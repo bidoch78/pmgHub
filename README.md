@@ -1,2 +1,2 @@
 # pmgHub
-Pimp My Gauge - Master
+Pimp My Gauge - Hub

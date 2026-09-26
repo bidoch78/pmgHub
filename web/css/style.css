@@ -1,0 +1,111 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    background: #101214;
+    color: #f5f5f5;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+button {
+    border: 0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    padding: 20px;
+    border-radius: 10px;
+    background: #292929;
+}
+
+.card span,
+.card small {
+    display: block;
+}
+
+.card strong {
+    display: inline-block;
+    margin: 10px 0 4px;
+    font-size: 2rem;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 18% 48%, rgb(247 180 54 / 12%), transparent 28%),
+        linear-gradient(135deg, #101214 0%, #171b1d 52%, #0c0e10 100%);
+}
+
+.login-box {
+    position: relative;
+    z-index: 1;
+    width: min(360px, 100%);
+    padding: 28px;
+    border-radius: 10px;
+    background: #292929;
+    box-shadow: 0 20px 60px rgb(0 0 0 / 45%);
+}
+
+.login-box form {
+    display: grid;
+    gap: 12px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+}
+
+.error {
+    min-height: 1.2em;
+}
+
+dialog {
+    width: min(360px, calc(100% - 32px));
+    padding: 28px;
+    border: 0;
+    border-radius: 10px;
+    background: #292929;
+    color: #f5f5f5;
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / 70%);
+}
+
+dialog form {
+    display: grid;
+    gap: 12px;
+}
+
+#connectionStatus {
+    margin-top: 20px;
+}
+
+@media (max-width: 760px) {
+    .login-box {
+        margin-top: 18vh;
+    }
+}

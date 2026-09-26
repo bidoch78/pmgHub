@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pmgHub</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>pmgHub</h1>
+        <button id="logoutButton">Log out</button>
+    </header>
+
+    <main>
+        <section class="dashboard">
+            <div class="card">
+                <span>Engine speed</span>
+                <strong id="rpm">--</strong>
+                <small>rpm</small>
+            </div>
+
+            <div class="card">
+                <span>Coolant temperature</span>
+                <strong id="coolant">--</strong>
+                <small>°C</small>
+            </div>
+
+            <div class="card">
+                <span>Oil pressure</span>
+                <strong id="oilPressure">--</strong>
+                <small>bar</small>
+            </div>
+
+            <div class="card">
+                <span>Fuel pressure</span>
+                <strong id="fuelPressure">--</strong>
+                <small>bar</small>
+            </div>
+
+            <div class="card">
+                <span>Ethanol</span>
+                <strong id="ethanol">--</strong>
+                <small>%</small>
+            </div>
+        </section>
+
+        <p id="connectionStatus">Connecting...</p>
+    </main>
+
+    <script type="module" src="/js/app.js"></script>
+</body>
+</html>

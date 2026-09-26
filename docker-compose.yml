@@ -1,0 +1,13 @@
+services:
+  pmghub-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pmghub-simulator
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app/web
+      - ./simulator:/app/simulator
+      - /app/simulator/node_modules
+    restart: unless-stopped

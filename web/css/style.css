@@ -129,6 +129,19 @@ main {
     color: #a9afb3;
 }
 
+.device-status.pairing {
+    color: #f7b436;
+}
+
+.pairing-card {
+    grid-template-columns: minmax(180px, 1fr) auto auto;
+}
+
+.pairing-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .device-name-form {
     display: flex;
     gap: 8px;

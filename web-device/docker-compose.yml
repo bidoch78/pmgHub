@@ -1,0 +1,16 @@
+services:
+  pmgdevice-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pmgdevice-simulator
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      HUB_URL: ${PMGHUB_URL:-http://host.docker.internal:3000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

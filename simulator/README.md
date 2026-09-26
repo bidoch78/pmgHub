@@ -37,8 +37,20 @@ They can be configured in `config.js`.
 - `POST /api/login`
 - `POST /api/logout`
 - `GET /api/sensors`
+- `GET /api/devices`
 - `GET /api/status`
 - WebSocket: `/ws`
+
+## Device pairing simulator API
+
+These authenticated dashboard endpoints handle device approval:
+
+- `GET /api/pairing/requests`
+- `POST /api/devices/:mac/approve`
+- `POST /api/pairing/requests/:mac/reject`
+- `DELETE /api/devices/:mac` to revoke a paired device
+
+The pmgDevice simulator connects to `/ws/device`. It sends a `pairing.request` message with its MAC address and name. Once approved, the hub sends a one-time `pairing.approved` message containing the generated token. The device reconnects with `device.authenticate`; the hub stores the token in `data/paired-devices.json` and updates the device's connection status.
 
 ## Simulator-only routes
 

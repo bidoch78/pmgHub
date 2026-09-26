@@ -27,6 +27,8 @@ const sessions = new SessionManager(
 
 const sensors = new SensorSimulator();
 const devices = new DeviceSimulator();
+const pairedDeviceSockets = new Map();
+const pendingDeviceSockets = new Map();
 
 const contentTypes = {
     ".html": "text/html; charset=utf-8",
@@ -229,9 +231,70 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    if (url.pathname === "/api/pairing/requests" && req.method === "GET") {
+        sendJson(res, 200, devices.getPending());
+        return;
+    }
+
+    const approveMatch = url.pathname.match(/^\/api\/devices\/([^/]+)\/approve$/);
+    if (approveMatch && req.method === "POST") {
+        const result = devices.approve(decodeURIComponent(approveMatch[1]));
+
+        if (!result) {
+            sendJson(res, 404, { error: "PAIRING_REQUEST_NOT_FOUND" });
+            return;
+        }
+
+        const pendingSocket = pendingDeviceSockets.get(result.device.mac);
+        if (pendingSocket && pendingSocket.readyState === 1) {
+            pendingSocket.send(JSON.stringify({
+                type: "pairing.approved",
+                mac: result.device.mac,
+                token: result.token
+            }));
+        }
+
+        sendJson(res, 200, { ok: true, device: result.device });
+        return;
+    }
+
+    const rejectPendingMatch = url.pathname.match(/^\/api\/pairing\/requests\/([^/]+)\/reject$/);
+    if (rejectPendingMatch && req.method === "POST") {
+        const requestedMac = decodeURIComponent(rejectPendingMatch[1]);
+        const pendingDevice = devices.getPending().find(
+            device => device.mac.toLowerCase() === requestedMac.toLowerCase()
+        );
+        const mac = pendingDevice?.mac || requestedMac;
+        const socket = pendingDeviceSockets.get(mac);
+        pendingDeviceSockets.delete(mac);
+        if (socket && socket.readyState === 1) {
+            socket.close(4003, "Pairing request rejected");
+        }
+
+        const device = devices.reject(mac);
+        if (!device) {
+            sendJson(res, 404, { error: "PAIRING_REQUEST_NOT_FOUND" });
+            return;
+        }
+
+        sendJson(res, 200, { ok: true });
+        return;
+    }
+
     const deviceNameMatch = url.pathname.match(/^\/api\/devices\/([^/]+)$/);
     if (deviceNameMatch && req.method === "DELETE") {
-        const device = devices.reject(decodeURIComponent(deviceNameMatch[1]));
+        const requestedMac = decodeURIComponent(deviceNameMatch[1]);
+        const registeredDevice = devices.getAll().find(
+            device => device.mac.toLowerCase() === requestedMac.toLowerCase()
+        );
+        const mac = registeredDevice?.mac || requestedMac;
+        const socket = pairedDeviceSockets.get(mac);
+        pairedDeviceSockets.delete(mac);
+        if (socket && socket.readyState === 1) {
+            socket.close(4003, "Device rejected by hub");
+        }
+
+        const device = devices.reject(mac);
 
         if (!device) {
             sendJson(res, 404, { error: "DEVICE_NOT_FOUND" });
@@ -316,9 +379,19 @@ const server = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({
     noServer: true
 });
+const deviceWss = new WebSocketServer({
+    noServer: true
+});
 
 server.on("upgrade", (req, socket, head) => {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+    if (url.pathname === "/ws/device") {
+        deviceWss.handleUpgrade(req, socket, head, ws => {
+            deviceWss.emit("connection", ws, req);
+        });
+        return;
+    }
 
     if (url.pathname !== "/ws") {
         socket.destroy();
@@ -338,6 +411,94 @@ server.on("upgrade", (req, socket, head) => {
 
 wss.on("connection", ws => {
     ws.send(JSON.stringify(sensors.getData()));
+});
+
+deviceWss.on("connection", ws => {
+    ws.on("message", rawMessage => {
+        let message;
+        try {
+            message = JSON.parse(rawMessage.toString());
+        } catch {
+            ws.close(4002, "Invalid JSON message");
+            return;
+        }
+
+        if (message.type === "pairing.request") {
+            const result = devices.requestPairing(message.mac, message.name || "");
+            if (!result) {
+                ws.send(JSON.stringify({ type: "pairing.rejected", reason: "INVALID_DEVICE" }));
+                ws.close(4002, "Invalid device details");
+                return;
+            }
+
+            ws.deviceMac = result.device.mac;
+            if (result.paired && result.token) {
+                ws.send(JSON.stringify({
+                    type: "pairing.approved",
+                    mac: result.device.mac,
+                    token: result.token
+                }));
+                return;
+            }
+
+            pendingDeviceSockets.set(result.device.mac, ws);
+            ws.send(JSON.stringify({
+                type: "pairing.pending",
+                mac: result.device.mac
+            }));
+            return;
+        }
+
+        if (message.type === "pairing.cancel") {
+            const mac = ws.deviceMac || message.mac;
+            if (pendingDeviceSockets.get(mac) === ws) {
+                pendingDeviceSockets.delete(mac);
+                devices.rejectPending(mac);
+            }
+            ws.close(1000, "Pairing request cancelled");
+            return;
+        }
+
+        if (message.type === "device.authenticate") {
+            if (!devices.isTokenValid(message.mac, message.token)) {
+                ws.send(JSON.stringify({ type: "device.authentication_failed" }));
+                ws.close(4001, "Invalid device token");
+                return;
+            }
+
+            const mac = message.mac.toUpperCase();
+            const previousSocket = pairedDeviceSockets.get(mac);
+            if (previousSocket && previousSocket !== ws && previousSocket.readyState === 1) {
+                previousSocket.close(4000, "Device reconnected");
+            }
+
+            ws.deviceMac = mac;
+            pairedDeviceSockets.set(mac, ws);
+            devices.setConnected(mac, true);
+            ws.send(JSON.stringify({ type: "device.authenticated", mac }));
+            return;
+        }
+
+        if (message.type === "device.disconnect") {
+            ws.close(1000, "Device simulator stopped");
+        }
+    });
+
+    ws.on("close", () => {
+        const mac = ws.deviceMac;
+        if (!mac) {
+            return;
+        }
+
+        if (pendingDeviceSockets.get(mac) === ws) {
+            pendingDeviceSockets.delete(mac);
+        }
+
+        if (pairedDeviceSockets.get(mac) === ws) {
+            pairedDeviceSockets.delete(mac);
+            devices.setConnected(mac, false);
+        }
+    });
 });
 
 setInterval(() => {

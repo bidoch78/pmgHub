@@ -1,7 +1,7 @@
 const path = require("path");
 
 module.exports = {
-    port: 3000,
+    port: Number(process.env.PORT || 3000),
     
     webRoot: path.resolve(__dirname, "../web"),
 

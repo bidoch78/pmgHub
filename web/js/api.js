@@ -27,6 +27,38 @@ export async function getDevices() {
     return response.json();
 }
 
+export async function getPairingRequests() {
+    const response = await request("/api/pairing/requests");
+
+    if (!response.ok) {
+        throw new Error("Unable to load pairing requests");
+    }
+
+    return response.json();
+}
+
+export async function approveDevice(mac) {
+    const response = await request(`/api/devices/${encodeURIComponent(mac)}/approve`, {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to approve pairing request");
+    }
+
+    return response.json();
+}
+
+export async function rejectPairingRequest(mac) {
+    const response = await request(`/api/pairing/requests/${encodeURIComponent(mac)}/reject`, {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to reject pairing request");
+    }
+}
+
 export async function updateDeviceName(mac, name) {
     const response = await request(`/api/devices/${encodeURIComponent(mac)}`, {
         method: "PATCH",

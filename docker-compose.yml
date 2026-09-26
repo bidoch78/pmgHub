@@ -9,5 +9,6 @@ services:
     volumes:
       - ./web:/app/web
       - ./simulator:/app/simulator
+      - ./data:/app/data
       - /app/simulator/node_modules
     restart: unless-stopped

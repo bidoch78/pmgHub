@@ -1,29 +1,133 @@
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+
+const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+
 class DeviceSimulator {
-    constructor() {
-        this.devices = [
-            {
-                mac: "02:00:00:00:00:01",
-                name: "Dashboard display",
-                connected: true
-            },
-            {
-                mac: "02:00:00:00:00:02",
-                name: "",
-                connected: false
+    constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
+        this.storePath = storePath;
+        this.devices = this.load();
+    }
+
+    load() {
+        try {
+            const data = JSON.parse(fs.readFileSync(this.storePath, "utf8"));
+            if (!Array.isArray(data.devices)) {
+                throw new Error("Invalid paired-device store");
             }
-        ];
+
+            return data.devices.map(device => ({
+                mac: device.mac,
+                name: device.name || "",
+                paired: device.paired !== false,
+                token: device.token || null,
+                connected: false
+            }));
+        } catch (error) {
+            if (error.code !== "ENOENT") {
+                console.error("Unable to read paired-device store:", error);
+            }
+
+            return [
+                { mac: "02:00:00:00:00:01", name: "Dashboard display", paired: true, token: null, connected: false },
+                { mac: "02:00:00:00:00:02", name: "", paired: true, token: null, connected: false }
+            ];
+        }
+    }
+
+    save() {
+        fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
+        fs.writeFileSync(
+            this.storePath,
+            `${JSON.stringify({ devices: this.devices }, null, 2)}\n`,
+            { mode: 0o600 }
+        );
+    }
+
+    toPublic(device) {
+        const { token, ...publicDevice } = device;
+        return { ...publicDevice, paired: Boolean(token) || device.paired };
+    }
+
+    find(mac) {
+        if (typeof mac !== "string") {
+            return undefined;
+        }
+
+        return this.devices.find(item => item.mac.toLowerCase() === mac.toLowerCase());
     }
 
     getAll() {
-        return this.devices.map(device => ({ ...device }));
+        return this.devices.filter(device => device.paired).map(device => this.toPublic(device));
+    }
+
+    getPending() {
+        return this.devices.filter(device => !device.paired).map(device => this.toPublic(device));
+    }
+
+    requestPairing(mac, name = "") {
+        if (typeof mac !== "string" || !macPattern.test(mac)) {
+            return null;
+        }
+
+        const existing = this.find(mac);
+        if (existing) {
+            if (existing.paired) {
+                return { paired: true, device: this.toPublic(existing), token: existing.token };
+            }
+
+            return { paired: false, device: this.toPublic(existing) };
+        }
+
+        if (typeof name !== "string" || name.length > 32) {
+            return null;
+        }
+
+        const device = {
+            mac: mac.toUpperCase(),
+            name: name.trim(),
+            paired: false,
+            token: null,
+            connected: true
+        };
+        this.devices.push(device);
+        this.save();
+        return { paired: false, device: this.toPublic(device) };
+    }
+
+    approve(mac) {
+        const device = this.find(mac);
+        if (!device || device.paired) {
+            return null;
+        }
+
+        device.paired = true;
+        device.token = crypto.randomBytes(32).toString("hex");
+        device.connected = false;
+        this.save();
+        return { device: this.toPublic(device), token: device.token };
+    }
+
+    isTokenValid(mac, token) {
+        const device = this.find(mac);
+        return Boolean(device && device.paired && device.token && token === device.token);
+    }
+
+    setConnected(mac, connected) {
+        const device = this.find(mac);
+        if (!device || !device.paired) {
+            return null;
+        }
+
+        device.connected = Boolean(connected);
+        this.save();
+        return this.toPublic(device);
     }
 
     setName(mac, name) {
-        const device = this.devices.find(
-            item => item.mac.toLowerCase() === mac.toLowerCase()
-        );
-
-        if (!device) {
+        const device = this.find(mac);
+        if (!device || !device.paired) {
             return null;
         }
 
@@ -32,19 +136,31 @@ class DeviceSimulator {
         }
 
         device.name = name.trim();
-        return { ...device };
+        this.save();
+        return this.toPublic(device);
     }
 
     reject(mac) {
         const index = this.devices.findIndex(
-            item => item.mac.toLowerCase() === mac.toLowerCase()
+            item => item.mac.toLowerCase() === String(mac).toLowerCase()
         );
 
         if (index === -1) {
             return null;
         }
 
-        return this.devices.splice(index, 1)[0];
+        const [device] = this.devices.splice(index, 1);
+        this.save();
+        return this.toPublic(device);
+    }
+
+    rejectPending(mac) {
+        const device = this.find(mac);
+        if (!device || device.paired) {
+            return null;
+        }
+
+        return this.reject(device.mac);
     }
 }
 

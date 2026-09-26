@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10161b">
+    <title>pmgDevice Simulator</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/" aria-label="pmgDevice Simulator home">
+            <span class="brand-mark">P</span>
+            <span>pmg<span class="brand-accent">Device</span></span>
+        </a>
+        <span class="simulator-label"><span class="pulse-dot"></span> DEVICE SIMULATOR</span>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div>
+                <p class="eyebrow">PAIRING LAB</p>
+                <h1>Manage your pmgDevices</h1>
+                <p class="hero-copy">Create virtual ESP32 devices, pair them with a pmgHub, and monitor their live connection.</p>
+            </div>
+            <button id="createDeviceButton" class="primary-button" type="button">
+                <span aria-hidden="true">+</span> Create device
+            </button>
+        </section>
+
+        <section class="hub-panel" aria-labelledby="hubHeading">
+            <div class="hub-icon" aria-hidden="true">⌁</div>
+            <div class="hub-details">
+                <h2 id="hubHeading">Hub connection</h2>
+                <p>Set the address of the pmgHub simulator to pair devices.</p>
+            </div>
+            <label class="hub-url-label" for="hubUrl">Hub URL</label>
+            <input id="hubUrl" class="hub-url-input" type="url" placeholder="http://host.docker.internal:3000" autocomplete="url">
+        </section>
+
+        <section class="devices-section" aria-labelledby="devicesHeading">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR HARDWARE</p>
+                    <h2 id="devicesHeading">Devices</h2>
+                </div>
+                <span id="deviceCount" class="device-count">Loading devices...</span>
+            </div>
+            <div id="deviceList" class="device-list" aria-live="polite"></div>
+        </section>
+
+        <p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
+    </main>
+
+    <template id="deviceTemplate">
+        <article class="device-card">
+            <div class="device-card-top">
+                <div class="device-avatar" aria-hidden="true">D</div>
+                <span class="device-status"><span class="status-dot"></span><span class="status-label"></span></span>
+            </div>
+            <label class="field-label device-name-label">Device name</label>
+            <input class="device-name-input" type="text" maxlength="32" placeholder="Add a friendly name">
+            <label class="field-label mac-label">MAC address</label>
+            <input class="mac-input" type="text" readonly aria-readonly="true">
+            <div class="device-card-footer">
+                <div class="pair-state"></div>
+                <div class="device-actions">
+                    <button class="pair-button primary-button" type="button">Pair with hub</button>
+                    <button class="delete-button" type="button">Delete device</button>
+                </div>
+            </div>
+        </article>
+    </template>
+</body>
+</html>

@@ -6,6 +6,7 @@ const { WebSocketServer } = require("ws");
 const config = require("./config");
 const SessionManager = require("./sessions");
 const SensorSimulator = require("./sensors");
+const DeviceSimulator = require("./devices");
 const {
     areValidCredentials,
     hasCredentials,
@@ -25,6 +26,7 @@ const sessions = new SessionManager(
 );
 
 const sensors = new SensorSimulator();
+const devices = new DeviceSimulator();
 
 const contentTypes = {
     ".html": "text/html; charset=utf-8",
@@ -218,6 +220,51 @@ const server = http.createServer(async (req, res) => {
     // ---------- SENSOR API ----------
     if (url.pathname === "/api/sensors" && req.method === "GET") {
         sendJson(res, 200, sensors.update());
+        return;
+    }
+
+    // ---------- REGISTERED DEVICES API ----------
+    if (url.pathname === "/api/devices" && req.method === "GET") {
+        sendJson(res, 200, devices.getAll());
+        return;
+    }
+
+    const deviceNameMatch = url.pathname.match(/^\/api\/devices\/([^/]+)$/);
+    if (deviceNameMatch && req.method === "DELETE") {
+        const device = devices.reject(decodeURIComponent(deviceNameMatch[1]));
+
+        if (!device) {
+            sendJson(res, 404, { error: "DEVICE_NOT_FOUND" });
+            return;
+        }
+
+        sendJson(res, 200, { ok: true, device });
+        return;
+    }
+
+    if (deviceNameMatch && req.method === "PATCH") {
+        try {
+            const body = await readJsonBody(req);
+            const device = devices.setName(
+                decodeURIComponent(deviceNameMatch[1]),
+                body.name
+            );
+
+            if (device === null) {
+                sendJson(res, 404, { error: "DEVICE_NOT_FOUND" });
+                return;
+            }
+
+            if (device === false) {
+                sendJson(res, 400, { error: "INVALID_DEVICE_NAME" });
+                return;
+            }
+
+            sendJson(res, 200, device);
+        } catch (error) {
+            sendJson(res, 400, { error: error.message });
+        }
+
         return;
     }
 

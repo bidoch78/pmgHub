@@ -13,36 +13,57 @@
     </header>
 
     <main>
-        <section class="dashboard">
-            <div class="card">
-                <span>Engine speed</span>
-                <strong id="rpm">--</strong>
-                <small>rpm</small>
+        <section class="dashboard-section" aria-labelledby="sensorsHeading">
+            <div class="section-heading">
+                <div>
+                    <h2 id="sensorsHeading">Sensors</h2>
+                    <p>Live readings from your pmgHub</p>
+                </div>
             </div>
 
-            <div class="card">
-                <span>Coolant temperature</span>
-                <strong id="coolant">--</strong>
-                <small>°C</small>
+            <div class="dashboard">
+                <div class="card">
+                    <span>Engine speed</span>
+                    <strong id="rpm">--</strong>
+                    <small>rpm</small>
+                </div>
+
+                <div class="card">
+                    <span>Coolant temperature</span>
+                    <strong id="coolant">--</strong>
+                    <small>°C</small>
+                </div>
+
+                <div class="card">
+                    <span>Oil pressure</span>
+                    <strong id="oilPressure">--</strong>
+                    <small>bar</small>
+                </div>
+
+                <div class="card">
+                    <span>Fuel pressure</span>
+                    <strong id="fuelPressure">--</strong>
+                    <small>bar</small>
+                </div>
+
+                <div class="card">
+                    <span>Ethanol</span>
+                    <strong id="ethanol">--</strong>
+                    <small>%</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="devices-section" aria-labelledby="devicesHeading">
+            <div class="section-heading">
+                <div>
+                    <h2 id="devicesHeading">Registered devices</h2>
+                    <p>pmgDevices paired with this hub</p>
+                </div>
+                <span id="deviceCount" class="device-count">Loading devices...</span>
             </div>
 
-            <div class="card">
-                <span>Oil pressure</span>
-                <strong id="oilPressure">--</strong>
-                <small>bar</small>
-            </div>
-
-            <div class="card">
-                <span>Fuel pressure</span>
-                <strong id="fuelPressure">--</strong>
-                <small>bar</small>
-            </div>
-
-            <div class="card">
-                <span>Ethanol</span>
-                <strong id="ethanol">--</strong>
-                <small>%</small>
-            </div>
+            <div id="deviceList" class="device-list" aria-live="polite"></div>
         </section>
 
         <p id="connectionStatus">Connecting...</p>

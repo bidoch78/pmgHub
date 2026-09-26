@@ -17,6 +17,42 @@ export async function getSensors() {
     return response.json();
 }
 
+export async function getDevices() {
+    const response = await request("/api/devices");
+
+    if (!response.ok) {
+        throw new Error("Unable to load registered devices");
+    }
+
+    return response.json();
+}
+
+export async function updateDeviceName(mac, name) {
+    const response = await request(`/api/devices/${encodeURIComponent(mac)}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name })
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to update device name");
+    }
+
+    return response.json();
+}
+
+export async function rejectDevice(mac) {
+    const response = await request(`/api/devices/${encodeURIComponent(mac)}`, {
+        method: "DELETE"
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to reject device");
+    }
+}
+
 export async function login(username, password) {
     const response = await fetch("/api/login", {
         method: "POST",

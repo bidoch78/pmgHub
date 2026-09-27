@@ -2,10 +2,12 @@ import {
     approveDevice,
     getDevices,
     getPairingRequests,
+    getPairingWindow,
     getSensors,
     logout,
     rejectDevice,
     rejectPairingRequest,
+    setPairingWindow,
     updateDeviceName
 } from "./api.js";
 import { connectWebSocket } from "./websocket.js";
@@ -16,8 +18,12 @@ const deviceList = document.getElementById("deviceList");
 const deviceCount = document.getElementById("deviceCount");
 const pairingList = document.getElementById("pairingList");
 const pairingCount = document.getElementById("pairingCount");
+const pairingWindowStatus = document.getElementById("pairingWindowStatus");
+const pairingWindowButton = document.getElementById("pairingWindowButton");
 const sensorCards = new Map();
 const sensorCategoryGroups = new Map();
+const pairingCodeDrafts = new Map();
+let pairingRequestSignature = null;
 
 function displaySensors(data) {
     if (!data || !Array.isArray(data.sensors)) {
@@ -294,20 +300,40 @@ async function refreshDevices() {
 
 async function refreshPairingRequests() {
     const requests = await getPairingRequests();
-    pairingList.replaceChildren();
+    const signature = JSON.stringify(requests.map(device => [device.mac, device.name]));
     pairingCount.textContent = `${requests.length} pending ${requests.length === 1 ? "request" : "requests"}`;
 
+    if (signature === pairingRequestSignature) return;
+    pairingRequestSignature = signature;
+
+    const currentMacs = new Set(requests.map(device => device.mac));
+    for (const card of pairingList.querySelectorAll(".pairing-card[data-mac]")) {
+        const input = card.querySelector(".pairing-code-input");
+        if (input && input.value) pairingCodeDrafts.set(card.dataset.mac, input.value);
+        if (!currentMacs.has(card.dataset.mac)) {
+            pairingCodeDrafts.delete(card.dataset.mac);
+            card.remove();
+        }
+    }
+
     if (requests.length === 0) {
-        const emptyState = document.createElement("p");
-        emptyState.className = "empty-state";
-        emptyState.textContent = "No devices are waiting for approval.";
-        pairingList.append(emptyState);
+        if (!pairingList.querySelector(".empty-state")) {
+            const emptyState = document.createElement("p");
+            emptyState.className = "empty-state";
+            emptyState.textContent = "No devices are waiting for approval.";
+            pairingList.append(emptyState);
+        }
         return;
     }
 
+    pairingList.querySelector(".empty-state")?.remove();
+
     for (const device of requests) {
+        if ([...pairingList.querySelectorAll(".pairing-card[data-mac]")]
+            .some(card => card.dataset.mac === device.mac)) continue;
         const card = document.createElement("article");
         card.className = "device-card pairing-card";
+        card.dataset.mac = device.mac;
 
         const identity = document.createElement("div");
         const name = document.createElement("span");
@@ -322,19 +348,49 @@ async function refreshPairingRequests() {
         status.className = "device-status pairing";
         status.textContent = "Awaiting approval";
 
-        const actions = document.createElement("div");
-        actions.className = "pairing-actions";
+        const codeForm = document.createElement("form");
+        codeForm.className = "pairing-code-form";
+        const codeLabel = document.createElement("label");
+        codeLabel.textContent = "Code shown on device";
+        const codeInput = document.createElement("input");
+        codeInput.type = "text";
+        codeInput.inputMode = "numeric";
+        codeInput.maxLength = 8;
+        codeInput.pattern = "[0-9]{8}";
+        codeInput.className = "pairing-code-input";
+        codeInput.placeholder = "8-digit code";
+        codeInput.value = pairingCodeDrafts.get(device.mac) || "";
+        codeInput.autocomplete = "one-time-code";
+        codeInput.setAttribute("aria-label", `Pairing code displayed by device ${device.mac}`);
+        codeInput.addEventListener("input", () => pairingCodeDrafts.set(device.mac, codeInput.value));
+        codeForm.append(codeLabel, codeInput);
+
         const approveButton = document.createElement("button");
-        approveButton.type = "button";
+        approveButton.type = "submit";
         approveButton.textContent = "Approve";
-        approveButton.addEventListener("click", async () => {
+        codeForm.append(approveButton);
+        const codeError = document.createElement("small");
+        codeError.className = "pairing-code-error";
+        codeError.setAttribute("role", "status");
+        codeForm.append(codeError);
+
+        codeForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const code = codeInput.value.trim();
+            if (!/^\d{8}$/.test(code)) {
+                codeError.textContent = "Enter the 8-digit code shown by the device.";
+                return;
+            }
+
+            codeError.textContent = "";
             approveButton.disabled = true;
             try {
-                await approveDevice(device.mac);
+                await approveDevice(device.mac, code);
+                pairingCodeDrafts.delete(device.mac);
                 await Promise.all([refreshDevices(), refreshPairingRequests()]);
             } catch (error) {
                 console.error(error);
-                approveButton.textContent = "Retry approval";
+                codeError.textContent = error.message;
                 approveButton.disabled = false;
             }
         });
@@ -354,11 +410,28 @@ async function refreshPairingRequests() {
                 rejectButton.disabled = false;
             }
         });
-        actions.append(approveButton, rejectButton);
+        const actions = document.createElement("div");
+        actions.className = "pairing-actions";
+        actions.append(rejectButton);
 
-        card.append(identity, status, actions);
+        card.append(identity, status, codeForm, actions);
         pairingList.append(card);
     }
+}
+
+async function refreshPairingWindow() {
+    const windowStatus = await getPairingWindow();
+    if (!windowStatus.open) {
+        pairingWindowStatus.textContent = "Pairing mode is closed";
+        pairingWindowStatus.classList.remove("pairing-window-open");
+        pairingWindowButton.textContent = `Open pairing mode (${Math.ceil(windowStatus.durationMs / 1000)} sec)`;
+        return;
+    }
+
+    const secondsRemaining = Math.max(0, Math.ceil((windowStatus.expiresAt - Date.now()) / 1000));
+    pairingWindowStatus.textContent = `Pairing mode open · ${secondsRemaining}s remaining`;
+    pairingWindowStatus.classList.add("pairing-window-open");
+    pairingWindowButton.textContent = "Close pairing mode";
 }
 
 async function initialize() {
@@ -382,6 +455,13 @@ async function initialize() {
         pairingCount.textContent = "Unable to load requests";
     }
 
+    try {
+        await refreshPairingWindow();
+    } catch (error) {
+        console.error(error);
+        pairingWindowStatus.textContent = "Unable to check pairing mode";
+    }
+
     connectWebSocket(displaySensors, status => {
         connectionStatus.textContent = status;
         connectionStatus.classList.toggle("online", status === "Connected");
@@ -391,8 +471,23 @@ async function initialize() {
     window.setInterval(() => {
         refreshDevices().catch(error => console.error(error));
         refreshPairingRequests().catch(error => console.error(error));
+        refreshPairingWindow().catch(error => console.error(error));
     }, 2000);
 }
+
+pairingWindowButton.addEventListener("click", async () => {
+    pairingWindowButton.disabled = true;
+    try {
+        const enabled = !pairingWindowStatus.classList.contains("pairing-window-open");
+        await setPairingWindow(enabled);
+        await refreshPairingWindow();
+        await refreshPairingRequests();
+    } catch (error) {
+        pairingWindowStatus.textContent = error.message;
+    } finally {
+        pairingWindowButton.disabled = false;
+    }
+});
 
 document.getElementById("logoutButton").addEventListener("click", async () => {
     try {

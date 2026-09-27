@@ -37,13 +37,43 @@ export async function getPairingRequests() {
     return response.json();
 }
 
-export async function approveDevice(mac) {
-    const response = await request(`/api/devices/${encodeURIComponent(mac)}/approve`, {
-        method: "POST"
+export async function getPairingWindow() {
+    const response = await request("/api/pairing/window");
+
+    if (!response.ok) {
+        throw new Error("Unable to check pairing mode");
+    }
+
+    return response.json();
+}
+
+export async function setPairingWindow(enabled) {
+    const response = await request("/api/pairing/window", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled })
     });
 
     if (!response.ok) {
-        throw new Error("Unable to approve pairing request");
+        throw new Error("Unable to change pairing mode");
+    }
+
+    return response.json();
+}
+
+export async function approveDevice(mac, code) {
+    const response = await request(`/api/devices/${encodeURIComponent(mac)}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+    });
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        if (body.error === "PAIRING_CODE_MISMATCH") {
+            throw new Error("The code does not match the one entered by this device.");
+        }
+        throw new Error(body.error || "Unable to approve pairing request");
     }
 
     return response.json();

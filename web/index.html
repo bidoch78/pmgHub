@@ -43,9 +43,13 @@
             <div class="section-heading">
                 <div>
                     <h2 id="pairingHeading">Pairing requests</h2>
-                    <p>New pmgDevices waiting for approval</p>
+                    <p>Compare each code with the one shown on the physical device before approving.</p>
                 </div>
-                <span id="pairingCount" class="device-count">Checking requests...</span>
+                <div class="pairing-panel-controls">
+                    <span id="pairingWindowStatus" class="device-count">Pairing mode is closed</span>
+                    <button id="pairingWindowButton" type="button">Open pairing mode (60 sec)</button>
+                    <span id="pairingCount" class="device-count">Checking requests...</span>
+                </div>
             </div>
             <div id="pairingList" class="device-list" aria-live="polite"></div>
         </section>

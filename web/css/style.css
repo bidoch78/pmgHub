@@ -249,12 +249,60 @@ main {
 }
 
 .pairing-card {
-    grid-template-columns: minmax(180px, 1fr) auto auto;
+    grid-template-columns: minmax(150px, 1fr) auto minmax(220px, 1.2fr) auto;
 }
 
 .pairing-actions {
     display: flex;
     gap: 8px;
+}
+
+.pairing-panel-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 8px;
+}
+
+.pairing-window-open {
+    border-color: rgb(81 216 138 / 40%);
+    color: #51d88a;
+}
+
+.pairing-panel-controls button {
+    padding: 8px 12px;
+}
+
+.pairing-code-form {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto;
+    align-items: center;
+    gap: 6px 8px;
+}
+
+.pairing-code-form label {
+    grid-column: 1 / -1;
+    color: #a9afb3;
+    font-size: 0.78rem;
+}
+
+.pairing-code-form input {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid #454c50;
+    border-radius: 6px;
+    background: #101214;
+    color: #f5f5f5;
+    font-family: monospace;
+    letter-spacing: 0.12em;
+}
+
+.pairing-code-error {
+    grid-column: 1 / -1;
+    min-height: 1em;
+    color: #ff8989;
+    font-size: 0.75rem;
 }
 
 .device-name-form {
@@ -370,14 +418,18 @@ dialog form {
     gap: 12px;
 }
 
-#connectionStatus {
-    margin-top: 20px;
-}
-
 @media (max-width: 760px) {
     .device-card {
         grid-template-columns: 1fr;
         gap: 14px;
+    }
+
+    .pairing-card {
+        grid-template-columns: 1fr;
+    }
+
+    .pairing-panel-controls {
+        justify-content: start;
     }
 
     .device-name-form {

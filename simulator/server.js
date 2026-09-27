@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -29,7 +30,12 @@ const sensors = new SensorSimulator();
 const devices = new DeviceSimulator();
 const pairedDeviceSockets = new Map();
 const pendingDeviceSockets = new Map();
+const pendingPairingCodes = new Map();
+const pendingPairingAttempts = new Map();
 const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+const pairingWindowMs = Number(process.env.PAIRING_WINDOW_MS || 60_000);
+let pairingWindowExpiresAt = 0;
+let pairingWindowTimer = null;
 
 const contentTypes = {
     ".html": "text/html; charset=utf-8",
@@ -74,6 +80,49 @@ function readJsonBody(req) {
 
         req.on("error", reject);
     });
+}
+
+function isPairingWindowOpen() {
+    return Date.now() < pairingWindowExpiresAt;
+}
+
+function closePendingPairingRequests(reason) {
+    for (const [mac, ws] of pendingDeviceSockets) {
+        pendingDeviceSockets.delete(mac);
+        pendingPairingCodes.delete(mac);
+        pendingPairingAttempts.delete(mac);
+        devices.rejectPending(mac);
+        if (ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: "pairing.rejected", reason }));
+            ws.close(4005, reason);
+        }
+    }
+}
+
+function disablePairingWindow(reason = "PAIRING_WINDOW_CLOSED") {
+    pairingWindowExpiresAt = 0;
+    if (pairingWindowTimer) {
+        clearTimeout(pairingWindowTimer);
+        pairingWindowTimer = null;
+    }
+    closePendingPairingRequests(reason);
+}
+
+function enablePairingWindow() {
+    if (pairingWindowTimer) clearTimeout(pairingWindowTimer);
+    pairingWindowExpiresAt = Date.now() + pairingWindowMs;
+    pairingWindowTimer = setTimeout(() => {
+        disablePairingWindow("PAIRING_WINDOW_EXPIRED");
+    }, pairingWindowMs);
+    pairingWindowTimer.unref?.();
+}
+
+function pairingWindowStatus() {
+    return {
+        open: isPairingWindowOpen(),
+        expiresAt: isPairingWindowOpen() ? pairingWindowExpiresAt : null,
+        durationMs: pairingWindowMs
+    };
 }
 
 function serveFile(res, relativePath) {
@@ -232,23 +281,108 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    if (url.pathname === "/api/pairing/window" && req.method === "GET") {
+        sendJson(res, 200, pairingWindowStatus());
+        return;
+    }
+
+    if (url.pathname === "/api/pairing/window" && req.method === "POST") {
+        try {
+            const body = await readJsonBody(req);
+            if (body.enabled === true) {
+                enablePairingWindow();
+            } else if (body.enabled === false) {
+                disablePairingWindow();
+            } else {
+                sendJson(res, 400, { error: "INVALID_PAIRING_WINDOW_STATE" });
+                return;
+            }
+
+            sendJson(res, 200, pairingWindowStatus());
+        } catch (error) {
+            sendJson(res, 400, { error: error.message });
+        }
+        return;
+    }
+
     const approveMatch = url.pathname.match(/^\/api\/devices\/([^/]+)\/approve$/);
     if (approveMatch && req.method === "POST") {
-        const result = devices.approve(decodeURIComponent(approveMatch[1]));
+        if (!isPairingWindowOpen()) {
+            sendJson(res, 409, { error: "PAIRING_WINDOW_CLOSED" });
+            return;
+        }
+
+        const requestedMac = decodeURIComponent(approveMatch[1]);
+        const pendingDevice = devices.getPending().find(
+            device => device.mac.toLowerCase() === requestedMac.toLowerCase()
+        );
+        const mac = pendingDevice?.mac || requestedMac;
+        const pendingSocket = pendingDeviceSockets.get(mac);
+        const expectedCode = pendingPairingCodes.get(mac);
+        if (!pendingSocket || pendingSocket.readyState !== 1 || !expectedCode) {
+            sendJson(res, 409, { error: "PAIRING_REQUEST_EXPIRED" });
+            return;
+        }
+
+        try {
+            const body = await readJsonBody(req);
+            const providedCode = typeof body.code === "string" ? body.code.trim() : "";
+            const providedBytes = Buffer.from(providedCode);
+            const expectedBytes = Buffer.from(expectedCode);
+            if (
+                providedBytes.length !== expectedBytes.length ||
+                !crypto.timingSafeEqual(providedBytes, expectedBytes)
+            ) {
+                const attempts = (pendingPairingAttempts.get(mac) || 0) + 1;
+                pendingPairingAttempts.set(mac, attempts);
+                if (attempts >= 5) {
+                    pendingDeviceSockets.delete(mac);
+                    pendingPairingCodes.delete(mac);
+                    pendingPairingAttempts.delete(mac);
+                    devices.rejectPending(mac);
+                    if (pendingSocket.readyState === 1) {
+                        pendingSocket.send(JSON.stringify({
+                            type: "pairing.rejected",
+                            reason: "PAIRING_CODE_ATTEMPTS_EXCEEDED"
+                        }));
+                        pendingSocket.close(4006, "Pairing code attempts exceeded");
+                    }
+                    sendJson(res, 429, { error: "PAIRING_CODE_ATTEMPTS_EXCEEDED" });
+                    return;
+                }
+                sendJson(res, 403, { error: "PAIRING_CODE_MISMATCH" });
+                return;
+            }
+
+            if (
+                !isPairingWindowOpen() ||
+                pendingDeviceSockets.get(mac) !== pendingSocket ||
+                pendingSocket.readyState !== 1 ||
+                pendingPairingCodes.get(mac) !== expectedCode
+            ) {
+                sendJson(res, 409, { error: "PAIRING_REQUEST_EXPIRED" });
+                return;
+            }
+        } catch (error) {
+            sendJson(res, 400, { error: error.message });
+            return;
+        }
+
+        const result = devices.approve(mac);
 
         if (!result) {
             sendJson(res, 404, { error: "PAIRING_REQUEST_NOT_FOUND" });
             return;
         }
 
-        const pendingSocket = pendingDeviceSockets.get(result.device.mac);
-        if (pendingSocket && pendingSocket.readyState === 1) {
-            pendingSocket.send(JSON.stringify({
-                type: "pairing.approved",
-                mac: result.device.mac,
-                token: result.token
-            }));
-        }
+        pendingDeviceSockets.delete(result.device.mac);
+        pendingPairingCodes.delete(result.device.mac);
+        pendingPairingAttempts.delete(result.device.mac);
+        pendingSocket.send(JSON.stringify({
+            type: "pairing.approved",
+            mac: result.device.mac,
+            token: result.token
+        }));
 
         sendJson(res, 200, { ok: true, device: result.device });
         return;
@@ -263,6 +397,8 @@ const server = http.createServer(async (req, res) => {
         const mac = pendingDevice?.mac || requestedMac;
         const socket = pendingDeviceSockets.get(mac);
         pendingDeviceSockets.delete(mac);
+        pendingPairingCodes.delete(mac);
+        pendingPairingAttempts.delete(mac);
         if (socket && socket.readyState === 1) {
             socket.close(4003, "Pairing request rejected");
         }
@@ -410,8 +546,20 @@ wss.on("connection", ws => {
 });
 
 deviceWss.on("connection", ws => {
-    const sendPairingRequest = (mac, replaceExisting = false) => {
-        const result = devices.requestPairing(mac, "", replaceExisting);
+    const sendPairingRequest = (mac, pairingCode) => {
+        if (!isPairingWindowOpen()) {
+            ws.send(JSON.stringify({ type: "pairing.rejected", reason: "PAIRING_WINDOW_CLOSED" }));
+            ws.close(4005, "Pairing window is closed");
+            return;
+        }
+
+        if (typeof pairingCode !== "string" || !/^\d{8}$/.test(pairingCode)) {
+            ws.send(JSON.stringify({ type: "pairing.rejected", reason: "INVALID_PAIRING_CODE" }));
+            ws.close(4002, "Invalid pairing code");
+            return;
+        }
+
+        const result = devices.requestPairing(mac);
         if (!result) {
             ws.send(JSON.stringify({ type: "pairing.rejected", reason: "INVALID_DEVICE" }));
             ws.close(4002, "Invalid device MAC address");
@@ -419,25 +567,39 @@ deviceWss.on("connection", ws => {
         }
 
         const canonicalMac = result.device.mac;
-        const currentSocket = pairedDeviceSockets.get(canonicalMac);
-        if (currentSocket && currentSocket !== ws) {
-            pairedDeviceSockets.delete(canonicalMac);
-            currentSocket.close(4000, "Device requires pairing approval");
+        if (result.paired) {
+            ws.send(JSON.stringify({ type: "device.authentication_failed", reason: "PAIRING_RESET_REQUIRED" }));
+            ws.close(4001, "Existing device must be explicitly revoked before pairing again");
+            return;
         }
 
         const previousPendingSocket = pendingDeviceSockets.get(canonicalMac);
         if (previousPendingSocket && previousPendingSocket !== ws) {
+            pendingDeviceSockets.delete(canonicalMac);
+            pendingPairingCodes.delete(canonicalMac);
+            pendingPairingAttempts.delete(canonicalMac);
             previousPendingSocket.close(4000, "A newer pairing request replaced this connection");
         }
 
         ws.deviceMac = canonicalMac;
         pendingDeviceSockets.set(canonicalMac, ws);
+        pendingPairingCodes.set(canonicalMac, pairingCode);
+        pendingPairingAttempts.set(canonicalMac, 0);
         ws.send(JSON.stringify({ type: "pairing.pending", mac: canonicalMac }));
     };
 
-    const authenticate = (mac, token) => {
+    const authenticate = (mac, token, pairingCode) => {
         if (!devices.isTokenValid(mac, token)) {
-            sendPairingRequest(mac, true);
+            if (devices.isPaired(mac)) {
+                ws.send(JSON.stringify({
+                    type: "device.authentication_failed",
+                    reason: "PAIRING_RESET_REQUIRED"
+                }));
+                ws.close(4001, "Invalid token for paired device");
+                return false;
+            }
+
+            sendPairingRequest(mac, pairingCode);
             return false;
         }
 
@@ -478,12 +640,16 @@ deviceWss.on("connection", ws => {
                 return;
             }
 
-            authenticate(message.mac, typeof message.token === "string" ? message.token : "");
+            authenticate(
+                message.mac,
+                typeof message.token === "string" ? message.token : "",
+                message.pairingCode
+            );
             return;
         }
 
         if (message.type === "pairing.request") {
-            sendPairingRequest(message.mac);
+            sendPairingRequest(message.mac, message.pairingCode);
             return;
         }
 
@@ -491,6 +657,8 @@ deviceWss.on("connection", ws => {
             const mac = ws.deviceMac || message.mac;
             if (pendingDeviceSockets.get(mac) === ws) {
                 pendingDeviceSockets.delete(mac);
+                pendingPairingCodes.delete(mac);
+                pendingPairingAttempts.delete(mac);
                 devices.rejectPending(mac);
             }
             ws.close(1000, "Pairing request cancelled");
@@ -515,6 +683,8 @@ deviceWss.on("connection", ws => {
 
         if (pendingDeviceSockets.get(mac) === ws) {
             pendingDeviceSockets.delete(mac);
+            pendingPairingCodes.delete(mac);
+            pendingPairingAttempts.delete(mac);
             devices.rejectPending(mac);
         }
 

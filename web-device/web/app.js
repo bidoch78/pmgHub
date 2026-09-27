@@ -39,6 +39,11 @@ function createMacAddress() {
     return [...bytes].map(byte => byte.toString(16).padStart(2, "0")).join(":").toUpperCase();
 }
 
+function createPairingCode() {
+    const bytes = crypto.getRandomValues(new Uint32Array(1));
+    return String(bytes[0] % 100_000_000).padStart(8, "0");
+}
+
 function displaySensorData(data) {
     if (!data || !Array.isArray(data.sensors)) return;
 
@@ -204,6 +209,7 @@ function renderDevice(currentDevice) {
     deviceCard.querySelector(".pair-state").textContent = device.token
         ? "Token stored locally · ready to authenticate"
         : "No pairing token · request hub approval";
+    updatePairingCodeDisplay();
     deviceCard.querySelector(".device-live-reading").classList.toggle("is-inactive", true);
 
     deviceCard.querySelector(".pair-button").addEventListener("click", () => {
@@ -213,6 +219,13 @@ function renderDevice(currentDevice) {
     deviceCard.querySelector(".connection-button").addEventListener("click", connectDevice);
     deviceList.append(deviceCard);
     setConnectionState("disconnected");
+}
+
+function updatePairingCodeDisplay() {
+    if (!deviceCard || !device) return;
+    const pairingCode = deviceCard.querySelector(".device-pairing-code");
+    pairingCode.hidden = Boolean(device.token);
+    pairingCode.querySelector(".pairing-code-value").textContent = device.pairingCode || "--------";
 }
 
 function createHubWebSocketUrl() {
@@ -240,6 +253,10 @@ function connectDevice() {
     }
 
     pairingRequested = !device.token;
+    if (pairingRequested) {
+        device.pairingCode = createPairingCode();
+        updatePairingCodeDisplay();
+    }
     disconnecting = false;
     setConnectionState("connecting");
 
@@ -249,7 +266,8 @@ function connectDevice() {
         socket.send(JSON.stringify({
             type: "device.connect",
             mac: device.mac,
-            token: device.token || ""
+            token: device.token || "",
+                pairingCode: device.token ? undefined : device.pairingCode
         }));
     });
 
@@ -275,6 +293,7 @@ function connectDevice() {
             device.token = message.token;
             deviceCard.querySelector(".token-input").value = device.token;
             deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticating";
+            updatePairingCodeDisplay();
             pairingRequested = false;
             socket.send(JSON.stringify({ type: "device.authenticate", mac: device.mac, token: device.token }));
             setConnectionState("connecting", "Authenticating");
@@ -283,7 +302,11 @@ function connectDevice() {
 
         if (message.type === "pairing.rejected") {
             pairingRequested = false;
-            setConnectionState("error", "Pairing rejected");
+            const reason = message.reason === "PAIRING_WINDOW_CLOSED"
+                ? "Open the hub pairing window, then retry."
+                : "Pairing was rejected by the hub.";
+            setConnectionState("error", "Pairing unavailable");
+            setMessage(reason);
             return;
         }
 
@@ -298,10 +321,12 @@ function connectDevice() {
 
         if (message.type === "device.authentication_failed") {
             device.token = "";
+            device.pairingCode = "";
             deviceCard.querySelector(".token-input").value = "";
-            deviceCard.querySelector(".pair-state").textContent = "Token rejected · awaiting hub approval";
-            setConnectionState("waiting");
-            setMessage("Saved token was invalid. The device is waiting for approval in the hub dashboard.");
+            deviceCard.querySelector(".pair-state").textContent = "Token rejected · hub registration unchanged";
+            updatePairingCodeDisplay();
+            setConnectionState("error", "Token rejected");
+            setMessage("The hub kept the existing registration. Ask the administrator to revoke it before pairing this device again.");
             return;
         }
 
@@ -329,8 +354,13 @@ function connectDevice() {
 
         if (event.code === 4003 && device.token) {
             device.token = "";
+            device.pairingCode = "";
             deviceCard.querySelector(".token-input").value = "";
             deviceCard.querySelector(".pair-state").textContent = "Token revoked · reconnect to request approval";
+            updatePairingCodeDisplay();
+        } else if (event.code === 4005 && !device.token) {
+            setConnectionState("error", "Pairing window closed");
+            setMessage("Open pairing mode on the hub, then click Pair with hub to generate a new code.");
         }
 
         if (!disconnecting && event.code !== 1000 && !event.reason) {
@@ -371,7 +401,12 @@ document.getElementById("createDeviceButton").addEventListener("click", () => {
     }
 
     const mac = enteredMac || createMacAddress();
-    device = { mac, token: enteredToken, hubUrl: hubUrlInput.value.trim() || "http://localhost:3000" };
+    device = {
+        mac,
+        token: enteredToken,
+        pairingCode: enteredToken ? "" : createPairingCode(),
+        hubUrl: hubUrlInput.value.trim() || "http://localhost:3000"
+    };
     manualMacInput.value = "";
     manualTokenInput.value = "";
     renderDevice(device);

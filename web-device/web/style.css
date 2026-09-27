@@ -108,6 +108,9 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .device-card { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(145deg, #19232a, #151d23); box-shadow: 0 10px 35px rgb(0 0 0 / 10%); }
 .device-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 23px; }
 .device-description { margin: -10px 0 18px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.device-pairing-code { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 12px 14px; border: 1px solid rgb(241 189 108 / 40%); border-radius: 10px; background: rgb(241 189 108 / 8%); color: #f1bd6c; }
+.device-pairing-code span { font-size: 10px; }
+.pairing-code-value { font: 700 24px 'SFMono-Regular', Consolas, monospace; letter-spacing: .13em; }
 .device-live-reading { margin: 0 0 16px; padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(120deg, rgb(88 214 176 / 8%), #11191e 65%); }
 .device-live-reading.is-inactive { opacity: .55; }
 .device-live-reading.has-error { border-color: #d65f5f; }

@@ -55,6 +55,11 @@ class DeviceSimulator {
         return this.devices.find(item => item.mac.toLowerCase() === mac.toLowerCase());
     }
 
+    isPaired(mac) {
+        const device = this.find(mac);
+        return Boolean(device && device.paired && device.token);
+    }
+
     getAll() {
         return this.devices.filter(device => device.paired).map(device => this.toPublic(device));
     }
@@ -63,22 +68,15 @@ class DeviceSimulator {
         return this.devices.filter(device => !device.paired).map(device => this.toPublic(device));
     }
 
-    requestPairing(mac, name = "", replaceExisting = false) {
+    requestPairing(mac, name = "") {
         if (typeof mac !== "string" || !macPattern.test(mac)) {
             return null;
         }
 
         const existing = this.find(mac);
         if (existing) {
-            if (existing.paired && !replaceExisting) {
-                return { paired: true, device: this.toPublic(existing), token: existing.token };
-            }
-
-            if (replaceExisting) {
-                existing.paired = false;
-                existing.token = null;
-                existing.connected = false;
-                this.save();
+            if (existing.paired) {
+                return { paired: true, device: this.toPublic(existing) };
             }
 
             return { paired: false, device: this.toPublic(existing) };

@@ -41,11 +41,13 @@ On first start, the login page asks you to set a password. The password is store
 These authenticated dashboard endpoints handle device approval:
 
 - `GET /api/pairing/requests`
-- `POST /api/devices/:mac/approve`
+- `GET /api/pairing/window`
+- `POST /api/pairing/window` to open/close a 60-second pairing window
+- `POST /api/devices/:mac/approve` with the code read from the device (five incorrect guesses invalidate that pending request)
 - `POST /api/pairing/requests/:mac/reject`
 - `DELETE /api/devices/:mac` to revoke a paired device
 
-The pmgDevice browser simulator opens its own connection to `/ws/device` and sends `device.connect` with its MAC and saved token (or an empty token). A valid token authenticates immediately; a missing or invalid token creates a pending request. Once approved, the hub sends `pairing.approved` with a new token, and the browser replies with `device.authenticate`. Authenticated devices receive `sensor.update` messages on that WebSocket. The hub stores tokens in `data/paired-devices.json` and updates connection status when the page's WebSocket opens or closes.
+The pmgDevice browser simulator opens its own connection to `/ws/device` and sends `device.connect` with its MAC, saved token (or an empty token), and an eight-digit pairing code. A valid token authenticates immediately. An unknown MAC is accepted for pairing only while the authenticated administrator has opened the time-limited pairing window. The administrator must compare the code shown in the device UI with the code displayed by the intended physical device and enter it before approval. This is an out-of-band user check, not cryptographic device attestation; production ESP32 devices should add a unique factory secret or physical pairing-button proof. A bad token for an already-paired MAC is rejected without changing or disconnecting that registration; the administrator must explicitly revoke it before pairing again. Once approved, the hub sends `pairing.approved` with a new token, and the browser replies with `device.authenticate`. Authenticated devices receive `sensor.update` messages on that WebSocket. The hub stores tokens in `data/paired-devices.json` and updates connection status when the page's WebSocket opens or closes.
 
 ## Sensor payload
 

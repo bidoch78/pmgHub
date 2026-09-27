@@ -8,7 +8,7 @@ const SessionManager = require("./sessions");
 const SensorSimulator = require("./sensors");
 const DeviceSimulator = require("./devices");
 const {
-    areValidCredentials,
+    isValidPassword,
     hasCredentials,
     initializeCredentials
 } = require("./credentials");
@@ -29,6 +29,7 @@ const sensors = new SensorSimulator();
 const devices = new DeviceSimulator();
 const pairedDeviceSockets = new Map();
 const pendingDeviceSockets = new Map();
+const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
 const contentTypes = {
     ".html": "text/html; charset=utf-8",
@@ -110,12 +111,12 @@ const server = http.createServer(async (req, res) => {
         try {
             const body = await readJsonBody(req);
 
-            if (!areValidCredentials(body.username, body.password)) {
+            if (!isValidPassword(body.password)) {
                 sendJson(res, 401, { error: "INVALID_CREDENTIALS" });
                 return;
             }
 
-            const token = sessions.create(body.username);
+            const token = sessions.create();
 
             if (!token) {
                 sendJson(res, 503, { error: "MAX_SESSIONS_REACHED" });
@@ -146,17 +147,12 @@ const server = http.createServer(async (req, res) => {
         try {
             const body = await readJsonBody(req);
 
-            if (
-                typeof body.username !== "string" ||
-                typeof body.password !== "string" ||
-                !body.username.trim() ||
-                !body.password
-            ) {
+            if (typeof body.password !== "string" || !body.password) {
                 sendJson(res, 400, { error: "INVALID_CREDENTIALS" });
                 return;
             }
 
-            if (!initializeCredentials(body.username.trim(), body.password)) {
+            if (!initializeCredentials(body.password)) {
                 sendJson(res, 409, { error: "CREDENTIALS_ALREADY_INITIALIZED" });
                 return;
             }
@@ -414,6 +410,58 @@ wss.on("connection", ws => {
 });
 
 deviceWss.on("connection", ws => {
+    const sendPairingRequest = (mac, replaceExisting = false) => {
+        const result = devices.requestPairing(mac, "", replaceExisting);
+        if (!result) {
+            ws.send(JSON.stringify({ type: "pairing.rejected", reason: "INVALID_DEVICE" }));
+            ws.close(4002, "Invalid device MAC address");
+            return;
+        }
+
+        const canonicalMac = result.device.mac;
+        const currentSocket = pairedDeviceSockets.get(canonicalMac);
+        if (currentSocket && currentSocket !== ws) {
+            pairedDeviceSockets.delete(canonicalMac);
+            currentSocket.close(4000, "Device requires pairing approval");
+        }
+
+        const previousPendingSocket = pendingDeviceSockets.get(canonicalMac);
+        if (previousPendingSocket && previousPendingSocket !== ws) {
+            previousPendingSocket.close(4000, "A newer pairing request replaced this connection");
+        }
+
+        ws.deviceMac = canonicalMac;
+        pendingDeviceSockets.set(canonicalMac, ws);
+        ws.send(JSON.stringify({ type: "pairing.pending", mac: canonicalMac }));
+    };
+
+    const authenticate = (mac, token) => {
+        if (!devices.isTokenValid(mac, token)) {
+            sendPairingRequest(mac, true);
+            return false;
+        }
+
+        const canonicalMac = mac.toUpperCase();
+        const previousSocket = pairedDeviceSockets.get(canonicalMac);
+        if (previousSocket && previousSocket !== ws && previousSocket.readyState === 1) {
+            pairedDeviceSockets.delete(canonicalMac);
+            previousSocket.close(4000, "Device reconnected");
+        }
+
+        if (pendingDeviceSockets.get(canonicalMac) === ws) {
+            pendingDeviceSockets.delete(canonicalMac);
+        }
+        ws.deviceMac = canonicalMac;
+        pairedDeviceSockets.set(canonicalMac, ws);
+        devices.setConnected(canonicalMac, true);
+        ws.send(JSON.stringify({ type: "device.authenticated", mac: canonicalMac }));
+        ws.send(JSON.stringify({
+            type: "sensor.update",
+            data: sensors.getData()
+        }));
+        return true;
+    };
+
     ws.on("message", rawMessage => {
         let message;
         try {
@@ -423,29 +471,19 @@ deviceWss.on("connection", ws => {
             return;
         }
 
-        if (message.type === "pairing.request") {
-            const result = devices.requestPairing(message.mac, message.name || "");
-            if (!result) {
+        if (message.type === "device.connect") {
+            if (typeof message.mac !== "string" || !macPattern.test(message.mac)) {
                 ws.send(JSON.stringify({ type: "pairing.rejected", reason: "INVALID_DEVICE" }));
-                ws.close(4002, "Invalid device details");
+                ws.close(4002, "Invalid device MAC address");
                 return;
             }
 
-            ws.deviceMac = result.device.mac;
-            if (result.paired && result.token) {
-                ws.send(JSON.stringify({
-                    type: "pairing.approved",
-                    mac: result.device.mac,
-                    token: result.token
-                }));
-                return;
-            }
+            authenticate(message.mac, typeof message.token === "string" ? message.token : "");
+            return;
+        }
 
-            pendingDeviceSockets.set(result.device.mac, ws);
-            ws.send(JSON.stringify({
-                type: "pairing.pending",
-                mac: result.device.mac
-            }));
+        if (message.type === "pairing.request") {
+            sendPairingRequest(message.mac);
             return;
         }
 
@@ -460,22 +498,7 @@ deviceWss.on("connection", ws => {
         }
 
         if (message.type === "device.authenticate") {
-            if (!devices.isTokenValid(message.mac, message.token)) {
-                ws.send(JSON.stringify({ type: "device.authentication_failed" }));
-                ws.close(4001, "Invalid device token");
-                return;
-            }
-
-            const mac = message.mac.toUpperCase();
-            const previousSocket = pairedDeviceSockets.get(mac);
-            if (previousSocket && previousSocket !== ws && previousSocket.readyState === 1) {
-                previousSocket.close(4000, "Device reconnected");
-            }
-
-            ws.deviceMac = mac;
-            pairedDeviceSockets.set(mac, ws);
-            devices.setConnected(mac, true);
-            ws.send(JSON.stringify({ type: "device.authenticated", mac }));
+            authenticate(message.mac, message.token);
             return;
         }
 
@@ -492,6 +515,7 @@ deviceWss.on("connection", ws => {
 
         if (pendingDeviceSockets.get(mac) === ws) {
             pendingDeviceSockets.delete(mac);
+            devices.rejectPending(mac);
         }
 
         if (pairedDeviceSockets.get(mac) === ws) {
@@ -507,6 +531,13 @@ setInterval(() => {
     for (const client of wss.clients) {
         if (client.readyState === 1) {
             client.send(data);
+        }
+    }
+
+    const deviceData = JSON.stringify({ type: "sensor.update", data: sensors.getData() });
+    for (const client of pairedDeviceSockets.values()) {
+        if (client.readyState === 1) {
+            client.send(deviceData);
         }
     }
 }, config.websocketIntervalMs);

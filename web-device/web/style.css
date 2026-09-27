@@ -13,6 +13,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
     min-width: 320px;
@@ -64,11 +65,17 @@ button:disabled { cursor: wait; opacity: .58; }
 
 main { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 64px 0 80px; }
 .hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 43px; }
+.create-controls { display: grid; grid-template-columns: minmax(220px, 310px) auto; align-items: center; gap: 8px 12px; }
+.create-controls .hub-url-label { grid-column: 1; }
+.manual-mac-input { width: 100%; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid #33414a; border-radius: 9px; outline: none; background: #11191e; color: #e5edf0; font-size: 11px; }
+.manual-mac-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(88 214 176 / 9%); }
+.manual-token-input { width: 100%; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid #33414a; border-radius: 9px; outline: none; background: #11191e; color: var(--accent); font: 11px 'SFMono-Regular', Consolas, monospace; }
+.manual-token-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(88 214 176 / 9%); }
 .eyebrow { margin: 0 0 10px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .17em; }
 h1, h2 { font-family: 'Segoe UI', Arial, sans-serif; letter-spacing: -.04em; }
 h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .hero-copy { max-width: 590px; margin: 14px 0 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
-.primary-button, .delete-button { min-height: 42px; border: 0; border-radius: 9px; padding: 0 16px; font-size: 12px; font-weight: 700; transition: transform .15s ease, background .15s ease; }
+.primary-button { min-height: 42px; border: 0; border-radius: 9px; padding: 0 16px; font-size: 12px; font-weight: 700; transition: transform .15s ease, background .15s ease; }
 .primary-button { flex: 0 0 auto; background: var(--accent); color: #0e1916; }
 .primary-button:hover:not(:disabled) { transform: translateY(-1px); background: #78e4c3; }
 .primary-button > span { margin-right: 5px; font-size: 19px; vertical-align: -1px; }
@@ -87,9 +94,10 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .hub-details h2 { margin: 0 0 4px; font-size: 15px; }
 .hub-details p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .hub-url-label, .field-label { color: #9caab2; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
-.hub-url-input, .device-name-input, .mac-input { min-width: 0; height: 39px; padding: 0 11px; border: 1px solid #33414a; border-radius: 8px; outline: none; background: #11191e; color: #e5edf0; font-size: 11px; }
-.hub-url-input:focus, .device-name-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(88 214 176 / 9%); }
-.mac-input { color: #9aa8b0; font: 11px 'SFMono-Regular', Consolas, monospace; letter-spacing: .04em; }
+.hub-url-input, .mac-input, .token-input { min-width: 0; height: 39px; padding: 0 11px; border: 1px solid #33414a; border-radius: 8px; outline: none; background: #11191e; color: #e5edf0; font-size: 11px; }
+.hub-url-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(88 214 176 / 9%); }
+.mac-input, .token-input { color: #9aa8b0; font: 11px 'SFMono-Regular', Consolas, monospace; letter-spacing: .02em; }
+.token-input { width: 100%; height: auto; min-height: 52px; padding: 9px 11px; resize: vertical; overflow-wrap: anywhere; white-space: pre-wrap; color: var(--accent); }
 
 .devices-section { margin-top: 54px; }
 .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
@@ -99,6 +107,8 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 15px; }
 .device-card { padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(145deg, #19232a, #151d23); box-shadow: 0 10px 35px rgb(0 0 0 / 10%); }
 .device-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 23px; }
+.device-description { margin: -10px 0 18px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.sensor-data { margin: 0; padding: 16px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #11191e; color: var(--accent); font: 12px/1.6 'SFMono-Regular', Consolas, monospace; }
 .device-avatar { width: 35px; height: 35px; display: grid; place-items: center; border: 1px solid rgb(88 214 176 / 22%); border-radius: 10px; background: rgb(88 214 176 / 8%); color: var(--accent); font: 700 15px 'Segoe UI', Arial, sans-serif; }
 .device-status { display: inline-flex; align-items: center; gap: 7px; color: #a5b0b7; font-size: 10px; }
 .device-status.connected { color: var(--accent); }
@@ -106,19 +116,21 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .device-status.waiting .status-dot { background: #f1bd6c; }
 .device-status.disconnected .status-dot { background: #6d7981; }
 .field-label { display: block; margin: 12px 0 6px; }
-.device-name-input, .mac-input { width: 100%; }
+.mac-input { width: 100%; }
 .device-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; padding-top: 15px; border-top: 1px solid rgb(255 255 255 / 6%); }
 .pair-state { color: var(--muted); font-size: 10px; }
 .device-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
 .pair-button { min-height: 34px; padding: 0 12px; font-size: 10px; }
-.delete-button { min-height: 34px; padding: 0 10px; border: 1px solid #354149; background: transparent; color: #abb6bc; font-size: 10px; }
-.delete-button:hover:not(:disabled) { border-color: #a95555; background: rgb(169 85 85 / 12%); color: #ffaaaa; }
+.connection-button { min-height: 34px; padding: 0 12px; border: 1px solid #354149; border-radius: 9px; background: transparent; color: #d4e0e4; font-size: 10px; font-weight: 700; }
+.connection-button.reconnect-button { border-color: rgb(88 214 176 / 40%); color: var(--accent); }
 .empty-state { grid-column: 1 / -1; padding: 36px 20px; border: 1px dashed #35434b; border-radius: 14px; color: var(--muted); text-align: center; font-size: 12px; }
 .app-message { min-height: 18px; margin: 18px 0 0; color: #f1bd6c; font-size: 11px; }
 
 @media (max-width: 720px) {
     main { padding-top: 43px; }
     .hero { align-items: start; flex-direction: column; }
+    .create-controls { width: 100%; grid-template-columns: 1fr; }
+    .create-controls .hub-url-label { grid-column: auto; }
     .hub-panel { grid-template-columns: 42px 1fr; }
     .hub-url-label { grid-column: 1 / -1; }
     .hub-url-input { grid-column: 1 / -1; }

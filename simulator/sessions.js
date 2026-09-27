@@ -17,7 +17,7 @@ class SessionManager {
         }
     }
 
-    create(username) {
+    create() {
         this.cleanup();
 
         if (this.sessions.size >= this.maxSessions) {
@@ -26,10 +26,7 @@ class SessionManager {
 
         const token = crypto.randomBytes(32).toString("hex");
 
-        this.sessions.set(token, {
-            username,
-            lastActivity: Date.now()
-        });
+        this.sessions.set(token, { lastActivity: Date.now() });
 
         return token;
     }

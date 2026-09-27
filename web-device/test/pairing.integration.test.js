@@ -5,6 +5,7 @@ const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 const { after, test } = require("node:test");
+const { WebSocket } = require("ws");
 
 const repoRoot = path.resolve(__dirname, "../..");
 const hubScript = path.join(repoRoot, "simulator", "server.js");
@@ -45,6 +46,24 @@ async function waitFor(check, description, timeoutMs = 12000) {
     throw new Error(`Timed out waiting for ${description}${lastError ? `: ${lastError.message}` : ""}`);
 }
 
+function waitForSocketMessage(socket, type) {
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error(`Timed out waiting for WebSocket message ${type}`)), 12000);
+        const onMessage = rawMessage => {
+            const message = JSON.parse(rawMessage.toString());
+            if (message.type !== type) return;
+            clearTimeout(timeout);
+            socket.off("message", onMessage);
+            resolve(message);
+        };
+        socket.on("message", onMessage);
+        socket.once("error", error => {
+            clearTimeout(timeout);
+            reject(error);
+        });
+    });
+}
+
 after(async () => {
     for (const child of children) {
         if (child.exitCode === null) child.kill();
@@ -52,28 +71,25 @@ after(async () => {
     await Promise.all(children.map(child => child.exitCode !== null
         ? Promise.resolve()
         : new Promise(resolve => child.once("exit", resolve))));
-    if (temporaryDirectory) {
-        fs.rmSync(temporaryDirectory, { recursive: true, force: true });
-    }
+    if (temporaryDirectory) fs.rmSync(temporaryDirectory, { recursive: true, force: true });
 });
 
-test("device simulator pairs with the hub and persists the shared token", { timeout: 30000 }, async () => {
+test("device accepts manual identity credentials and uses token-first WebSocket pairing", { timeout: 30000 }, async () => {
     temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "pmghub-pairing-"));
     const hubPort = await availablePort();
     const devicePort = await availablePort();
     const hubUrl = `http://127.0.0.1:${hubPort}`;
     const deviceUrl = `http://127.0.0.1:${devicePort}`;
     const hubStore = path.join(temporaryDirectory, "hub-devices.json");
-    const deviceStore = path.join(temporaryDirectory, "device-devices.json");
 
     start(hubScript, {
         PORT: String(hubPort),
-        PMGHUB_DEVICE_STORE_PATH: hubStore
+        PMGHUB_DEVICE_STORE_PATH: hubStore,
+        PMGHUB_CREDENTIALS_PATH: path.join(temporaryDirectory, "credentials.json")
     });
     start(deviceScript, {
         PORT: String(devicePort),
-        HUB_URL: hubUrl,
-        DEVICE_STORE_PATH: deviceStore
+        BROWSER_HUB_URL: hubUrl
     });
 
     await waitFor(async () => {
@@ -84,73 +100,110 @@ test("device simulator pairs with the hub and persists the shared token", { time
         return hubResponse.ok && deviceResponse.ok;
     }, "simulator servers to start");
 
-    const authStatus = await fetch(`${hubUrl}/api/auth/status`).then(response => response.json());
-    let credentials;
-    const credentialPath = path.join(repoRoot, "simulator", "credentials.json");
-    if (authStatus.initialized && fs.existsSync(credentialPath)) {
-        credentials = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
-    } else {
-        credentials = { username: "pairing-test", password: "pairing-test-password" };
-        const response = await fetch(`${hubUrl}/api/auth/initialize`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(credentials)
-        });
-        assert.equal(response.status, 201);
-    }
+    const password = "pairing-test-password";
+    const initializeResponse = await fetch(`${hubUrl}/api/auth/initialize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+    });
+    assert.equal(initializeResponse.status, 201);
 
     const loginResponse = await fetch(`${hubUrl}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({ password })
     });
     assert.equal(loginResponse.status, 200);
     const cookie = loginResponse.headers.get("set-cookie").split(";")[0];
 
-    const createResponse = await fetch(`${deviceUrl}/api/devices`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Integration display" })
-    });
-    assert.equal(createResponse.status, 201);
-    const created = await createResponse.json();
-    assert.match(created.mac, /^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$/);
-    assert.equal(created.paired, false);
+    const exposedDeviceApi = await fetch(`${deviceUrl}/api/devices`);
+    assert.equal(exposedDeviceApi.status, 404);
 
-    const pairResponse = await fetch(`${deviceUrl}/api/devices/${encodeURIComponent(created.mac)}/pair`, {
-        method: "POST",
+    const mac = "02:AA:BB:CC:DD:01";
+    const manualTokenEndpoint = await fetch(`${deviceUrl}/api/devices/${encodeURIComponent(mac)}/token`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hubUrl })
+        body: JSON.stringify({ token: "a".repeat(64) })
     });
-    assert.equal(pairResponse.status, 202);
+    assert.equal(manualTokenEndpoint.status, 404);
 
-    const requestsUrl = `${hubUrl}/api/pairing/requests`;
-    await waitFor(async () => {
-        const response = await fetch(requestsUrl, { headers: { Cookie: cookie } });
+    const socket = new WebSocket(`${hubUrl.replace(/^http/, "ws")}/ws/device`);
+    await new Promise((resolve, reject) => {
+        socket.once("open", resolve);
+        socket.once("error", reject);
+    });
+
+    const pairingPending = waitForSocketMessage(socket, "pairing.pending");
+    socket.send(JSON.stringify({ type: "device.connect", mac, token: "" }));
+    await pairingPending;
+
+    const pendingRequest = await waitFor(async () => {
+        const response = await fetch(`${hubUrl}/api/pairing/requests`, { headers: { Cookie: cookie } });
         const requests = await response.json();
-        return requests.find(request => request.mac === created.mac);
-    }, "the hub to receive the pairing request");
+        return requests.find(request => request.mac === mac);
+    }, "the hub to list a tokenless device for approval");
+    assert.equal(pendingRequest.mac, mac);
+    assert.equal("token" in pendingRequest, false);
 
-    const approveResponse = await fetch(`${hubUrl}/api/devices/${encodeURIComponent(created.mac)}/approve`, {
+    const approvalMessage = waitForSocketMessage(socket, "pairing.approved");
+    const approveResponse = await fetch(`${hubUrl}/api/devices/${encodeURIComponent(mac)}/approve`, {
         method: "POST",
         headers: { Cookie: cookie }
     });
     assert.equal(approveResponse.status, 200);
+    const approval = await approvalMessage;
+    assert.match(approval.token, /^[0-9a-f]{64}$/i);
 
-    const pairedDevice = await waitFor(async () => {
-        const response = await fetch(`${deviceUrl}/api/devices`);
-        const currentDevices = await response.json();
-        return currentDevices.find(device => device.mac === created.mac && device.paired && device.connected);
-    }, "the device to reconnect with its token");
-    assert.equal("token" in pairedDevice, false);
+    const authenticatedMessage = waitForSocketMessage(socket, "device.authenticated");
+    const sensorUpdateMessage = waitForSocketMessage(socket, "sensor.update");
+    socket.send(JSON.stringify({ type: "device.authenticate", mac, token: approval.token }));
+    await authenticatedMessage;
+    const initialSensors = await sensorUpdateMessage;
+    assert.equal(typeof initialSensors.data.rpm, "number");
 
     const hubDevices = await fetch(`${hubUrl}/api/devices`, { headers: { Cookie: cookie } }).then(response => response.json());
-    const hubDevice = hubDevices.find(device => device.mac === created.mac);
-    assert.equal(hubDevice.connected, true);
-    assert.equal("token" in hubDevice, false);
+    assert.equal(hubDevices.find(item => item.mac === mac)?.connected, true);
+    assert.equal("token" in hubDevices.find(item => item.mac === mac), false);
 
-    const hubStoredDevice = JSON.parse(fs.readFileSync(hubStore, "utf8")).devices.find(device => device.mac === created.mac);
-    const deviceStoredDevice = JSON.parse(fs.readFileSync(deviceStore, "utf8")).devices.find(device => device.mac === created.mac);
-    assert.equal(typeof hubStoredDevice.token, "string");
-    assert.equal(deviceStoredDevice.token, hubStoredDevice.token);
+    const hubStoredDevice = JSON.parse(fs.readFileSync(hubStore, "utf8")).devices.find(item => item.mac === mac);
+    assert.equal(hubStoredDevice.token, approval.token);
+
+    socket.close();
+    await waitFor(async () => {
+        const current = await fetch(`${hubUrl}/api/devices`, { headers: { Cookie: cookie } }).then(response => response.json());
+        return current.find(item => item.mac === mac)?.connected === false;
+    }, "hub to mark the device inactive after WebSocket close");
+
+    const retrySocket = new WebSocket(`${hubUrl.replace(/^http/, "ws")}/ws/device`);
+    await new Promise((resolve, reject) => {
+        retrySocket.once("open", resolve);
+        retrySocket.once("error", reject);
+    });
+    const invalidTokenPending = waitForSocketMessage(retrySocket, "pairing.pending");
+    retrySocket.send(JSON.stringify({ type: "device.connect", mac, token: "invalid-token" }));
+    await invalidTokenPending;
+
+    const reapproval = await waitFor(async () => {
+        const response = await fetch(`${hubUrl}/api/pairing/requests`, { headers: { Cookie: cookie } });
+        const requests = await response.json();
+        return requests.find(request => request.mac === mac);
+    }, "the hub to send a device with an invalid token back for approval");
+    assert.equal(reapproval.mac, mac);
+    const previousToken = approval.token;
+
+    const renewedTokenMessage = waitForSocketMessage(retrySocket, "pairing.approved");
+    const reapproveResponse = await fetch(`${hubUrl}/api/devices/${encodeURIComponent(mac)}/approve`, {
+        method: "POST",
+        headers: { Cookie: cookie }
+    });
+    assert.equal(reapproveResponse.status, 200);
+    const renewedApproval = await renewedTokenMessage;
+    assert.notEqual(renewedApproval.token, previousToken);
+
+    const reauthenticated = waitForSocketMessage(retrySocket, "device.authenticated");
+    const renewedSensors = waitForSocketMessage(retrySocket, "sensor.update");
+    retrySocket.send(JSON.stringify({ type: "device.authenticate", mac, token: renewedApproval.token }));
+    await reauthenticated;
+    await renewedSensors;
+    retrySocket.close();
 });

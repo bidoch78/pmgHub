@@ -29,10 +29,7 @@ class DeviceSimulator {
                 console.error("Unable to read paired-device store:", error);
             }
 
-            return [
-                { mac: "02:00:00:00:00:01", name: "Dashboard display", paired: true, token: null, connected: false },
-                { mac: "02:00:00:00:00:02", name: "", paired: true, token: null, connected: false }
-            ];
+            return [];
         }
     }
 
@@ -66,15 +63,22 @@ class DeviceSimulator {
         return this.devices.filter(device => !device.paired).map(device => this.toPublic(device));
     }
 
-    requestPairing(mac, name = "") {
+    requestPairing(mac, name = "", replaceExisting = false) {
         if (typeof mac !== "string" || !macPattern.test(mac)) {
             return null;
         }
 
         const existing = this.find(mac);
         if (existing) {
-            if (existing.paired) {
+            if (existing.paired && !replaceExisting) {
                 return { paired: true, device: this.toPublic(existing), token: existing.token };
+            }
+
+            if (replaceExisting) {
+                existing.paired = false;
+                existing.token = null;
+                existing.connected = false;
+                this.save();
             }
 
             return { paired: false, device: this.toPublic(existing) };

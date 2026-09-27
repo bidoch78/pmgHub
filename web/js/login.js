@@ -27,11 +27,10 @@ form.addEventListener("submit", async event => {
 
     errorElement.textContent = "";
 
-    const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
     try {
-        await login(username, password);
+        await login(password);
         window.location.href = "/";
     } catch (error) {
         errorElement.textContent = error.message;
@@ -42,7 +41,6 @@ initializationForm.addEventListener("submit", async event => {
     event.preventDefault();
     initializationError.textContent = "";
 
-    const username = document.getElementById("initializationUsername").value;
     const password = document.getElementById("initializationPassword").value;
     const confirmation = document.getElementById("initializationConfirmation").value;
 
@@ -52,9 +50,9 @@ initializationForm.addEventListener("submit", async event => {
     }
 
     try {
-        await initializeCredentials(username, password);
+        await initializeCredentials(password);
         initializationDialog.close();
-        errorElement.textContent = "Credentials initialized. You can now log in.";
+        errorElement.textContent = "Password set. You can now unlock pmgHub.";
     } catch (error) {
         initializationError.textContent = error.message;
     }

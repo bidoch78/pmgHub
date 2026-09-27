@@ -2,144 +2,272 @@ const deviceList = document.getElementById("deviceList");
 const deviceCount = document.getElementById("deviceCount");
 const appMessage = document.getElementById("appMessage");
 const hubUrlInput = document.getElementById("hubUrl");
+const manualMacInput = document.getElementById("manualMac");
+const manualTokenInput = document.getElementById("manualToken");
+const createDeviceControls = document.getElementById("createDeviceControls");
 const deviceTemplate = document.getElementById("deviceTemplate");
+const sensorPanel = document.getElementById("sensorPanel");
+const sensorData = document.getElementById("sensorData");
 
-hubUrlInput.value = localStorage.getItem("pmghub-url") || "";
-hubUrlInput.addEventListener("change", () => {
-    localStorage.setItem("pmghub-url", hubUrlInput.value.trim());
-});
+let device = null;
+let deviceCard = null;
+let deviceSocket = null;
+let connectionState = "disconnected";
+let pairingRequested = false;
+let disconnecting = false;
 
-async function apiRequest(url, options = {}) {
-    const response = await fetch(url, {
-        headers: { "Content-Type": "application/json", ...options.headers },
-        ...options
-    });
+// Remove values saved by previous versions; this simulator now keeps state in memory only.
+localStorage.removeItem("pmghub-url");
+localStorage.removeItem("pmgdevice-mac");
+localStorage.removeItem("pmgdevice-token");
 
-    if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || "The request could not be completed.");
-    }
-
-    return response.status === 204 ? null : response.json();
+async function getHubConfig() {
+    const response = await fetch("/api/config");
+    if (!response.ok) throw new Error("Unable to load hub configuration.");
+    return response.json();
 }
 
 function setMessage(message = "") {
     appMessage.textContent = message;
 }
 
-function statusPresentation(device) {
-    if (device.connected) return { label: "Connected", className: "connected" };
-    if (device.pairingRequested) return { label: "Waiting for approval", className: "waiting" };
-    if (device.paired) return { label: "Disconnected", className: "disconnected" };
-    return { label: "Not paired", className: "disconnected" };
+function createMacAddress() {
+    const bytes = crypto.getRandomValues(new Uint8Array(6));
+    bytes[0] = (bytes[0] | 0x02) & 0xfe;
+    return [...bytes].map(byte => byte.toString(16).padStart(2, "0")).join(":").toUpperCase();
 }
 
-function renderDevices(devices) {
-    deviceList.replaceChildren();
-    deviceCount.textContent = `${devices.length} ${devices.length === 1 ? "device" : "devices"}`;
+function setConnectionState(state, label) {
+    connectionState = state;
+    if (!deviceCard) return;
 
-    if (devices.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "No devices yet. Create a virtual pmgDevice to get started.";
-        deviceList.append(empty);
+    const status = deviceCard.querySelector(".device-status");
+    status.classList.toggle("connected", state === "connected");
+    status.classList.toggle("waiting", state === "waiting");
+    status.classList.toggle("disconnected", ["disconnected", "error"].includes(state));
+    status.querySelector(".status-label").textContent = label || {
+        connected: "Connected",
+        waiting: "Waiting for approval",
+        connecting: "Connecting",
+        disconnected: "Inactive",
+        error: "Connection error"
+    }[state];
+    deviceCount.textContent = state === "connected" ? "1 device · Connected" : "1 device · Inactive";
+
+    const pairButton = deviceCard.querySelector(".pair-button");
+    const connectionButton = deviceCard.querySelector(".connection-button");
+    pairButton.hidden = Boolean(device.token);
+    pairButton.disabled = state === "connecting" || state === "waiting";
+    pairButton.textContent = state === "waiting" ? "Request sent" : "Pair with hub";
+    connectionButton.hidden = !device.token || state === "connected";
+    connectionButton.textContent = "Reconnect";
+    connectionButton.classList.add("reconnect-button");
+    connectionButton.disabled = state === "connecting" || state === "waiting";
+}
+
+function renderDevice(currentDevice) {
+    device = currentDevice;
+    createDeviceControls.hidden = Boolean(device);
+    deviceList.replaceChildren();
+    sensorPanel.hidden = true;
+
+    if (!device) {
+        deviceCard = null;
+        deviceCount.textContent = "No device created";
         return;
     }
 
-    for (const device of devices) {
-        const card = deviceTemplate.content.firstElementChild.cloneNode(true);
-        const nameInput = card.querySelector(".device-name-input");
-        const macInput = card.querySelector(".mac-input");
-        const status = card.querySelector(".device-status");
-        const pairButton = card.querySelector(".pair-button");
-        const pairState = card.querySelector(".pair-state");
-        const deleteButton = card.querySelector(".delete-button");
-        const presentation = statusPresentation(device);
+    deviceCard = deviceTemplate.content.firstElementChild.cloneNode(true);
+    const macInput = deviceCard.querySelector(".mac-input");
+    const tokenInput = deviceCard.querySelector(".token-input");
+    macInput.value = device.mac;
+    macInput.setAttribute("aria-label", `MAC address for device ${device.mac}`);
+    tokenInput.value = device.token || "";
+    tokenInput.setAttribute("aria-label", `Pairing token for device ${device.mac}`);
+    deviceCard.querySelector(".pair-state").textContent = device.token
+        ? "Token stored locally · ready to authenticate"
+        : "No pairing token · request hub approval";
 
-        nameInput.value = device.name;
-        nameInput.setAttribute("aria-label", `Name for device ${device.mac}`);
-        macInput.value = device.mac;
-        macInput.setAttribute("aria-label", `MAC address for device ${device.mac}`);
-        status.classList.add(presentation.className);
-        status.querySelector(".status-label").textContent = presentation.label;
-        pairState.textContent = device.paired ? "Token stored on device and hub" : "No pairing token stored";
+    deviceCard.querySelector(".pair-button").addEventListener("click", () => {
+        setMessage("");
+        connectDevice();
+    });
+    deviceCard.querySelector(".connection-button").addEventListener("click", connectDevice);
+    deviceList.append(deviceCard);
+    setConnectionState("disconnected");
+}
 
-        nameInput.addEventListener("change", async () => {
-            try {
-                await apiRequest(`/api/devices/${encodeURIComponent(device.mac)}`, {
-                    method: "PATCH",
-                    body: JSON.stringify({ name: nameInput.value.trim() })
-                });
-                setMessage("Device name saved.");
-                await loadDevices();
-            } catch (error) {
-                setMessage(error.message);
-            }
-        });
-
-        pairButton.hidden = device.paired;
-        pairButton.disabled = device.pairingRequested;
-        pairButton.textContent = device.pairingRequested ? "Request sent" : "Pair with hub";
-        pairButton.addEventListener("click", async () => {
-            pairButton.disabled = true;
-            setMessage("");
-            try {
-                await apiRequest(`/api/devices/${encodeURIComponent(device.mac)}/pair`, {
-                    method: "POST",
-                    body: JSON.stringify({ hubUrl: hubUrlInput.value.trim() })
-                });
-                setMessage("Pairing request sent. Approve this device in the pmgHub dashboard.");
-                await loadDevices();
-            } catch (error) {
-                pairButton.disabled = false;
-                setMessage(error.message);
-            }
-        });
-
-        deleteButton.addEventListener("click", async () => {
-            if (!window.confirm(`Delete device ${device.mac} from this simulator?`)) return;
-            deleteButton.disabled = true;
-            try {
-                await apiRequest(`/api/devices/${encodeURIComponent(device.mac)}`, { method: "DELETE" });
-                setMessage("Device deleted from this simulator.");
-                await loadDevices();
-            } catch (error) {
-                deleteButton.disabled = false;
-                setMessage(error.message);
-            }
-        });
-
-        deviceList.append(card);
+function createHubWebSocketUrl() {
+    const hubUrl = new URL(hubUrlInput.value.trim() || device.hubUrl || "http://localhost:3000");
+    if (!["http:", "https:"].includes(hubUrl.protocol) || hubUrl.username || hubUrl.password) {
+        throw new Error("Hub URL must use http:// or https:// and cannot contain credentials.");
     }
+    hubUrl.protocol = hubUrl.protocol === "https:" ? "wss:" : "ws:";
+    hubUrl.pathname = "/ws/device";
+    hubUrl.search = "";
+    hubUrl.hash = "";
+    return hubUrl.toString();
 }
 
-async function loadDevices() {
-    renderDevices(await apiRequest("/api/devices"));
-}
+function connectDevice() {
+    if (!device || (deviceSocket && deviceSocket.readyState < WebSocket.CLOSING)) return;
 
-document.getElementById("createDeviceButton").addEventListener("click", async event => {
-    const button = event.currentTarget;
-    button.disabled = true;
-    setMessage("");
+    let socketUrl;
     try {
-        await apiRequest("/api/devices", {
-            method: "POST",
-            body: JSON.stringify({ name: "pmgDevice" })
-        });
-        setMessage("Device created with a generated MAC address.");
-        await loadDevices();
+        socketUrl = createHubWebSocketUrl();
     } catch (error) {
+        setConnectionState("error", "Invalid hub URL");
         setMessage(error.message);
-    } finally {
-        button.disabled = false;
+        return;
+    }
+
+    pairingRequested = !device.token;
+    disconnecting = false;
+    setConnectionState("connecting");
+
+    const socket = new WebSocket(socketUrl);
+    deviceSocket = socket;
+    socket.addEventListener("open", () => {
+        socket.send(JSON.stringify({
+            type: "device.connect",
+            mac: device.mac,
+            token: device.token || ""
+        }));
+    });
+
+    socket.addEventListener("message", event => {
+        let message;
+        try {
+            message = JSON.parse(event.data);
+        } catch {
+            return;
+        }
+
+        if (message.type === "pairing.pending") {
+            pairingRequested = true;
+            device.token = "";
+            deviceCard.querySelector(".token-input").value = "";
+            deviceCard.querySelector(".pair-state").textContent = "No valid token · awaiting hub approval";
+            setConnectionState("waiting");
+            setMessage("Pairing request sent. Approve this device in the pmgHub dashboard.");
+            return;
+        }
+
+        if (message.type === "pairing.approved" && message.mac?.toLowerCase() === device.mac.toLowerCase() && typeof message.token === "string") {
+            device.token = message.token;
+            deviceCard.querySelector(".token-input").value = device.token;
+            deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticating";
+            pairingRequested = false;
+            socket.send(JSON.stringify({ type: "device.authenticate", mac: device.mac, token: device.token }));
+            setConnectionState("connecting", "Authenticating");
+            return;
+        }
+
+        if (message.type === "pairing.rejected") {
+            pairingRequested = false;
+            setConnectionState("error", "Pairing rejected");
+            return;
+        }
+
+        if (message.type === "device.authenticated") {
+            setConnectionState("connected");
+            deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticated";
+            sensorPanel.hidden = false;
+            setMessage("Device connected to pmgHub.");
+            return;
+        }
+
+        if (message.type === "device.authentication_failed") {
+            device.token = "";
+            deviceCard.querySelector(".token-input").value = "";
+            deviceCard.querySelector(".pair-state").textContent = "Token rejected · awaiting hub approval";
+            setConnectionState("waiting");
+            setMessage("Saved token was invalid. The device is waiting for approval in the hub dashboard.");
+            return;
+        }
+
+        if (message.type === "sensor.update") {
+            sensorPanel.hidden = false;
+            sensorData.textContent = JSON.stringify(message.data, null, 2);
+        }
+    });
+
+    socket.addEventListener("error", () => {
+        if (deviceSocket === socket) {
+            setConnectionState("error");
+            setMessage("Unable to connect to the hub WebSocket.");
+        }
+    });
+
+    socket.addEventListener("close", event => {
+        if (deviceSocket !== socket) return;
+        deviceSocket = null;
+        pairingRequested = false;
+        setConnectionState("disconnected");
+        sensorPanel.hidden = true;
+
+        if (event.code === 4003 && device.token) {
+            device.token = "";
+            deviceCard.querySelector(".token-input").value = "";
+            deviceCard.querySelector(".pair-state").textContent = "Token revoked · reconnect to request approval";
+        }
+
+        if (!disconnecting && event.code !== 1000 && !event.reason) {
+            setMessage("WebSocket disconnected. Select Reconnect to try again.");
+        }
+        disconnecting = false;
+    });
+}
+
+async function initialize() {
+    try {
+        const config = await getHubConfig();
+        hubUrlInput.value = config.defaultHubUrl;
+        renderDevice(null);
+    } catch (error) {
+        deviceCount.textContent = "Unable to load device simulator";
+        setMessage(error.message);
+    }
+}
+
+function getHubConfig() {
+    return fetch("/api/config").then(response => {
+        if (!response.ok) throw new Error("Unable to load hub configuration.");
+        return response.json();
+    });
+}
+
+document.getElementById("createDeviceButton").addEventListener("click", () => {
+    const enteredMac = manualMacInput.value.trim().toUpperCase();
+    const enteredToken = manualTokenInput.value.trim();
+    if (enteredMac && !/^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(enteredMac)) {
+        setMessage("MAC address must use the format XX:XX:XX:XX:XX:XX.");
+        return;
+    }
+    if (enteredToken && !/^[0-9A-F]{64}$/i.test(enteredToken)) {
+        setMessage("Pairing token must contain exactly 64 hexadecimal characters, or be left empty.");
+        return;
+    }
+
+    const mac = enteredMac || createMacAddress();
+    device = { mac, token: enteredToken, hubUrl: hubUrlInput.value.trim() || "http://localhost:3000" };
+    manualMacInput.value = "";
+    manualTokenInput.value = "";
+    renderDevice(device);
+    setMessage(enteredToken
+        ? "Device created with the supplied token. Connecting to pmgHub to authenticate."
+        : "Device created without a token. Connecting to pmgHub to request pairing.");
+    connectDevice();
+});
+
+window.addEventListener("pagehide", () => {
+    if (deviceSocket && deviceSocket.readyState < WebSocket.CLOSING) {
+        disconnecting = true;
+        if (!device.token && pairingRequested && deviceSocket.readyState === WebSocket.OPEN) {
+            deviceSocket.send(JSON.stringify({ type: "pairing.cancel", mac: device.mac }));
+        }
+        deviceSocket.close(1000, "Device simulator page closed");
     }
 });
 
-loadDevices().catch(error => {
-    deviceCount.textContent = "Unable to load devices";
-    setMessage(error.message);
-});
-apiRequest("/api/config").then(config => {
-    if (!hubUrlInput.value) hubUrlInput.value = config.defaultHubUrl;
-}).catch(error => setMessage(error.message));
-window.setInterval(() => loadDevices().catch(error => setMessage(error.message)), 1500);
+initialize();

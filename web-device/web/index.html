@@ -24,9 +24,15 @@
                 <h1>Manage your pmgDevices</h1>
                 <p class="hero-copy">Create virtual ESP32 devices, pair them with a pmgHub, and monitor their live connection.</p>
             </div>
-            <button id="createDeviceButton" class="primary-button" type="button">
-                <span aria-hidden="true">+</span> Create device
-            </button>
+            <div id="createDeviceControls" class="create-controls">
+                <label class="hub-url-label" for="manualMac">MAC address (optional)</label>
+                <input id="manualMac" class="manual-mac-input" type="text" maxlength="17" placeholder="Auto-generate or enter XX:XX:XX:XX:XX:XX" autocomplete="off">
+                <label class="hub-url-label" for="manualToken">Pairing token (optional)</label>
+                <input id="manualToken" class="manual-token-input" type="text" maxlength="64" placeholder="Leave empty if not paired" autocomplete="off" spellcheck="false">
+                <button id="createDeviceButton" class="primary-button" type="button">
+                    <span aria-hidden="true">+</span> Create device
+                </button>
+            </div>
         </section>
 
         <section class="hub-panel" aria-labelledby="hubHeading">
@@ -36,18 +42,28 @@
                 <p>Set the address of the pmgHub simulator to pair devices.</p>
             </div>
             <label class="hub-url-label" for="hubUrl">Hub URL</label>
-            <input id="hubUrl" class="hub-url-input" type="url" placeholder="http://host.docker.internal:3000" autocomplete="url">
+            <input id="hubUrl" class="hub-url-input" type="url" placeholder="http://localhost:3000" autocomplete="url">
         </section>
 
         <section class="devices-section" aria-labelledby="devicesHeading">
             <div class="section-heading">
                 <div>
-                    <p class="eyebrow">YOUR HARDWARE</p>
-                    <h2 id="devicesHeading">Devices</h2>
+                    <p class="eyebrow">VIRTUAL HARDWARE</p>
+                    <h2 id="devicesHeading">Simulated device</h2>
                 </div>
                 <span id="deviceCount" class="device-count">Loading devices...</span>
             </div>
             <div id="deviceList" class="device-list" aria-live="polite"></div>
+        </section>
+
+        <section id="sensorPanel" class="devices-section sensor-panel" aria-labelledby="sensorHeading" hidden>
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">LIVE DATA</p>
+                    <h2 id="sensorHeading">Sensors received from pmgHub</h2>
+                </div>
+            </div>
+            <pre id="sensorData" class="sensor-data">Waiting for hub data...</pre>
         </section>
 
         <p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
@@ -59,15 +75,16 @@
                 <div class="device-avatar" aria-hidden="true">D</div>
                 <span class="device-status"><span class="status-dot"></span><span class="status-label"></span></span>
             </div>
-            <label class="field-label device-name-label">Device name</label>
-            <input class="device-name-input" type="text" maxlength="32" placeholder="Add a friendly name">
+            <p class="device-description">This browser tab represents the device's live connection. Closing it disconnects the device and clears its simulated state.</p>
             <label class="field-label mac-label">MAC address</label>
             <input class="mac-input" type="text" readonly aria-readonly="true">
+            <label class="field-label token-label">Pairing token</label>
+            <textarea class="token-input" rows="2" readonly aria-readonly="true" placeholder="Not paired yet"></textarea>
             <div class="device-card-footer">
                 <div class="pair-state"></div>
                 <div class="device-actions">
                     <button class="pair-button primary-button" type="button">Pair with hub</button>
-                    <button class="delete-button" type="button">Delete device</button>
+                    <button class="connection-button" type="button" hidden></button>
                 </div>
             </div>
         </article>

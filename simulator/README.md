@@ -25,12 +25,7 @@ Then open:
 
 `http://localhost:3000`
 
-Development credentials:
-
-- username: `admin`
-- password: `vehiclecore`
-
-They can be configured in `config.js`.
+On first start, the login page asks you to set a password. The password is stored as a scrypt hash in `credentials.json`; legacy credential files containing a username and plaintext password are accepted once and migrated to the password-only hash format after successful login.
 
 ## API shared with the ESP32
 
@@ -50,7 +45,7 @@ These authenticated dashboard endpoints handle device approval:
 - `POST /api/pairing/requests/:mac/reject`
 - `DELETE /api/devices/:mac` to revoke a paired device
 
-The pmgDevice simulator connects to `/ws/device`. It sends a `pairing.request` message with its MAC address and name. Once approved, the hub sends a one-time `pairing.approved` message containing the generated token. The device reconnects with `device.authenticate`; the hub stores the token in `data/paired-devices.json` and updates the device's connection status.
+The pmgDevice browser simulator opens its own connection to `/ws/device` and sends `device.connect` with its MAC and saved token (or an empty token). A valid token authenticates immediately; a missing or invalid token creates a pending request. Once approved, the hub sends `pairing.approved` with a new token, and the browser replies with `device.authenticate`. Authenticated devices receive `sensor.update` messages on that WebSocket. The hub stores tokens in `data/paired-devices.json` and updates connection status when the page's WebSocket opens or closes.
 
 ## Simulator-only routes
 

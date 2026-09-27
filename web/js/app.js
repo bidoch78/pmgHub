@@ -33,89 +33,153 @@ function displaySensors(data) {
 }
 
 function displayDevices(devices) {
-    deviceList.replaceChildren();
-
     const connectedCount = devices.filter(device => device.connected).length;
     deviceCount.textContent = `${devices.length} ${devices.length === 1 ? "device" : "devices"} · ${connectedCount} connected`;
 
     if (devices.length === 0) {
-        const emptyState = document.createElement("p");
-        emptyState.className = "empty-state";
-        emptyState.textContent = "No devices are paired with this hub yet.";
-        deviceList.append(emptyState);
+        for (const card of deviceList.querySelectorAll(".device-card")) {
+            card.remove();
+        }
+
+        if (!deviceList.querySelector(".empty-state")) {
+            const emptyState = document.createElement("p");
+            emptyState.className = "empty-state";
+            emptyState.textContent = "No devices are paired with this hub yet.";
+            deviceList.append(emptyState);
+        }
         return;
     }
 
-    for (const device of devices) {
-        const card = document.createElement("article");
-        card.className = "device-card";
+    deviceList.querySelector(".empty-state")?.remove();
 
-        const identity = document.createElement("div");
-        const name = document.createElement("span");
-        name.className = "device-name";
-        name.textContent = device.name || "Unnamed device";
-        const mac = document.createElement("span");
-        mac.className = "device-mac";
+    const existingCards = new Map(
+        [...deviceList.querySelectorAll(".device-card[data-mac]")]
+            .map(card => [card.dataset.mac, card])
+    );
+    const currentMacs = new Set(devices.map(device => device.mac));
+
+    for (const [mac, card] of existingCards) {
+        if (!currentMacs.has(mac)) {
+            card.remove();
+        }
+    }
+
+    devices.forEach((device, index) => {
+        let card = existingCards.get(device.mac);
+
+        if (!card) {
+            card = createDeviceCard(device);
+        }
+
+        updateDeviceCard(card, device);
+        const position = deviceList.children[index];
+        if (position !== card) {
+            deviceList.insertBefore(card, position || null);
+        }
+    });
+}
+
+function createDeviceCard(device) {
+    const card = document.createElement("article");
+    card.className = "device-card";
+    card.dataset.mac = device.mac;
+
+    const identity = document.createElement("div");
+    const name = document.createElement("span");
+    name.className = "device-name";
+    name.textContent = device.name || "Unnamed device";
+    const mac = document.createElement("span");
+    mac.className = "device-mac";
+    mac.textContent = device.mac;
+    identity.append(name, mac);
+
+    const status = document.createElement("span");
+    status.className = `device-status ${device.connected ? "online" : "offline"}`;
+    status.textContent = device.connected ? "Connected" : "Disconnected";
+
+    const form = document.createElement("form");
+    form.className = "device-name-form";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 32;
+    input.value = device.name || "";
+    input.placeholder = "Add a name";
+    input.setAttribute("aria-label", `Name for device ${device.mac}`);
+    const saveButton = document.createElement("button");
+    saveButton.type = "submit";
+    saveButton.textContent = "Save name";
+    form.append(input, saveButton);
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        saveButton.disabled = true;
+
+        try {
+            await updateDeviceName(card.dataset.mac, input.value.trim());
+            saveButton.textContent = "Save name";
+            await refreshDevices();
+        } catch (error) {
+            console.error(error);
+            saveButton.textContent = "Retry";
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
+
+    const rejectButton = document.createElement("button");
+    rejectButton.type = "button";
+    rejectButton.className = "reject-device-button";
+    rejectButton.textContent = "Reject device";
+    rejectButton.addEventListener("click", async () => {
+        const currentName = card.querySelector(".device-name").textContent;
+        const mac = card.dataset.mac;
+        const deviceName = currentName === "Unnamed device" ? mac : currentName;
+        if (!window.confirm(`Reject and remove ${deviceName} from this hub?`)) {
+            return;
+        }
+
+        rejectButton.disabled = true;
+
+        try {
+            await rejectDevice(mac);
+            await refreshDevices();
+        } catch (error) {
+            console.error(error);
+            rejectButton.textContent = "Retry rejection";
+            rejectButton.disabled = false;
+        }
+    });
+
+    card.append(identity, status, form, rejectButton);
+    return card;
+}
+
+function updateDeviceCard(card, device) {
+    const name = card.querySelector(".device-name");
+    const mac = card.querySelector(".device-mac");
+    const status = card.querySelector(".device-status");
+    const input = card.querySelector(".device-name-form input");
+    const rejectButton = card.querySelector(".reject-device-button");
+    const displayName = device.name || "Unnamed device";
+    const statusText = device.connected ? "Connected" : "Disconnected";
+
+    if (name.textContent !== displayName) {
+        name.textContent = displayName;
+    }
+    if (mac.textContent !== device.mac) {
         mac.textContent = device.mac;
-        identity.append(name, mac);
+    }
+    status.classList.toggle("online", device.connected);
+    status.classList.toggle("offline", !device.connected);
+    if (status.textContent !== statusText) {
+        status.textContent = statusText;
+    }
 
-        const status = document.createElement("span");
-        status.className = `device-status ${device.connected ? "online" : "offline"}`;
-        status.textContent = device.connected ? "Connected" : "Disconnected";
-
-        const form = document.createElement("form");
-        form.className = "device-name-form";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.maxLength = 32;
+    if (document.activeElement !== input && input.value !== (device.name || "")) {
         input.value = device.name || "";
-        input.placeholder = "Add a name";
-        input.setAttribute("aria-label", `Name for device ${device.mac}`);
-        const saveButton = document.createElement("button");
-        saveButton.type = "submit";
-        saveButton.textContent = "Save name";
-        form.append(input, saveButton);
-
-        form.addEventListener("submit", async event => {
-            event.preventDefault();
-            saveButton.disabled = true;
-
-            try {
-                await updateDeviceName(device.mac, input.value.trim());
-                await refreshDevices();
-            } catch (error) {
-                console.error(error);
-                saveButton.textContent = "Retry";
-            } finally {
-                saveButton.disabled = false;
-            }
-        });
-
-        const rejectButton = document.createElement("button");
-        rejectButton.type = "button";
-        rejectButton.className = "reject-device-button";
-        rejectButton.textContent = "Reject device";
+    }
+    if (rejectButton.getAttribute("aria-label") !== `Reject device ${device.mac}`) {
         rejectButton.setAttribute("aria-label", `Reject device ${device.mac}`);
-        rejectButton.addEventListener("click", async () => {
-            const deviceName = device.name || device.mac;
-            if (!window.confirm(`Reject and remove ${deviceName} from this hub?`)) {
-                return;
-            }
-
-            rejectButton.disabled = true;
-
-            try {
-                await rejectDevice(device.mac);
-                await refreshDevices();
-            } catch (error) {
-                console.error(error);
-                rejectButton.textContent = "Retry rejection";
-                rejectButton.disabled = false;
-            }
-        });
-
-        card.append(identity, status, form, rejectButton);
-        deviceList.append(card);
     }
 }
 

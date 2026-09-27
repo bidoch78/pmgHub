@@ -85,18 +85,18 @@ export async function rejectDevice(mac) {
     }
 }
 
-export async function login(username, password) {
+export async function login(password) {
     const response = await fetch("/api/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         credentials: "same-origin",
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ password })
     });
 
     if (!response.ok) {
-        throw new Error("Incorrect username or password");
+        throw new Error("Incorrect password");
     }
 }
 
@@ -110,13 +110,13 @@ export async function getAuthStatus() {
     return response.json();
 }
 
-export async function initializeCredentials(username, password) {
+export async function initializeCredentials(password) {
     const response = await fetch("/api/auth/initialize", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ password })
     });
 
     if (!response.ok) {

@@ -3,32 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pmgHub - Log in</title>
+    <title>pmgHub - Password</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="login-page">
     <main class="login-box">
         <h1>pmgHub</h1>
-        <h2>Log in</h2>
+        <h2>Enter password</h2>
 
         <form id="loginForm">
-            <label for="username">Username</label>
-            <input id="username" name="username" type="text" autocomplete="username" required>
-
             <label for="password">Password</label>
             <input id="password" name="password" type="password" autocomplete="current-password" required>
 
-            <button type="submit">Log in</button>
+            <button type="submit">Unlock pmgHub</button>
             <p id="loginError" class="error"></p>
         </form>
     </main>
 
     <dialog id="initializationDialog">
         <form id="initializationForm">
-            <h2>Initialize credentials</h2>
-
-            <label for="initializationUsername">Username</label>
-            <input id="initializationUsername" type="text" autocomplete="username" required>
+            <h2>Set hub password</h2>
 
             <label for="initializationPassword">Password</label>
             <input id="initializationPassword" type="password" autocomplete="new-password" required>
@@ -36,7 +30,7 @@
             <label for="initializationConfirmation">Confirm password</label>
             <input id="initializationConfirmation" type="password" autocomplete="new-password" required>
 
-            <button type="submit">Save credentials</button>
+            <button type="submit">Set password</button>
             <p id="initializationError" class="error"></p>
         </form>
     </dialog>

@@ -10,5 +10,5 @@ module.exports = {
         maxSessions: 5
     },
 
-    websocketIntervalMs: 250
+    websocketIntervalMs: 1000
 };

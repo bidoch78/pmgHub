@@ -8,7 +8,10 @@
 </head>
 <body>
     <header>
-        <h1>pmgHub</h1>
+        <div class="hub-brand">
+            <h1>pmgHub</h1>
+            <span id="connectionStatus" class="hub-connection-status offline">Connecting...</span>
+        </div>
         <button id="logoutButton">Log out</button>
     </header>
 
@@ -21,37 +24,7 @@
                 </div>
             </div>
 
-            <div class="dashboard">
-                <div class="card">
-                    <span>Engine speed</span>
-                    <strong id="rpm">--</strong>
-                    <small>rpm</small>
-                </div>
-
-                <div class="card">
-                    <span>Coolant temperature</span>
-                    <strong id="coolant">--</strong>
-                    <small>°C</small>
-                </div>
-
-                <div class="card">
-                    <span>Oil pressure</span>
-                    <strong id="oilPressure">--</strong>
-                    <small>bar</small>
-                </div>
-
-                <div class="card">
-                    <span>Fuel pressure</span>
-                    <strong id="fuelPressure">--</strong>
-                    <small>bar</small>
-                </div>
-
-                <div class="card">
-                    <span>Ethanol</span>
-                    <strong id="ethanol">--</strong>
-                    <small>%</small>
-                </div>
-            </div>
+            <div id="sensorGroups" class="sensor-groups" aria-live="polite"></div>
         </section>
 
         <section class="devices-section" aria-labelledby="devicesHeading">
@@ -76,8 +49,6 @@
             </div>
             <div id="pairingList" class="device-list" aria-live="polite"></div>
         </section>
-
-        <p id="connectionStatus">Connecting...</p>
     </main>
 
     <script type="module" src="/js/app.js"></script>

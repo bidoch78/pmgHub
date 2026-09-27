@@ -2,6 +2,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
     padding: 24px;
@@ -15,6 +19,49 @@ header {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 30px;
+}
+
+.hub-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.hub-brand h1 {
+    margin: 0;
+}
+
+.hub-connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #9aa1a5;
+    font-size: 0.78rem;
+}
+
+.hub-connection-status::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #858b8f;
+    content: "";
+}
+
+.hub-connection-status.online {
+    color: #51d88a;
+}
+
+.hub-connection-status.online::before {
+    background: #51d88a;
+    box-shadow: 0 0 9px rgb(81 216 138 / 40%);
+}
+
+.hub-connection-status.offline {
+    color: #9aa1a5;
+}
+
+.hub-connection-status.offline::before {
+    background: #858b8f;
 }
 
 button {
@@ -61,10 +108,78 @@ main {
     gap: 16px;
 }
 
+.sensor-category {
+    margin-top: 22px;
+}
+
+.sensor-category:first-child {
+    margin-top: 0;
+}
+
+.sensor-category-title {
+    margin: 0 0 10px;
+    color: #a9afb3;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+}
+
 .card {
+    min-width: 0;
     padding: 20px;
     border-radius: 10px;
     background: #292929;
+}
+
+.sensor-card {
+    border: 1px solid transparent;
+}
+
+.sensor-card.has-error {
+    border-color: #d65f5f;
+}
+
+.sensor-card.has-alarm {
+    border-color: #f7b436;
+    box-shadow: 0 0 0 1px rgb(247 180 54 / 15%);
+}
+
+.sensor-id {
+    color: #8f989d;
+    font-family: monospace;
+    font-size: 0.72rem;
+}
+
+.sensor-value {
+    overflow-wrap: anywhere;
+}
+
+.sensor-voltage {
+    color: #a9afb3;
+}
+
+.sensor-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.sensor-flag {
+    display: inline-block;
+    padding: 4px 7px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.sensor-error {
+    background: rgb(214 95 95 / 15%);
+    color: #ff8989;
+}
+
+.sensor-alarm {
+    background: rgb(247 180 54 / 15%);
+    color: #f7b436;
 }
 
 .device-count {

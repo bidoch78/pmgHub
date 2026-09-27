@@ -46,12 +46,12 @@ async function waitFor(check, description, timeoutMs = 12000) {
     throw new Error(`Timed out waiting for ${description}${lastError ? `: ${lastError.message}` : ""}`);
 }
 
-function waitForSocketMessage(socket, type) {
+function waitForSocketMessage(socket, type, predicate = () => true) {
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error(`Timed out waiting for WebSocket message ${type}`)), 12000);
         const onMessage = rawMessage => {
             const message = JSON.parse(rawMessage.toString());
-            if (message.type !== type) return;
+            if (message.type !== type || !predicate(message)) return;
             clearTimeout(timeout);
             socket.off("message", onMessage);
             resolve(message);
@@ -159,7 +159,37 @@ test("device accepts manual identity credentials and uses token-first WebSocket 
     socket.send(JSON.stringify({ type: "device.authenticate", mac, token: approval.token }));
     await authenticatedMessage;
     const initialSensors = await sensorUpdateMessage;
-    assert.equal(typeof initialSensors.data.rpm, "number");
+    assert.ok(Array.isArray(initialSensors.data.sensors));
+    assert.equal(new Set(initialSensors.data.sensors.map(sensor => sensor.id)).size, initialSensors.data.sensors.length);
+    const rpmSensor = initialSensors.data.sensors.find(sensor => sensor.id === "engine.rpm");
+    assert.equal(rpmSensor.category, "ENGINE");
+    assert.equal(rpmSensor.name, "Engine speed");
+    assert.equal(typeof rpmSensor.value, "number");
+    assert.equal(typeof rpmSensor.voltage, "number");
+    assert.equal(typeof rpmSensor.error, "boolean");
+    assert.equal(typeof rpmSensor.alarm, "boolean");
+
+    const lowOilScenario = await fetch(`${hubUrl}/simulator/scenario`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie },
+        body: JSON.stringify({ scenario: "lowOilPressure" })
+    });
+    assert.equal(lowOilScenario.status, 200);
+    const oilAlarm = await waitForSocketMessage(socket, "sensor.update", message =>
+        message.data.sensors.some(sensor => sensor.id === "engine.oil-pressure" && sensor.alarm)
+    );
+    assert.ok(oilAlarm.data.sensors.find(sensor => sensor.id === "engine.oil-pressure").value < 1);
+
+    const sensorErrorScenario = await fetch(`${hubUrl}/simulator/scenario`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookie },
+        body: JSON.stringify({ scenario: "sensorError" })
+    });
+    assert.equal(sensorErrorScenario.status, 200);
+    const sensorError = await waitForSocketMessage(socket, "sensor.update", message =>
+        message.data.sensors.some(sensor => sensor.id === "fuel.pressure" && sensor.error)
+    );
+    assert.equal(sensorError.data.sensors.find(sensor => sensor.id === "fuel.pressure").error, true);
 
     const hubDevices = await fetch(`${hubUrl}/api/devices`, { headers: { Cookie: cookie } }).then(response => response.json());
     assert.equal(hubDevices.find(item => item.mac === mac)?.connected, true);

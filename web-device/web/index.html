@@ -63,7 +63,7 @@
                     <h2 id="sensorHeading">Sensors received from pmgHub</h2>
                 </div>
             </div>
-            <pre id="sensorData" class="sensor-data">Waiting for hub data...</pre>
+            <div id="sensorData" class="device-sensor-list" aria-live="polite"></div>
         </section>
 
         <p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
@@ -76,6 +76,18 @@
                 <span class="device-status"><span class="status-dot"></span><span class="status-label"></span></span>
             </div>
             <p class="device-description">This browser tab represents the device's live connection. Closing it disconnects the device and clears its simulated state.</p>
+            <section class="device-live-reading" aria-label="Live RPM sensor reading">
+                <div class="device-live-reading-heading">
+                    <span>ENGINE · RPM</span>
+                    <span class="device-live-reading-id">engine.rpm</span>
+                </div>
+                <div class="device-live-reading-value"><strong class="rpm-value">--</strong><span class="rpm-unit">rpm</span></div>
+                <div class="device-live-reading-voltage">Voltage: <span class="rpm-voltage">--</span></div>
+                <div class="sensor-flags">
+                    <span class="sensor-flag sensor-error" hidden>Read error</span>
+                    <span class="sensor-flag sensor-alarm" hidden>Alarm</span>
+                </div>
+            </section>
             <label class="field-label mac-label">MAC address</label>
             <input class="mac-input" type="text" readonly aria-readonly="true">
             <label class="field-label token-label">Pairing token</label>

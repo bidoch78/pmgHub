@@ -34,3 +34,5 @@ Run the pairing integration test from this directory with `npm test` after insta
 Closing or reloading the browser page closes its WebSocket, so pmgHub marks the device disconnected. The next page load starts with no simulated device and no saved MAC, token, or hub URL: create the device again and enter its MAC/token if you want to simulate that hardware reconnecting. While the page remains open, **Reconnect** can retry a dropped socket. No `/api/devices` endpoint is provided by web-device, so its server cannot be queried to list or retrieve tokens.
 
 The pairing token is displayed in the simulator for reconnect testing, but is discarded when the page closes or reloads. The hub's device-list APIs never return tokens.
+
+Authenticated pmgDevices receive categorized sensor records containing a stable ID, category, name, numeric value/unit, input voltage, and `error`/`alarm` booleans. The device simulator displays these records from the WebSocket stream.

@@ -47,6 +47,30 @@ These authenticated dashboard endpoints handle device approval:
 
 The pmgDevice browser simulator opens its own connection to `/ws/device` and sends `device.connect` with its MAC and saved token (or an empty token). A valid token authenticates immediately; a missing or invalid token creates a pending request. Once approved, the hub sends `pairing.approved` with a new token, and the browser replies with `device.authenticate`. Authenticated devices receive `sensor.update` messages on that WebSocket. The hub stores tokens in `data/paired-devices.json` and updates connection status when the page's WebSocket opens or closes.
 
+## Sensor payload
+
+`GET /api/sensors`, the dashboard `/ws` stream, and authenticated pmgDevice `sensor.update` messages share this shape:
+
+```json
+{
+  "scenario": "idle",
+  "sensors": [
+    {
+      "id": "engine.rpm",
+      "category": "ENGINE",
+      "name": "Engine speed",
+      "value": 850.0,
+      "unit": "rpm",
+      "voltage": 0.925,
+      "error": false,
+      "alarm": false
+    }
+  ]
+}
+```
+
+Sensor IDs are stable and unique. Values and voltages are numeric; `voltage` is the simulated raw input in volts. `error` marks a failed reading and `alarm` is the signal pmgDevice can use to react. The `sensorError` simulator scenario exercises the error flag.
+
 ## Simulator-only routes
 
 `POST /simulator/scenario`
@@ -67,5 +91,6 @@ Available scenarios:
 - `acceleration`
 - `lowOilPressure`
 - `overheat`
+- `sensorError`
 
 These routes are intended for testing only and are not meant to be implemented on the ESP32.

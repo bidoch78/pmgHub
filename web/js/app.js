@@ -10,26 +10,131 @@ import {
 } from "./api.js";
 import { connectWebSocket } from "./websocket.js";
 
-const fields = {
-    rpm: document.getElementById("rpm"),
-    coolant: document.getElementById("coolant"),
-    oilPressure: document.getElementById("oilPressure"),
-    fuelPressure: document.getElementById("fuelPressure"),
-    ethanol: document.getElementById("ethanol")
-};
-
 const connectionStatus = document.getElementById("connectionStatus");
+const sensorGroups = document.getElementById("sensorGroups");
 const deviceList = document.getElementById("deviceList");
 const deviceCount = document.getElementById("deviceCount");
 const pairingList = document.getElementById("pairingList");
 const pairingCount = document.getElementById("pairingCount");
+const sensorCards = new Map();
+const sensorCategoryGroups = new Map();
 
 function displaySensors(data) {
-    for (const [key, element] of Object.entries(fields)) {
-        if (element && data[key] !== undefined) {
-            element.textContent = data[key];
+    if (!data || !Array.isArray(data.sensors)) {
+        return;
+    }
+
+    const receivedIds = new Set();
+    const activeCategories = new Set();
+
+    for (const sensor of data.sensors) {
+        if (!sensor || typeof sensor.id !== "string" || !sensor.id) continue;
+        receivedIds.add(sensor.id);
+        const category = typeof sensor.category === "string" && sensor.category.trim()
+            ? sensor.category.trim().toUpperCase()
+            : "UNCATEGORIZED";
+        activeCategories.add(category);
+
+        let group = sensorCategoryGroups.get(category);
+        if (!group) {
+            group = createSensorCategory(category);
+            sensorCategoryGroups.set(category, group);
+            sensorGroups.append(group.element);
+        }
+
+        let card = sensorCards.get(sensor.id);
+        if (!card) {
+            card = createSensorCard(sensor.id);
+            sensorCards.set(sensor.id, card);
+        }
+        updateSensorCard(card, sensor);
+
+        if (card.element.parentElement !== group.grid) {
+            group.grid.append(card.element);
         }
     }
+
+    for (const [id, card] of sensorCards) {
+        if (!receivedIds.has(id)) {
+            card.element.remove();
+            sensorCards.delete(id);
+        }
+    }
+
+    for (const [category, group] of sensorCategoryGroups) {
+        group.element.hidden = !activeCategories.has(category) || group.grid.childElementCount === 0;
+    }
+
+    sensorGroups.querySelector(".empty-state")?.remove();
+    if (receivedIds.size === 0 && !sensorGroups.querySelector(".empty-state")) {
+        const emptyState = document.createElement("p");
+        emptyState.className = "empty-state";
+        emptyState.textContent = "No sensors are configured on this hub.";
+        sensorGroups.append(emptyState);
+    }
+}
+
+function createSensorCategory(category) {
+    const section = document.createElement("section");
+    section.className = "sensor-category";
+    const heading = document.createElement("h3");
+    heading.className = "sensor-category-title";
+    heading.textContent = category;
+    const grid = document.createElement("div");
+    grid.className = "dashboard";
+    section.append(heading, grid);
+    return { element: section, grid };
+}
+
+function createSensorCard(id) {
+    const element = document.createElement("article");
+    element.className = "card sensor-card";
+    element.dataset.sensorId = id;
+
+    const name = document.createElement("span");
+    name.className = "sensor-name";
+    const sensorId = document.createElement("small");
+    sensorId.className = "sensor-id";
+    const value = document.createElement("strong");
+    value.className = "sensor-value";
+    const unit = document.createElement("small");
+    unit.className = "sensor-unit";
+    const voltage = document.createElement("small");
+    voltage.className = "sensor-voltage";
+    const flags = document.createElement("div");
+    flags.className = "sensor-flags";
+    const errorFlag = document.createElement("span");
+    errorFlag.className = "sensor-flag sensor-error";
+    errorFlag.textContent = "Read error";
+    const alarmFlag = document.createElement("span");
+    alarmFlag.className = "sensor-flag sensor-alarm";
+    alarmFlag.textContent = "Alarm";
+    flags.append(errorFlag, alarmFlag);
+    element.append(name, sensorId, value, unit, voltage, flags);
+    return { element };
+}
+
+function updateSensorCard(card, sensor) {
+    const { element } = card;
+    const setText = (selector, text) => {
+        const target = element.querySelector(selector);
+        if (target.textContent !== text) target.textContent = text;
+    };
+
+    setText(".sensor-name", typeof sensor.name === "string" && sensor.name ? sensor.name : sensor.id);
+    setText(".sensor-id", sensor.id);
+    setText(".sensor-value", typeof sensor.value === "number" && Number.isFinite(sensor.value) ? String(sensor.value) : "--");
+    setText(".sensor-unit", typeof sensor.unit === "string" ? sensor.unit : "");
+    setText(".sensor-voltage", typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
+        ? `${sensor.voltage.toFixed(3)} V`
+        : "Voltage unavailable");
+
+    const hasError = sensor.error === true;
+    const hasAlarm = sensor.alarm === true;
+    element.classList.toggle("has-error", hasError);
+    element.classList.toggle("has-alarm", hasAlarm);
+    element.querySelector(".sensor-error").hidden = !hasError;
+    element.querySelector(".sensor-alarm").hidden = !hasAlarm;
 }
 
 function displayDevices(devices) {
@@ -277,10 +382,11 @@ async function initialize() {
         pairingCount.textContent = "Unable to load requests";
     }
 
-    connectWebSocket(
-        displaySensors,
-        status => connectionStatus.textContent = status
-    );
+    connectWebSocket(displaySensors, status => {
+        connectionStatus.textContent = status;
+        connectionStatus.classList.toggle("online", status === "Connected");
+        connectionStatus.classList.toggle("offline", status !== "Connected");
+    });
 
     window.setInterval(() => {
         refreshDevices().catch(error => console.error(error));

@@ -1,3 +1,10 @@
+/********************
+ * 
+ * EXPORTS
+ * YBI 01/10/2026
+ * 
+ */
+
 const path = require("path");
 
 module.exports = {
@@ -6,8 +13,8 @@ module.exports = {
     webRoot: path.resolve(__dirname, "../web"),
 
     auth: {
-        sessionTimeoutMs: 60 * 60 * 1000,
-        maxSessions: 5
+        sessionTimeoutMs: 60 * 60 * 1000, // web interface timeout
+        maxSessions: 10 // web interface + devices
     },
 
     websocketIntervalMs: 1000

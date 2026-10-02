@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pmgHub - Password</title>
+    <title>pmgHub - Login</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="login-page">
-    <main class="login-box">
-        <h1>pmgHub</h1>
-        <h2>Enter password</h2>
 
+    <main id="waiting" class="waiting-box">
+        <h1>pmgHub</h1>
+        <div class="loader"></div>
+    </main>
+
+    <dialog id="login" class="login-box">
+        <h1>pmgHub</h1>
+        <h3 style="text-align: center;">Enter password</h3>
         <form id="loginForm">
             <label for="password">Password</label>
             <input id="password" name="password" type="password" autocomplete="current-password" required>
@@ -18,11 +23,12 @@
             <button type="submit">Unlock pmgHub</button>
             <p id="loginError" class="error"></p>
         </form>
-    </main>
+    </dialog>
 
     <dialog id="initializationDialog">
         <form id="initializationForm">
-            <h2>Set hub password</h2>
+            <h1>pmgHub</h1>
+            <h3 style="text-align: center;">Create your password</h3>
 
             <label for="initializationPassword">Password</label>
             <input id="initializationPassword" type="password" autocomplete="new-password" required>

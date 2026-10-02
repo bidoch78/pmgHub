@@ -11,89 +11,86 @@ function createPasswordHash(password) {
     return { algorithm: "scrypt", salt, hash };
 }
 
-function persistCredentials(credentials) {
-    fs.writeFileSync(
-        credentialsPath,
-        JSON.stringify(credentials, null, 2) + "\n",
-        { mode: 0o600 }
-    );
-}
+// function persistCredentials(credentials) {
+//     fs.writeFileSync(
+//         credentialsPath,
+//         JSON.stringify(credentials, null, 2) + "\n",
+//         { mode: 0o600 }
+//     );
+// }
 
 function readCredentials() {
+
     try {
+        
         const data = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
 
-        if (typeof data.password === "string" && data.password.length > 0) {
-            return data;
-        }
+        if (typeof data.password === "string" && data.password.length > 0) return data;
 
-        if (
-            data.algorithm === "scrypt" &&
-            typeof data.salt === "string" &&
-            typeof data.hash === "string" &&
-            /^[0-9a-f]{128}$/i.test(data.hash)
-        ) {
-            return data;
+        switch(data.algorithm) {
+            case "scrypt":
+                if (typeof data.salt === "string" && 
+                    typeof data.hash === "string" && 
+                    /^[0-9a-f]{128}$/i.test(data.hash)) return data;
+                break;
         }
-
+        
         return null;
+
     } catch (error) {
-        if (error.code === "ENOENT") {
-            return null;
-        }
-
+         
+        if (error.code === "ENOENT") return null;
         throw error;
+
     }
+
 }
 
-function hasCredentials() {
-    return readCredentials() !== null;
-}
+function hasCredentials() { return readCredentials() !== null; }
 
 function initializeCredentials(password) {
-    if (hasCredentials()) {
-        return false;
-    }
+   
+    if (hasCredentials()) return false;
 
-    if (typeof password !== "string" || !password) {
-        return false;
-    }
+    if (typeof password !== "string" || !password) return false;
 
     fs.writeFileSync(credentialsPath, JSON.stringify(createPasswordHash(password), null, 2) + "\n", {
         flag: "wx",
-        mode: 0o600
+        mode: 0o775
     });
 
     return true;
+
 }
 
 function isValidPassword(password) {
-    if (typeof password !== "string" || !password) {
-        return false;
-    }
+
+    if (typeof password !== "string" || !password) return false;
 
     const credentials = readCredentials();
-    if (!credentials) {
-        return false;
-    }
 
-    if (credentials.algorithm === "scrypt") {
-        const attemptedHash = crypto.scryptSync(password, credentials.salt, 64, scryptOptions);
-        const expectedHash = Buffer.from(credentials.hash, "hex");
-        return expectedHash.length === attemptedHash.length && crypto.timingSafeEqual(attemptedHash, expectedHash);
-    }
+//     if (!credentials) {
+//         return false;
+//     }
 
-    // Accept existing username/password files once, then migrate them to a password-only hash.
-    if (typeof credentials.password === "string") {
-        const attemptedPassword = Buffer.from(password);
-        const savedPassword = Buffer.from(credentials.password);
-        if (attemptedPassword.length === savedPassword.length && crypto.timingSafeEqual(attemptedPassword, savedPassword)) {
-            persistCredentials(createPasswordHash(password));
-            return true;
-        }
-    }
+//     if (credentials.algorithm === "scrypt") {
+//         const attemptedHash = crypto.scryptSync(password, credentials.salt, 64, scryptOptions);
+//         const expectedHash = Buffer.from(credentials.hash, "hex");
+//         return expectedHash.length === attemptedHash.length && crypto.timingSafeEqual(attemptedHash, expectedHash);
+//     }
+
+//     // Accept existing username/password files once, then migrate them to a password-only hash.
+//     if (typeof credentials.password === "string") {
+//         const attemptedPassword = Buffer.from(password);
+//         const savedPassword = Buffer.from(credentials.password);
+//         if (attemptedPassword.length === savedPassword.length && crypto.timingSafeEqual(attemptedPassword, savedPassword)) {
+//             persistCredentials(createPasswordHash(password));
+//             return true;
+//         }
+//     }
 
     return false;
+
 }
 
 module.exports = {

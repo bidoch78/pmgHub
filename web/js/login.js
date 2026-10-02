@@ -5,26 +5,35 @@ import {
 } from "./api.js";
 
 const form = document.getElementById("loginForm");
+const loginDialog = document.getElementById("login");
 const errorElement = document.getElementById("loginError");
 const initializationDialog = document.getElementById("initializationDialog");
 const initializationForm = document.getElementById("initializationForm");
 const initializationError = document.getElementById("initializationError");
+const waiting = document.getElementById("waiting");
 
-async function checkCredentials() {
+async function checkIfCredentialsAlreadyDefine() {
     try {
+        
         const status = await getAuthStatus();
 
-        if (!status.initialized) {
+        waiting.style.display = "none";
+        
+        // if credential is already initialized display login password
+        // otherwise display password creation
+        if (status.initialized)
+            loginDialog.showModal();
+        else
             initializationDialog.showModal();
-        }
+
     } catch (error) {
         errorElement.textContent = error.message;
     }
 }
 
 form.addEventListener("submit", async event => {
-    event.preventDefault();
 
+    event.preventDefault();
     errorElement.textContent = "";
 
     const password = document.getElementById("password").value;
@@ -35,9 +44,11 @@ form.addEventListener("submit", async event => {
     } catch (error) {
         errorElement.textContent = error.message;
     }
+    
 });
 
 initializationForm.addEventListener("submit", async event => {
+
     event.preventDefault();
     initializationError.textContent = "";
 
@@ -49,13 +60,19 @@ initializationForm.addEventListener("submit", async event => {
         return;
     }
 
+    //if (password.length < 8) {
+    //    initializationError.textContent = "Password must contains at least 8 characters";
+    //    return;
+    //}
+
     try {
         await initializeCredentials(password);
         initializationDialog.close();
-        errorElement.textContent = "Password set. You can now unlock pmgHub.";
+        loginDialog.showModal();
     } catch (error) {
         initializationError.textContent = error.message;
     }
+
 });
 
-checkCredentials();
+checkIfCredentialsAlreadyDefine();

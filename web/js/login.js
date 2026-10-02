@@ -60,10 +60,10 @@ initializationForm.addEventListener("submit", async event => {
         return;
     }
 
-    //if (password.length < 8) {
-    //    initializationError.textContent = "Password must contains at least 8 characters";
-    //    return;
-    //}
+    if (password.length < 8) {
+       initializationError.textContent = "Password must contains at least 8 characters";
+       return;
+    }
 
     try {
         await initializeCredentials(password);

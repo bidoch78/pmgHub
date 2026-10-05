@@ -28,8 +28,8 @@ function parseCookies(cookieHeader = "") {
 
 function getSessionToken(req) { return parseCookies(req.headers.cookie).session || null; }
 
-function setSessionCookie(res, token, maxAgeSeconds = 3600) {
-    res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSeconds}`);
+function setSessionCookie(res, token, maxAgeMs = 3600) {
+    res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${ (Math.floor(maxAgeMs / 1000)) }`);
 }
 
 function clearSessionCookie(res) {
@@ -38,10 +38,17 @@ function clearSessionCookie(res) {
 
 function isAuthenticated(req, sessions) { return sessions.validate(getSessionToken(req)); }
 
+function getSessionTypeAuthenticated(req, sessions) { 
+    const token = getSessionToken(req);
+    if (!sessions.validate(token)) return null;
+    return sessions.getType(token);
+}
+
 module.exports = {
     parseCookies,
     getSessionToken,
     isAuthenticated,
     setSessionCookie,
-    clearSessionCookie
+    clearSessionCookie,
+    getSessionTypeAuthenticated
 };

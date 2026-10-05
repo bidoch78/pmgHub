@@ -1,16 +1,16 @@
-// async function request(url, options = {}) {
-//     const response = await fetch(url, {
-//         credentials: "same-origin",
-//         ...options
-//     });
+async function request(url, options = {}) {
+    const response = await fetch(url, {
+        credentials: "same-origin",
+        ...options
+    });
 
-//     if (response.status === 401) {
-//         window.location.href = "/login";
-//         throw new Error("Not authenticated");
-//     }
+    if (response.status === 401) {
+        window.location.href = "/login";
+        throw new Error("Not authenticated");
+    }
 
-//     return response;
-// }
+    return response;
+}
 
 // export async function getSensors() {
 //     const response = await request("/api/sensors");
@@ -158,8 +158,8 @@ export async function initializeCredentials(password) {
 
 }
 
-// export async function logout() {
-//     await request("/api/logout", {
-//         method: "POST"
-//     });
-// }
+export async function logout() {
+    await request("/api/logout", {
+        method: "POST"
+    });
+}

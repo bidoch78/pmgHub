@@ -7,7 +7,7 @@ const { WebSocketServer } = require("ws");
 const config = require("./config");
 
 const SessionManager = require("./sessions");
-// const SensorSimulator = require("./sensors");
+const SensorSimulator = require("./sensors");
 // const DeviceSimulator = require("./devices");
 
 const {
@@ -17,10 +17,11 @@ const {
 } = require("./credentials");
 
 const {
-//     getSessionToken,
+    getSessionToken,
     isAuthenticated,
-//     setSessionCookie,
-//     clearSessionCookie
+    setSessionCookie,
+    clearSessionCookie,
+    getSessionTypeAuthenticated
 } = require("./auth");
 
 const sessions = new SessionManager(
@@ -28,7 +29,7 @@ const sessions = new SessionManager(
     config.auth.sessionTimeoutMs
 );
 
-// const sensors = new SensorSimulator();
+const sensors = new SensorSimulator();
 // const devices = new DeviceSimulator();
 // const pairedDeviceSockets = new Map();
 // const pendingDeviceSockets = new Map();
@@ -147,7 +148,7 @@ function returnFile(res, relativePath) {
 
         if (err) {
             res.writeHead(err.code === "ENOENT" ? 404 : 500);
-            res.end(err.code === "ENOENT" ? "File not found" : "Internal server error");
+            res.end(err.code === "ENOENT" ? "File not found" : "Internal server error (1)");
             return;
         }
 
@@ -161,35 +162,67 @@ function returnFile(res, relativePath) {
 
 }
 
+function isWebFile(relativePath) {
+
+    const safePath = path.normalize(relativePath).replace(/^([.][.][/\\])+/, "");
+    const filePath = path.join(config.webRoot, safePath);
+
+    return fs.existsSync(filePath) && fs.statSync(filePath).isFile()
+
+}
+
 const server = http.createServer(async (req, res) => {
     
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-
+    
     // -------------------------------
     // ---- WEB
     // ----
 
     // ---------- STATIC ASSETS ----------
-    if (url.pathname.startsWith("/css/") || url.pathname.startsWith("/js/") || url.pathname.startsWith("/assets/")) {
-        returnFile(res, url.pathname.slice(1));
-        return;
+
+    console.log(url.href);
+    //console.log(url);
+
+    const webFile = url.pathname.slice(1);
+
+    // ----------  WEB FILES (if file exists inside web folder) ----------
+    if (isWebFile(webFile)) {
+        returnFile(res, webFile);
+        return;        
+    }
+
+    const isAuth = isAuthenticated(req, sessions);
+
+    // ----------  API PUBLIC ROUTES ----------
+    if (url.pathname.startsWith("/api/")) {
+
+        // ---------- API CREDENTIALS IS CREATED ?----------
+        if (url.pathname === "/api/auth/status" && req.method === "GET") {
+            sendJson(res, 200, { initialized: hasCredentials() });
+            return;
+        }
+
+        // ---------- API LOGOUT  ----------
+        if (url.pathname === "/api/logout" && req.method === "POST") {
+            
+            const token = getSessionToken(req);
+
+            if (token) sessions.remove(token);
+
+            clearSessionCookie(res);
+            sendJson(res, 200, { ok: true });
+            return;
+
+        }
+
     }
 
     // ----------  LOGIN REDIRECTION ----------
-    if (!isAuthenticated(req, sessions)) {
+    if (!isAuth) {
 
         if (url.pathname.startsWith("/api/")) {
             
-            // -------------------------------
-            // --- PUBLIC ROUTES
-            // ----
-
-            // ---------- API AUTHENTICATION SETUP - CREDENTIALS IS CREATED ?----------
-            if (url.pathname === "/api/auth/status" && req.method === "GET") {
-                sendJson(res, 200, { initialized: hasCredentials() });
-                return;
-            }
-
             // ---------- API AUTHENTICATION SETUP - INITIALIZE CREDENTIALS  ----------
             if (url.pathname === "/api/auth/initialize" && req.method === "POST") {
 
@@ -223,8 +256,39 @@ const server = http.createServer(async (req, res) => {
 
             }
 
+            // ---------- API AUTHENTICATION - LOGIN  ----------
+            if (url.pathname === "/api/login" && req.method === "POST") {
+
+                try {
+
+                    const body = await readJsonBody(req);
+
+                    if (!isValidPassword(body.password)) {
+                        sendJson(res, 401, { error: "INVALID_CREDENTIALS" });
+                        return;
+                    }
+
+                    const token = sessions.create(SessionManager.SESSION_WEBADMIN);
+
+                    if (!token) {
+                        sendJson(res, 503, { error: "MAX_SESSIONS_REACHED" });
+                        return;
+                    }
+
+                    setSessionCookie(res, token, config.auth.sessionTimeoutMs);
+
+                    sendJson(res, 200, { ok: true });
+
+                } catch (error) {
+                    sendJson(res, 400, { error: error.message });
+                }
+
+                return;
+
+            }
+
             // ---------- ERROR ----------
-            sendJson(res, 401, { error: "Unauthorized" });
+            sendJson(res, 500, { error: "Internal server error (2)" });
             return;
 
         }
@@ -248,6 +312,12 @@ const server = http.createServer(async (req, res) => {
 
     // ---------- LOGIN PAGE ----------
     if (url.pathname === "/login" && req.method === "GET") {
+        if (isAuth) {
+            // redirect to /
+            res.writeHead(302, { Location: "/" });
+            res.end();
+            return;
+        }
         returnFile(res, "login.html");
         return;
     }
@@ -255,57 +325,6 @@ const server = http.createServer(async (req, res) => {
     // -------------------------------
     // ---- API
     // ----
-
-
-//     // ---------- API LOGIN ----------
-//     if (url.pathname === "/api/login" && req.method === "POST") {
-//         try {
-//             const body = await readJsonBody(req);
-
-//             if (!isValidPassword(body.password)) {
-//                 sendJson(res, 401, { error: "INVALID_CREDENTIALS" });
-//                 return;
-//             }
-
-//             const token = sessions.create();
-
-//             if (!token) {
-//                 sendJson(res, 503, { error: "MAX_SESSIONS_REACHED" });
-//                 return;
-//             }
-
-//             setSessionCookie(
-//                 res,
-//                 token,
-//                 Math.floor(config.auth.sessionTimeoutMs / 1000)
-//             );
-
-//             sendJson(res, 200, { ok: true });
-//         } catch (error) {
-//             sendJson(res, 400, { error: error.message });
-//         }
-
-//         return;
-//     }
-
-
-
-
-
-//     // ---------- API LOGOUT ----------
-//     if (url.pathname === "/api/logout" && req.method === "POST") {
-//         const token = getSessionToken(req);
-
-//         if (token) {
-//             sessions.remove(token);
-//         }
-
-//         clearSessionCookie(res);
-//         sendJson(res, 200, { ok: true });
-//         return;
-//     }
-
-
 
 
 //     // ---------- SENSOR API ----------
@@ -457,6 +476,7 @@ const server = http.createServer(async (req, res) => {
 //         return;
 //     }
 
+
 //     const deviceNameMatch = url.pathname.match(/^\/api\/devices\/([^/]+)$/);
 //     if (deviceNameMatch && req.method === "DELETE") {
 //         const requestedMac = decodeURIComponent(deviceNameMatch[1]);
@@ -539,7 +559,7 @@ const server = http.createServer(async (req, res) => {
 //     }
 
     res.writeHead(404);
-    res.end("Page not found");
+    res.end("not found");
 
 });
 
@@ -547,42 +567,73 @@ const server = http.createServer(async (req, res) => {
 // WebSocket /ws
 // -------------------------------------------------
 
-// const wss = new WebSocketServer({
-//     noServer: true
-// });
-// const deviceWss = new WebSocketServer({
-//     noServer: true
-// });
+const wss = new WebSocketServer({ noServer: true });
 
-// server.on("upgrade", (req, socket, head) => {
-//     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+server.on("upgrade", (req, socket, head) => {
 
-//     if (url.pathname === "/ws/device") {
-//         deviceWss.handleUpgrade(req, socket, head, ws => {
-//             deviceWss.emit("connection", ws, req);
-//         });
-//         return;
-//     }
+    console.log("ws upgrade");
 
-//     if (url.pathname !== "/ws") {
-//         socket.destroy();
-//         return;
-//     }
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
-//     if (!isAuthenticated(req, sessions)) {
-//         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-//         socket.destroy();
-//         return;
-//     }
+    if (url.pathname !== "/ws") {
+        socket.destroy();
+        return;
+    }
+    
+    // For devices, connection is accepted directly 
+    if (url.pathname === "/ws/device") {
+        wss.handleUpgrade(req, socket, head, ws => {
+            wss.emit("connection", ws, req);
+        });
+        return;
+    }
 
-//     wss.handleUpgrade(req, socket, head, ws => {
-//         wss.emit("connection", ws, req);
-//     });
-// });
+    // For web admin, connection is accepted if authentification is done
+    if (!getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
+        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+        socket.destroy();
+        return;
+    }
 
-// wss.on("connection", ws => {
-//     ws.send(JSON.stringify(sensors.getData()));
-// });
+    wss.handleUpgrade(req, socket, head, ws => {
+        wss.emit("connection", ws, req);
+    });
+
+});
+
+wss.on("connection", (ws, req) => {
+
+    console.log("WS Connection");
+    console.log("Cookie: " + req.headers.cookie);
+
+    ws.on("message", rawMessage => {
+
+        let message;
+        try {
+            message = JSON.parse(rawMessage.toString());
+        } catch {
+            this.close(4002, "Invalid JSON message");
+            return;
+        }
+
+        console.log("WS Message:" + message.type + ", data:" + message.data);
+
+        if (!message.type) {
+            this.close(4003, "Invalid JSON message");
+            return;
+        }
+
+        switch(message.type) {
+            case "getsensors":
+                if (getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
+                    ws.send(JSON.stringify({ type: "sensors.list", "data": sensors.getSensors() }));
+                }
+                break;
+        }
+        
+    });
+
+});
 
 // deviceWss.on("connection", ws => {
 //     const sendPairingRequest = (mac, pairingCode) => {
@@ -734,7 +785,8 @@ const server = http.createServer(async (req, res) => {
 //     });
 // });
 
-// setInterval(() => {
+// Generate dummy data sensors
+setInterval(() => {
 //     const data = JSON.stringify(sensors.update());
 
 //     for (const client of wss.clients) {
@@ -749,7 +801,7 @@ const server = http.createServer(async (req, res) => {
 //             client.send(deviceData);
 //         }
 //     }
-// }, config.websocketIntervalMs);
+}, config.websocketIntervalMs);
 
 // -------------------------------------------------
 

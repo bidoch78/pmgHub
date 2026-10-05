@@ -1,21 +1,79 @@
-// class SensorSimulator {
-//     constructor() {
-//         this.scenario = "idle";
-//         this.data = {
-//             rpm: 850,
-//             coolant: 86.0,
-//             oilPressure: 1.8,
-//             fuelPressure: 3.0,
-//             ethanol: 78
-//         };
-//         this.sensors = [
-//             { id: "engine.rpm", category: "ENGINE", name: "Engine speed", valueKey: "rpm", unit: "rpm", valueRange: [0, 8000] },
-//             { id: "engine.coolant-temperature", category: "ENGINE", name: "Coolant temperature", valueKey: "coolant", unit: "°C", valueRange: [-20, 150] },
-//             { id: "engine.oil-pressure", category: "ENGINE", name: "Oil pressure", valueKey: "oilPressure", unit: "bar", valueRange: [0, 10] },
-//             { id: "fuel.pressure", category: "FUEL", name: "Fuel pressure", valueKey: "fuelPressure", unit: "bar", valueRange: [0, 6] },
-//             { id: "fuel.ethanol-content", category: "FUEL", name: "Ethanol content", valueKey: "ethanol", unit: "%", valueRange: [0, 100] }
-//         ];
-//     }
+class SensorSimulator {
+
+    constructor() {
+
+        this.sensors = [
+            { info: { id: "engine.airpressure", category: "ENGINE", name: "Air Pressure", type: "pressure" }, 'sim': { dtype: 'range', data: [ 0, 5] } },
+            { info: { id: "engine.coolant-temp", category: "ENGINE", name: "Coolant Temperature", type: "temp" }, 'sim': { dtype: 'range', date: [ 0, 5 ] } },
+            { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "lambda" }, 'sim': { dtype: 'range', data: [ 0, 5 ] } },
+            { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "lambda" }, 'sim': { dtype: 'range', data: [ 0, 5 ] } },
+            { info: { id: "engine.oil-pressure", category: "ENGINE", name: "Oil Pressure", type: "pressure" }, 'sim': { dtye: 'range', data: [ 0, 5 ] } },
+
+            { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure" }, 'sim': { dtype: 'range', data: [ 0, 5 ] }},
+            { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage" }, 'sim': { dtype: 'range', data: [ 0, 12 ] }},
+            { info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", type: "bool" }, 'sim': { dtype: 'pull', data: [ 0, 12] }},
+
+            { info: { id: "trans.oil-temp", category: "TRANSMISSION", name: "Tranny Oil Temperature", type: "temp" }, sim: { dtype: "range", data: [ 0, 12 ] } },
+            { info: { id: "trans.sol-a", category: "TRANSMISSION", name: "Tranny SolA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.sol-b", category: "TRANSMISSION", name: "Tranny SolB", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.sol-lockconv", category: "TRANSMISSION", name: "Tranny SolLC", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.gearsel-na", category: "TRANSMISSION", name: "Tranny Selector NA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.gearsel-1", category: "TRANSMISSION", name: "Tranny Selector 1", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.gearsel-2", category: "TRANSMISSION", name: "Tranny Selector 2", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "Tranny Selector D", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } },
+            { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "Tranny Selector R", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ] } }
+
+        ];
+
+        for (const item of this.sensors) {
+            item.unit = this.getUnit(item.info.type);
+        }
+
+    }
+
+    getUnit(type) {
+
+        const unit = { id: '', 'name': '', format: '%.2f' };
+
+        switch(type) {
+            case "bool": 
+                unit.id = 'on'; 
+                unit.name = "ON";
+                unit.format = "%.0f";
+                break;
+            case "pressure": 
+                unit.id = "psi"; 
+                unit.name = "PSI"; 
+                unit.format = "%.2f";
+                break;
+            case "temp":
+                unit.id = "celcius"; 
+                unit.name = "°C"; 
+                unit.format = "%.0f"; 
+                break;
+            case "percentage":
+                unit.id = "pct"; 
+                unit.name = "%"; 
+                unit.format = "%.0f"; 
+                break;
+            case "lambda":
+                unit.id = "lambda" 
+                unit.name = "λ"; unit.format = "%.2f"; break;
+        }
+
+        return unit;
+
+    }
+
+    getSensors() {
+
+        const retSensors = [];
+        for (const item of this.sensors) {
+            retSensors.push({ sensor: item.info, unit: item.unit } );
+        }
+        return retSensors;
+
+    }
 
 //     setScenario(name) {
 //         const allowed = [
@@ -129,6 +187,6 @@
 //             })
 //         };
 //     }
-// }
+}
 
-// module.exports = SensorSimulator;
+module.exports = SensorSimulator;

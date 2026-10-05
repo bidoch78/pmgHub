@@ -1,16 +1,16 @@
-// import {
+import {
+        getAuthStatus,
 //     approveDevice,
 //     getDevices,
 //     getPairingRequests,
 //     getPairingWindow,
 //     getSensors,
-//     logout,
+        logout,
 //     rejectDevice,
 //     rejectPairingRequest,
 //     setPairingWindow,
 //     updateDeviceName
-// } from "./api.js";
-// import { connectWebSocket } from "./websocket.js";
+} from "./api.js";
 
 // const connectionStatus = document.getElementById("connectionStatus");
 // const sensorGroups = document.getElementById("sensorGroups");
@@ -20,45 +20,53 @@
 // const pairingCount = document.getElementById("pairingCount");
 // const pairingWindowStatus = document.getElementById("pairingWindowStatus");
 // const pairingWindowButton = document.getElementById("pairingWindowButton");
-// const sensorCards = new Map();
-// const sensorCategoryGroups = new Map();
+
+const sensorCards = new Map();
+const sensorCategoryGroups = new Map();
+
 // const pairingCodeDrafts = new Map();
 // let pairingRequestSignature = null;
 
-// function displaySensors(data) {
-//     if (!data || !Array.isArray(data.sensors)) {
-//         return;
-//     }
+function displaySensors(data) {
 
-//     const receivedIds = new Set();
-//     const activeCategories = new Set();
+    console.log(data);
 
-//     for (const sensor of data.sensors) {
-//         if (!sensor || typeof sensor.id !== "string" || !sensor.id) continue;
-//         receivedIds.add(sensor.id);
-//         const category = typeof sensor.category === "string" && sensor.category.trim()
-//             ? sensor.category.trim().toUpperCase()
-//             : "UNCATEGORIZED";
-//         activeCategories.add(category);
+    if (!data || !Array.isArray(data)) return;
 
-//         let group = sensorCategoryGroups.get(category);
-//         if (!group) {
-//             group = createSensorCategory(category);
-//             sensorCategoryGroups.set(category, group);
-//             sensorGroups.append(group.element);
-//         }
+    const receivedIds = new Set();
+    const activeCategories = new Set();
 
-//         let card = sensorCards.get(sensor.id);
-//         if (!card) {
-//             card = createSensorCard(sensor.id);
-//             sensorCards.set(sensor.id, card);
-//         }
-//         updateSensorCard(card, sensor);
+    for (const sensordata of data) {
 
-//         if (card.element.parentElement !== group.grid) {
-//             group.grid.append(card.element);
-//         }
-//     }
+        const sensor = sensordata.sensor;
+
+        if (!sensor || typeof sensor.id !== "string" || !sensor.id) continue;
+
+        receivedIds.add(sensor.id);
+        const category = typeof sensor.category === "string" && sensor.category.trim()
+            ? sensor.category.trim().toUpperCase()
+            : "UNCATEGORIZED";
+        activeCategories.add(category);
+
+        let group = sensorCategoryGroups.get(category);
+        if (!group) {
+            group = createSensorCategory(category);
+            sensorCategoryGroups.set(category, group);
+            sensorGroups.append(group.element);
+        }
+
+        let card = sensorCards.get(sensor.id);
+        if (!card) {
+            card = createSensorCard(sensor.id);
+            sensorCards.set(sensor.id, card);
+        }
+        updateSensorCard(card, sensor, sensordata.unit);
+
+        if (card.element.parentElement !== group.grid) {
+            group.grid.append(card.element);
+        }
+
+    }
 
 //     for (const [id, card] of sensorCards) {
 //         if (!receivedIds.has(id)) {
@@ -78,59 +86,82 @@
 //         emptyState.textContent = "No sensors are configured on this hub.";
 //         sensorGroups.append(emptyState);
 //     }
-// }
+}
 
-// function createSensorCategory(category) {
-//     const section = document.createElement("section");
-//     section.className = "sensor-category";
-//     const heading = document.createElement("h3");
-//     heading.className = "sensor-category-title";
-//     heading.textContent = category;
-//     const grid = document.createElement("div");
-//     grid.className = "dashboard";
-//     section.append(heading, grid);
-//     return { element: section, grid };
-// }
+function createSensorCategory(category) {
 
-// function createSensorCard(id) {
-//     const element = document.createElement("article");
-//     element.className = "card sensor-card";
-//     element.dataset.sensorId = id;
+    const section = document.createElement("section");
+    section.className = "sensor-category";
 
-//     const name = document.createElement("span");
-//     name.className = "sensor-name";
-//     const sensorId = document.createElement("small");
-//     sensorId.className = "sensor-id";
-//     const value = document.createElement("strong");
-//     value.className = "sensor-value";
-//     const unit = document.createElement("small");
-//     unit.className = "sensor-unit";
-//     const voltage = document.createElement("small");
-//     voltage.className = "sensor-voltage";
-//     const flags = document.createElement("div");
-//     flags.className = "sensor-flags";
-//     const errorFlag = document.createElement("span");
-//     errorFlag.className = "sensor-flag sensor-error";
-//     errorFlag.textContent = "Read error";
-//     const alarmFlag = document.createElement("span");
-//     alarmFlag.className = "sensor-flag sensor-alarm";
-//     alarmFlag.textContent = "Alarm";
-//     flags.append(errorFlag, alarmFlag);
-//     element.append(name, sensorId, value, unit, voltage, flags);
-//     return { element };
-// }
+    const heading = document.createElement("h3");
+    heading.className = "sensor-category-title";
+    heading.textContent = category;
 
-// function updateSensorCard(card, sensor) {
-//     const { element } = card;
-//     const setText = (selector, text) => {
-//         const target = element.querySelector(selector);
-//         if (target.textContent !== text) target.textContent = text;
-//     };
+    const grid = document.createElement("div");
+    grid.className = "dashboard";
+    
+    section.append(heading, grid);
 
-//     setText(".sensor-name", typeof sensor.name === "string" && sensor.name ? sensor.name : sensor.id);
-//     setText(".sensor-id", sensor.id);
+    return { element: section, grid };
+
+}
+
+function createSensorCard(id) {
+
+    const element = document.createElement("article");
+    element.className = "card sensor-card";
+    element.dataset.sensorId = id;
+
+    const name = document.createElement("span");
+    name.className = "sensor-name";
+
+    const sensorId = document.createElement("small");
+    sensorId.className = "sensor-id";
+
+    const value = document.createElement("strong");
+    value.className = "sensor-value";
+
+    const unit = document.createElement("small");
+    unit.className = "sensor-unit";
+
+    const voltage = document.createElement("small");
+    voltage.className = "sensor-voltage";
+
+    const flags = document.createElement("div");
+    flags.className = "sensor-flags";
+
+    const errorFlag = document.createElement("span");
+    errorFlag.className = "sensor-flag sensor-error";
+    errorFlag.textContent = "Read error";
+
+    const alarmFlag = document.createElement("span");
+    alarmFlag.className = "sensor-flag sensor-alarm";
+    alarmFlag.textContent = "Alarm";
+
+    flags.append(errorFlag, alarmFlag);
+
+    element.append(name, sensorId, value, unit, voltage, flags);
+
+    return { element };
+}
+
+function updateSensorCard(card, sensor, unit) {
+
+    const { element } = card;
+    const setText = (selector, text) => {
+        const target = element.querySelector(selector);
+        if (target.textContent !== text) target.textContent = text;
+    };
+
+    setText(".sensor-name", typeof sensor.name === "string" && sensor.name ? sensor.name : sensor.id);
+    setText(".sensor-id", sensor.id);
+
+    setText(".sensor-value", "--");
+
 //     setText(".sensor-value", typeof sensor.value === "number" && Number.isFinite(sensor.value) ? String(sensor.value) : "--");
-//     setText(".sensor-unit", typeof sensor.unit === "string" ? sensor.unit : "");
+
+    setText(".sensor-unit", typeof unit.name === "string" ? unit.name : "");
+
 //     setText(".sensor-voltage", typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
 //         ? `${sensor.voltage.toFixed(3)} V`
 //         : "Voltage unavailable");
@@ -141,7 +172,13 @@
 //     element.classList.toggle("has-alarm", hasAlarm);
 //     element.querySelector(".sensor-error").hidden = !hasError;
 //     element.querySelector(".sensor-alarm").hidden = !hasAlarm;
-// }
+
+    element.classList.toggle("has-error", false);
+    element.classList.toggle("has-alarm", false);
+    element.querySelector(".sensor-error").hidden = true;
+    element.querySelector(".sensor-alarm").hidden = true;
+
+}
 
 // function displayDevices(devices) {
 //     const connectedCount = devices.filter(device => device.connected).length;
@@ -434,7 +471,10 @@
 //     pairingWindowButton.textContent = "Close pairing mode";
 // }
 
-// async function initialize() {
+async function initialize() {
+
+    const status = await getAuthStatus();
+
 //     try {
 //         displaySensors(await getSensors());
 //     } catch (error) {
@@ -462,18 +502,74 @@
 //         pairingWindowStatus.textContent = "Unable to check pairing mode";
 //     }
 
-//     connectWebSocket(displaySensors, status => {
-//         connectionStatus.textContent = status;
-//         connectionStatus.classList.toggle("online", status === "Connected");
-//         connectionStatus.classList.toggle("offline", status !== "Connected");
-//     });
+// connectWebSocket(displaySensors, status => {
+//     connectionStatus.textContent = status;
+//     connectionStatus.classList.toggle("online", status === "Connected");
+//     connectionStatus.classList.toggle("offline", status !== "Connected");
+// });
+
+    connectWebSocket(status => {
+        connectionStatus.textContent = status;
+        connectionStatus.classList.toggle("online", status === "Connected");
+        connectionStatus.classList.toggle("offline", status !== "Connected");
+    });
 
 //     window.setInterval(() => {
 //         refreshDevices().catch(error => console.error(error));
 //         refreshPairingRequests().catch(error => console.error(error));
 //         refreshPairingWindow().catch(error => console.error(error));
 //     }, 2000);
-// }
+
+}
+
+function connectWebSocket(onStatus) {
+    
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${protocol}://${location.host}/ws`);
+
+    socket.addEventListener("open", () => {
+        onStatus?.("Connected");
+        socket.send(JSON.stringify({ 'type': 'getsensors', 'data': null }));
+    });
+
+    socket.addEventListener("message", event => {
+        
+        let message = null;
+        
+        try {
+            message = JSON.parse(event.data);
+        } catch (error) {
+            console.error("Invalid WebSocket message", error);
+            return;
+        }
+
+        switch(message.type) {
+
+            case "sensors.list":
+                displaySensors(message.data);
+                break;
+
+        }
+
+    });
+
+    socket.addEventListener("close", () => {
+        onStatus?.("Disconnected");
+
+        //Wait an try to reconnect
+        setTimeout(() => {
+            connectWebSocket(onData, onStatus);
+        }, 2000);
+
+    });
+
+    socket.addEventListener("error", () => {
+        onStatus?.("Connection error");
+    });
+
+    return socket;
+
+}
 
 // pairingWindowButton.addEventListener("click", async () => {
 //     pairingWindowButton.disabled = true;
@@ -489,12 +585,12 @@
 //     }
 // });
 
-// document.getElementById("logoutButton").addEventListener("click", async () => {
-//     try {
-//         await logout();
-//     } finally {
-//         window.location.href = "/login";
-//     }
-// });
+document.getElementById("logoutButton").addEventListener("click", async () => {
+    try {
+        await logout();
+    } finally {
+        window.location.href = "/login";
+    }
+});
 
-// initialize();
+initialize();

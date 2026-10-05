@@ -69,15 +69,13 @@ function isValidPassword(password) {
 
     const credentials = readCredentials();
 
-//     if (!credentials) {
-//         return false;
-//     }
+    if (!credentials) return false;
 
-//     if (credentials.algorithm === "scrypt") {
-//         const attemptedHash = crypto.scryptSync(password, credentials.salt, 64, scryptOptions);
-//         const expectedHash = Buffer.from(credentials.hash, "hex");
-//         return expectedHash.length === attemptedHash.length && crypto.timingSafeEqual(attemptedHash, expectedHash);
-//     }
+    if (credentials.algorithm === "scrypt") {
+        const attemptedHash = crypto.scryptSync(password, credentials.salt, 64, scryptOptions);
+        const expectedHash = Buffer.from(credentials.hash, "hex");
+        return expectedHash.length === attemptedHash.length && crypto.timingSafeEqual(attemptedHash, expectedHash);
+    }
 
 //     // Accept existing username/password files once, then migrate them to a password-only hash.
 //     if (typeof credentials.password === "string") {

@@ -785,15 +785,17 @@ wss.on("connection", (ws, req) => {
 //     });
 // });
 
-// Generate dummy data sensors
+// Generate dummy data sensors (arduino loop)
 setInterval(() => {
-//     const data = JSON.stringify(sensors.update());
 
-//     for (const client of wss.clients) {
-//         if (client.readyState === 1) {
-//             client.send(data);
-//         }
-//     }
+    sensors.update();
+    console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
+
+    for (const client of wss.clients) {
+        if (client.readyState === 1) {
+            client.send(JSON.stringify(Object.fromEntries(sensors.getValues())));
+        }
+    }
 
 //     const deviceData = JSON.stringify({ type: "sensor.update", data: sensors.getData() });
 //     for (const client of pairedDeviceSockets.values()) {
@@ -801,7 +803,10 @@ setInterval(() => {
 //             client.send(deviceData);
 //         }
 //     }
-}, config.websocketIntervalMs);
+
+    //config.websocketIntervalMs
+
+}, 1000);
 
 // -------------------------------------------------
 

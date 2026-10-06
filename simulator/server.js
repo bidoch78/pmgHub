@@ -8,7 +8,7 @@ const config = require("./config");
 
 const SessionManager = require("./sessions");
 const SensorSimulator = require("./sensors");
-// const DeviceSimulator = require("./devices");
+const DeviceSimulator = require("./devices");
 
 const {
     isValidPassword,
@@ -30,7 +30,8 @@ const sessions = new SessionManager(
 );
 
 const sensors = new SensorSimulator();
-// const devices = new DeviceSimulator();
+const devices = new DeviceSimulator();
+
 // const pairedDeviceSockets = new Map();
 // const pendingDeviceSockets = new Map();
 // const pendingPairingCodes = new Map();
@@ -606,31 +607,48 @@ wss.on("connection", (ws, req) => {
     console.log("WS Connection");
     console.log("Cookie: " + req.headers.cookie);
 
+    ws._auth = { 'token': getSessionToken(req) };
+
+     //Create webadmin devive
+    if (getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
+        devices.registerWebAdmin(ws._auth.token);
+    }
+
     ws.on("message", rawMessage => {
 
         let message;
         try {
             message = JSON.parse(rawMessage.toString());
         } catch {
-            this.close(4002, "Invalid JSON message");
+            ws.close(4002, "Invalid JSON message");
             return;
         }
 
         console.log("WS Message:" + message.type + ", data:" + message.data);
 
         if (!message.type) {
-            this.close(4003, "Invalid JSON message");
+            ws.close(4003, "Invalid JSON message");
             return;
         }
+        
+        //const isAdmin = getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN;
 
         switch(message.type) {
-            case "getsensors":
-                if (getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
-                    ws.send(JSON.stringify({ type: "sensors.list", "data": sensors.getSensors() }));
-                }
+            case "sensors.get":
+                ws.send(JSON.stringify({ type: "sensors.list", "data": sensors.getSensors() }));
+                break;
+            case "sensors.read":
+                devices.startListenSensors(ws._auth.token);
                 break;
         }
         
+    });
+
+    ws.on("close", (code, reason) => {
+
+        console.log("WS Close")
+        if (ws._auth && ws._auth.token) devices.unregister(ws._auth.token);
+
     });
 
 });
@@ -789,11 +807,20 @@ wss.on("connection", (ws, req) => {
 setInterval(() => {
 
     sensors.update();
-    console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
+    
+    //console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
 
     for (const client of wss.clients) {
         if (client.readyState === 1) {
-            client.send(JSON.stringify(Object.fromEntries(sensors.getValues())));
+
+            if (client._auth && client._auth.token) {
+                if (devices.isWebAdmin(client._auth.token)) {
+                    //Now we need to check with devices object which sensors can be sent based on rate defined and last sent
+                    //So we avoid to resend everything
+                    client.send(JSON.stringify({ type: "sensors.value", data: Object.fromEntries(sensors.getValues()) } ));
+                }
+            }
+   
         }
     }
 
@@ -806,7 +833,7 @@ setInterval(() => {
 
     //config.websocketIntervalMs
 
-}, 1000);
+}, 500);
 
 // -------------------------------------------------
 

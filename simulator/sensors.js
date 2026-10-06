@@ -1,65 +1,75 @@
 class SensorSimulator {
 
+    static rates = {
+        LOW: 1000,
+        MEDIUM: 500,
+        HIGH: 100
+    };
+
     constructor() {
 
+        this.lastUpdate = null;
+
         this.sensors = [
-            { info: { id: "engine.airpressure", category: "ENGINE", name: "Air Pressure", type: "pressure" }, sim: { dtype: 'range', data: [ 0, 5], out: [ -0.5, 2], unit: 'psi' }, unit: null, read: null },
-            { info: { id: "engine.coolant-temp", category: "ENGINE", name: "Coolant Temperature", type: "temp" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null },
-            // { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "lambda" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null },
-            // { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "lambda" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null },
-            // { info: { id: "engine.oil-pressure", category: "ENGINE", name: "Oil Pressure", type: "pressure" }, sim: { dtye: 'range', data: [ 0, 5 ], out: [ 0, 7 ], unit: 'psi' }, unit: null, read: null },
+            { info: { id: "engine.airpressure", category: "ENGINE", name: "Air Pressure", type: "pressure", rate: SensorSimulator.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5], out: [ -0.5, 2], unit: 'psi' }, unit: null, read: null, _data: null },
+            { info: { id: "engine.coolant-temp", category: "ENGINE", name: "Coolant Temperature", type: "temp", rate: SensorSimulator.rates.LOW }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
+            // { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "lambda" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
+            // { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "lambda" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
+            // { info: { id: "engine.oil-pressure", category: "ENGINE", name: "Oil Pressure", type: "pressure" }, sim: { dtye: 'range', data: [ 0, 5 ], out: [ 0, 7 ], unit: 'psi' }, unit: null, read: null, _data: null },
 
-            // { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 60 ], unit: 'psi' }, unit: null, read: null },
-            // { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage" }, sim: { dtype: 'range', data: [ 0, 12 ], out: [ 0, 100 ], unit: 'percentage' }, unit: null, read: null },
-            // { info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", type: "bool" }, sim: { dtype: 'pull', data: [ 0, 12], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
+            // { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure" }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 60 ], unit: 'psi' }, unit: null, read: null, _data: null },
+            // { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage" }, sim: { dtype: 'range', data: [ 0, 12 ], out: [ 0, 100 ], unit: 'percentage' }, unit: null, read: null, _data: null },
+            // { info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", type: "bool" }, sim: { dtype: 'pull', data: [ 0, 12], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
 
-            // { info: { id: "trans.oil-temp", category: "TRANSMISSION", name: "Tranny Oil Temperature", type: "temp" }, sim: { dtype: "range", data: [ 0, 12 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null },
-            // { info: { id: "trans.sol-a", category: "TRANSMISSION", name: "Tranny SolA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.sol-b", category: "TRANSMISSION", name: "Tranny SolB", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.sol-lockconv", category: "TRANSMISSION", name: "Tranny SolLC", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.gearsel-na", category: "TRANSMISSION", name: "Tranny Selector NA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.gearsel-1", category: "TRANSMISSION", name: "Tranny Selector 1", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.gearsel-2", category: "TRANSMISSION", name: "Tranny Selector 2", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "Tranny Selector D", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null },
-            // { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "Tranny Selector R", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null }
+            // { info: { id: "trans.oil-temp", category: "TRANSMISSION", name: "Tranny Oil Temperature", type: "temp" }, sim: { dtype: "range", data: [ 0, 12 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.sol-a", category: "TRANSMISSION", name: "Tranny SolA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.sol-b", category: "TRANSMISSION", name: "Tranny SolB", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.sol-lockconv", category: "TRANSMISSION", name: "Tranny SolLC", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.gearsel-na", category: "TRANSMISSION", name: "Tranny Selector NA", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.gearsel-1", category: "TRANSMISSION", name: "Tranny Selector 1", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.gearsel-2", category: "TRANSMISSION", name: "Tranny Selector 2", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "Tranny Selector D", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            // { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "Tranny Selector R", type: "bool" }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null }
 
         ];
 
         for (const item of this.sensors) {
             item.unit = this.getUnit(item.info.type);
             item.read = { 'voltage': 0, 'value': 0, 'srate': 0 };
+            item._data = { 'lastread': null, 'count': 0  }
         }
 
     }
 
     getUnit(type) {
 
-        const unit = { id: '', 'name': '', format: '%.2f' };
+        const unit = { id: '', 'name': '', decimals: 2 };
 
         switch(type) {
             case "bool": 
                 unit.id = 'on'; 
                 unit.name = "ON";
-                unit.format = "%.0f";
+                unit.decimals = 0;
                 break;
             case "pressure": 
                 unit.id = "psi"; 
                 unit.name = "PSI"; 
-                unit.format = "%.2f";
+                unit.decimals = 2;
                 break;
             case "temp":
                 unit.id = "celcius"; 
                 unit.name = "°C"; 
-                unit.format = "%.0f"; 
+                unit.decimals = 0;
                 break;
             case "percentage":
                 unit.id = "pct"; 
                 unit.name = "%"; 
-                unit.format = "%.0f"; 
+                unit.decimals = 0;
                 break;
             case "lambda":
                 unit.id = "lambda" 
-                unit.name = "λ"; unit.format = "%.2f"; 
+                unit.name = "λ"; 
+                unit.decimals = 2;
                 break;
         }
 
@@ -90,32 +100,81 @@ class SensorSimulator {
 
     }
 
-    transformUnit(value, fromunit, toObjectUnit) {
+    transformUnit(value, unit, toObjectUnit) {
         
-        const match = toObjectUnit.format.match(/^%\.(\d+)f$/);
-        if (!match) return value;
+        switch(unit) {
+            //Pressure
+            case "psi":
+                switch(toObjectUnit) {
+                    case "bar":
+                        value = value * 0.0689476;
+                        break;
+                }
+                break;
+            //Temp
+            case "celcius":
+                 switch(toObjectUnit) {
+                    case "fahrenheit":
+                        value = (value * 9 / 5) + 32
+                        break;
+                }
+                break;
+            //WB
+            case "lambda":
+                switch(toObjectUnit) {
+                    case "afr":
+                        value = value * 14.7;
+                        break;
+                }
+                break;
+        }
+
+        return value;
         
-        return value.toFixed(Number(match[1]));
-        
+    }
+
+    roundValue(value, decimals = 2) {
+        return Math.round(value * 10 ** decimals) / 10 ** decimals;
     }
 
     update() {
 
+        const now = Date.now();    
+
+        if (!this.lastUpdate) this.lastUpdate = now;
+
         for (const item of this.sensors) {
+
+            //Check aquisition freq
+            if (item._data.lastread) {
+                if ((now - item._data.lastread) < item.info.rate) continue;
+            }
+            else {
+                item._data.lastread = now;
+            }
+
+            item._data.count++;
+
+            if ((now - this.lastUpdate) >= 1000) {
+                item.read.srate = item._data.count;
+                item._data.count = 0;
+            }
+
+            //Read
 
             item.read.voltage = null;
             item.read.value = null;
 
             switch(item.sim.dtype) {
                 case "range":
-                    item.read.voltage = this.random(item.sim.data[0], item.sim.data[1]).toFixed(2);
+                    item.read.voltage = this.roundValue(this.random(item.sim.data[0], item.sim.data[1]));
                     break;
                 case "pull":
-                    item.read.voltage = this.randomToggle(item.sim.data[0], item.sim.data[1]).toFixed(2);
+                    item.read.voltage = this.roundValue(this.randomToggle(item.sim.data[0], item.sim.data[1]));
                     break;
             }
 
-            let value = null;
+            let value = 0;
 
             switch(item.info.type) {
                 
@@ -134,12 +193,13 @@ class SensorSimulator {
 
             if (value !== null) {
 
-                item.read.value = this.transformUnit(value, item.sim.unit, item.unit);
-
+                item.read.value = this.roundValue(this.transformUnit(value, item.sim.unit, item.unit), item.unit.decimals);
 
             }
 
         }
+
+        if ((now - this.lastUpdate) >= 1000) this.lastUpdate = now;
 
     }
 

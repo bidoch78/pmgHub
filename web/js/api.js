@@ -12,6 +12,13 @@ async function request(url, options = {}) {
     return response;
 }
 
+export function sendWSCommand(socket, type, data = null) {
+    if (!socket) return false;
+    if (socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify({ 'type': type, 'data': data }));
+    return true;
+}
+
 // export async function getSensors() {
 //     const response = await request("/api/sensors");
 //     return response.json();

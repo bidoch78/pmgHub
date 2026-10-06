@@ -40,6 +40,8 @@ class SessionManager {
 
         this.sessions.set(token, { lastActivity: Date.now(), type: (session_type === SessionManager.SESSION_WEBADMIN ? SessionManager.SESSION_WEBADMIN : SessionManager.SESSION_DEVICE ) });
 
+        console.log("SESSION CREATE SESSION - Nb of Sessions " + this.sessions.size);
+
         return token;
 
     }

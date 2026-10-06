@@ -9,7 +9,8 @@ import {
 //     rejectDevice,
 //     rejectPairingRequest,
 //     setPairingWindow,
-//     updateDeviceName
+//     updateDeviceName,
+        sendWSCommand
 } from "./api.js";
 
 // const connectionStatus = document.getElementById("connectionStatus");
@@ -21,15 +22,15 @@ import {
 // const pairingWindowStatus = document.getElementById("pairingWindowStatus");
 // const pairingWindowButton = document.getElementById("pairingWindowButton");
 
+let wsCom = null;
+
 const sensorCards = new Map();
 const sensorCategoryGroups = new Map();
 
 // const pairingCodeDrafts = new Map();
 // let pairingRequestSignature = null;
 
-function displaySensors(data) {
-
-    console.log(data);
+function displaySensors(data, read = false) {
 
     if (!data || !Array.isArray(data)) return;
 
@@ -86,6 +87,9 @@ function displaySensors(data) {
 //         emptyState.textContent = "No sensors are configured on this hub.";
 //         sensorGroups.append(emptyState);
 //     }
+
+    if (read) sendWSCommand(wsCom, "sensors.read", "start");
+
 }
 
 function createSensorCategory(category) {
@@ -118,6 +122,14 @@ function createSensorCard(id) {
     const sensorId = document.createElement("small");
     sensorId.className = "sensor-id";
 
+    const sensorRate = document.createElement("small");
+    sensorRate.className = "sensor-rate";
+
+    const divTitle = document.createElement("div");
+    divTitle.className = "sensor-title"
+
+    divTitle.append(sensorId, sensorRate);
+
     const value = document.createElement("strong");
     value.className = "sensor-value";
 
@@ -140,7 +152,7 @@ function createSensorCard(id) {
 
     flags.append(errorFlag, alarmFlag);
 
-    element.append(name, sensorId, value, unit, voltage, flags);
+    element.append(name, divTitle, value, unit, voltage, flags);
 
     return { element };
 }
@@ -178,6 +190,29 @@ function updateSensorCard(card, sensor, unit) {
     element.querySelector(".sensor-error").hidden = true;
     element.querySelector(".sensor-alarm").hidden = true;
 
+}
+
+function updateSensorsValue(data) {
+    
+    if (!data || typeof data !== "object") return;
+
+    const setText = (element, selector, text) => {
+        const target = element.querySelector(selector);
+        if (target.textContent !== text) target.textContent = text;
+    };
+
+    for (const [sensorId, sensorData] of Object.entries(data)) {
+        
+        let card = sensorCards.get(sensorId);
+        if (card) {
+
+            setText(card.element, ".sensor-value", sensorData.value);
+            setText(card.element, ".sensor-rate", sensorData.srate + " reads/s");
+
+        }
+
+    }
+    
 }
 
 // function displayDevices(devices) {
@@ -508,7 +543,7 @@ async function initialize() {
 //     connectionStatus.classList.toggle("offline", status !== "Connected");
 // });
 
-    connectWebSocket(status => {
+    wsCom = connectWebSocket(status => {
         connectionStatus.textContent = status;
         connectionStatus.classList.toggle("online", status === "Connected");
         connectionStatus.classList.toggle("offline", status !== "Connected");
@@ -529,7 +564,7 @@ function connectWebSocket(onStatus) {
 
     socket.addEventListener("open", () => {
         onStatus?.("Connected");
-        socket.send(JSON.stringify({ 'type': 'getsensors', 'data': null }));
+        socket.send(JSON.stringify({ 'type': 'sensors.get', 'data': null }));
     });
 
     socket.addEventListener("message", event => {
@@ -546,7 +581,11 @@ function connectWebSocket(onStatus) {
         switch(message.type) {
 
             case "sensors.list":
-                displaySensors(message.data);
+                displaySensors(message.data, true);
+                break;
+            
+            case "sensors.value":
+                updateSensorsValue(message.data);
                 break;
 
         }

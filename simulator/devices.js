@@ -1,14 +1,57 @@
-// const crypto = require("crypto");
-// const fs = require("fs");
-// const path = require("path");
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
-// const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
-// class DeviceSimulator {
-//     constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
+class DeviceSimulator {
+
+    constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
+
+        this.devices = new Map();
+
 //         this.storePath = storePath;
 //         this.devices = this.load();
-//     }
+    }
+
+    createDeviceObject(token) {
+
+        return {
+            token: token,
+            isWebAdmin: false,
+            listenSensors: false
+        };
+
+    }
+
+    unregister(token) {
+        if (!token) return;
+        this.devices.delete(token);
+    }
+
+    registerWebAdmin(token) {
+        if (!token) return;
+        const webAdmin = this.createDeviceObject(token);
+        webAdmin.isWebAdmin = true;
+        this.devices.set(token, webAdmin);
+    }
+
+    getDevice(token) {
+        return this.devices.get(token) ?? null;
+    }
+
+    isWebAdmin(token) {
+        if (!this.devices.has(token)) return false;
+        return this.devices.get(token).isWebAdmin;
+    }
+
+    startListenSensors(token) {
+        if (this.devices.has(token)) this.devices.get(token).listenSensors = true;
+    }
+
+    stopListenSensors(token) {
+        if (this.devices.has(token)) this.devices.get(token).listenSensors = false;
+    }
 
 //     load() {
 //         try {
@@ -164,6 +207,7 @@
 
 //         return this.reject(device.mac);
 //     }
-// }
 
-// module.exports = DeviceSimulator;
+}
+
+module.exports = DeviceSimulator;

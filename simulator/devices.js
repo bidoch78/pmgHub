@@ -27,6 +27,7 @@ class DeviceSimulator {
 
     unregister(token) {
         if (!token) return;
+        this.stopListenSensors();
         this.devices.delete(token);
     }
 

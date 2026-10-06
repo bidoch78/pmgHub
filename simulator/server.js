@@ -638,7 +638,7 @@ wss.on("connection", (ws, req) => {
                 ws.send(JSON.stringify({ type: "sensors.list", "data": sensors.getSensors() }));
                 break;
             case "sensors.read":
-                devices.startListenSensors(ws._auth.token);
+                devices.startListenSensors(ws._auth.token, sensors.getSensors());
                 break;
         }
         
@@ -815,9 +815,10 @@ setInterval(() => {
 
             if (client._auth && client._auth.token) {
                 if (devices.isWebAdmin(client._auth.token)) {
-                    //Now we need to check with devices object which sensors can be sent based on rate defined and last sent
+                    //Now we need to check with devices object which sensors can be sent based and check if value has changed
                     //So we avoid to resend everything
-                    client.send(JSON.stringify({ type: "sensors.value", data: Object.fromEntries(sensors.getValues()) } ));
+                    const dtSensor = devices.sensorsValueToSend(client._auth.token, sensors.getValues())
+                    if (dtSensor.size) client.send(JSON.stringify({ type: "sensors.value", data: Object.fromEntries(dtSensor) } ));
                 }
             }
    
@@ -833,7 +834,7 @@ setInterval(() => {
 
     //config.websocketIntervalMs
 
-}, 500);
+}, 100);
 
 // -------------------------------------------------
 

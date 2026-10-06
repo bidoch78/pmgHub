@@ -9,6 +9,7 @@ class DeviceSimulator {
     constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
         this.devices = new Map();
+        this.sensorsDataByDevice = new Map();
 
 //         this.storePath = storePath;
 //         this.devices = this.load();
@@ -45,12 +46,45 @@ class DeviceSimulator {
         return this.devices.get(token).isWebAdmin;
     }
 
-    startListenSensors(token) {
-        if (this.devices.has(token)) this.devices.get(token).listenSensors = true;
+    startListenSensors(token, sensors) {
+        if (!this.devices.has(token)) return;
+
+        const sensorsData = new Map();
+        for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
+        this.sensorsDataByDevice.set(token, sensorsData);
+     
+        this.devices.get(token).listenSensors = true;
     }
 
     stopListenSensors(token) {
-        if (this.devices.has(token)) this.devices.get(token).listenSensors = false;
+        if (!this.devices.has(token)) return;
+        this.devices.get(token).listenSensors = false;
+        this.sensorsDataByDevice.delete(token);
+    }
+
+    sensorsValueToSend(token, sensorValues) {
+
+        const now = Date.now();
+        const sensorsToSend = new Map();
+
+        const sensorsData = this.sensorsDataByDevice.get(token);
+        if (sensorsData) {
+            
+            for (const [id, data] of sensorValues) {
+
+                if (!sensorsData.has(id)) continue;
+
+                const sensorData = sensorsData.get(id);
+                if (!sensorData.lastValue || sensorData.lastValue != data.value) {
+                    sensorData.lastValue = data.value;
+                    sensorsToSend.set(id, data);
+                }
+
+            }
+
+        }
+
+        return sensorsToSend;
     }
 
 //     load() {

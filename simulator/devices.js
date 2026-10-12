@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { isAuthenticated } = require("./auth");
+const { domainToASCII } = require("url");
 
 const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
@@ -10,7 +11,6 @@ class Devices {
     constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
         this.devices = new Map();
-        this.sensorsDataByDevice = new Map();
 
 //         this.storePath = storePath;
 //         this.devices = this.load();
@@ -22,7 +22,7 @@ class Devices {
         ).join(':');
     }
 
-    createDeviceObject(token) {
+    createDeviceObject(token, services) {
 
         return {
             uID: crypto.randomUUID(),
@@ -31,7 +31,23 @@ class Devices {
             listenSensors: false,
             isConnected: true,
             initialized: false,
-            MAC: Devices.generateMacAddress()
+            services: services,
+            MAC: Devices.generateMacAddress(),
+            sensors: null,
+            startListenSensors() {
+                const sensors = this.sensorsUsed();
+                const sensorsData = new Map();
+                for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
+                this.sensors = sensorsData;
+                this.listenSensors = true;
+            },
+            stopListenSensors() {
+                this.sensors = null;
+                this.listenSensors = false;
+            },
+            sensorsUsed() {
+                return this.services.getSensors().get();
+            }
         };
 
     }
@@ -42,9 +58,9 @@ class Devices {
         this.devices.delete(token);
     }
 
-    registerWebAdmin(token) {
+    registerWebAdmin(token, services) {
         if (!token) return;
-        const webAdmin = this.createDeviceObject(token);
+        const webAdmin = this.createDeviceObject(token, services);
         webAdmin.isWebAdmin = true;
         webAdmin.isConnected = true;
         webAdmin.initialized = true;
@@ -52,9 +68,9 @@ class Devices {
         return webAdmin;
     }
 
-    registerDevice() {
+    registerDevice(services) {
         //Here generate a default token (will be changed later during connection/apairing)
-        const device = this.createDeviceObject(crypto.randomBytes(32).toString("hex"));
+        const device = this.createDeviceObject(crypto.randomBytes(32).toString("hex"), services);
         this.devices.set(device.token, device);
         return device;
     }
@@ -68,44 +84,40 @@ class Devices {
         return this.devices.get(token).isWebAdmin;
     }
 
-    startListenSensors(token, sensors) {
-        if (!this.devices.has(token)) return;
-
-        const sensorsData = new Map();
-        for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
-        this.sensorsDataByDevice.set(token, sensorsData);
-     
-        this.devices.get(token).listenSensors = true;
-    }
-
-    stopListenSensors(token) {
-        if (!this.devices.has(token)) return;
-        this.devices.get(token).listenSensors = false;
-        this.sensorsDataByDevice.delete(token);
-    }
-
     sensorsValueToSend(token, sensorValues) {
 
+        if (!this.devices.has(token)) return;
+
         const sensorsToSend = new Map();
+        const device = this.devices.get(token);
 
-        const sensorsData = this.sensorsDataByDevice.get(token);
-        if (sensorsData) {
+        if (!device.sensors) return sensorsToSend;
             
-            for (const [id, data] of sensorValues) {
+        for (const [id, data] of sensorValues) {
 
-                if (!sensorsData.has(id)) continue;
+            if (!device.sensors.has(id)) continue;
 
-                const sensorData = sensorsData.get(id);
-                if (!sensorData.lastValue || sensorData.lastValue != data.value) {
-                    sensorData.lastValue = data.value;
-                    sensorsToSend.set(id, data);
-                }
-
+            const sensorData = device.sensors.get(id);
+            if (!sensorData.lastValue || sensorData.lastValue != data.value) {
+                sensorData.lastValue = data.value;
+                sensorsToSend.set(id, data);
             }
 
         }
 
         return sensorsToSend;
+    }
+
+    getConnected() {
+
+        const ds = [];
+
+        for (const [id, data] of this.devices) {
+            if (data.isConnected) ds.push(data);
+        }
+        
+        return ds;
+
     }
 
 //     load() {
@@ -158,9 +170,7 @@ class Devices {
 //         return Boolean(device && device.paired && device.token);
 //     }
 
-//     getAll() {
-//         return this.devices.filter(device => device.paired).map(device => this.toPublic(device));
-//     }
+
 
 //     getPending() {
 //         return this.devices.filter(device => !device.paired).map(device => this.toPublic(device));

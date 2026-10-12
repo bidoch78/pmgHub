@@ -145,19 +145,25 @@ class WSClientSessionManager {
 
     getById(clientUID) { return this.cSockets.get(clientUID); }
 
-    // sendToDevice(deviceId, message) {
+    broadcastToWebAdmin(message) {
+        
+        for (const cSocketData of this.cSockets.values()) {
+            if (cSocketData.client.device.isWebAdmin && cSocketData.client.isConnected()) {
+                cSocketData.client.ws.send(message);
+            }
+        }
 
-        // for (const session of this.sessions.values()) {
+    }
 
-        //     if (
-        //         session.deviceId === deviceId &&
-        //         session.authenticated
-        //     ) {
-        //         session.send(message);
-        //     }
-        // }
+    sendToDevice(clientUID, message) {
 
-    // }
+        for (const cSocketData of this.cSockets.values()) {
+            if (cSocketData.client.getId() == clientUID && cSocketData.client.isConnected()) {
+                cSocketData.client.ws.send(message);
+            }
+        }
+
+    }
 
     countSessions() { return this.cSockets.size; }
 

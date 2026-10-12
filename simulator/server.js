@@ -5,10 +5,8 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 
 const config = require("./config");
-
+const Services = require("./services");
 const SessionManager = require("./sessions");
-const Sensors = require("./sensors");
-const Devices = require("./devices");
 
 const WSClientSession = require("./ws_clientsession");
 const WSClientSessionManager = require("./ws_clientsessionmanager")
@@ -27,17 +25,15 @@ const {
     getSessionTypeAuthenticated
 } = require("./auth");
 
-const sessions = new SessionManager(config.auth.sessionTimeoutMs);
-const sensors = new Sensors();
-const devices = new Devices();
+const services = new Services();
 const csManager = new WSClientSessionManager();
 
 // const pairedDeviceSockets = new Map();
-const pendingDeviceSockets = new Map();
 // const pendingPairingCodes = new Map();
 // const pendingPairingAttempts = new Map();
 const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
-const pairingWindowMs = Number(process.env.PAIRING_WINDOW_MS || 60000);
+
+//const pendingDeviceSockets = new Map();
 let pairingWindowExpireAt = null;
 let pairingWindowRemainingSent = null;
 
@@ -183,7 +179,6 @@ const server = http.createServer(async (req, res) => {
     // ---------- STATIC ASSETS ----------
 
     console.log(url.href);
-    //console.log(url);
 
     const webFile = url.pathname.slice(1);
 
@@ -193,7 +188,7 @@ const server = http.createServer(async (req, res) => {
         return;        
     }
 
-    const isAuth = isAuthenticated(req, sessions);
+    const isAuth = isAuthenticated(req, services.getSessions());
 
     // ----------  API PUBLIC ROUTES ----------
     if (url.pathname.startsWith("/api/")) {
@@ -209,7 +204,7 @@ const server = http.createServer(async (req, res) => {
             
             const token = getSessionToken(req);
 
-            if (token) sessions.remove(token);
+            if (token) services.getSessions().remove(token);
 
             clearSessionCookie(res);
             sendJson(res, 200, { ok: true });
@@ -269,7 +264,7 @@ const server = http.createServer(async (req, res) => {
                         return;
                     }
 
-                    const token = sessions.create(SessionManager.SESSION_WEBADMIN);
+                    const token = services.getSessions().create(SessionManager.SESSION_WEBADMIN);
 
                     if (!token) {
                         sendJson(res, 503, { error: "MAX_SESSIONS_REACHED" });
@@ -537,34 +532,34 @@ const server = http.createServer(async (req, res) => {
 // Pairing
 // -------------------------------------------------
 
-const sendPairingRequest = (socket) => {
+// const sendPairingRequest = (socket) => {
 
-    if (!socket || !(socket.readyState === WebSocket.OPEN)) return;
+//     if (!socket || !(socket.readyState === WebSocket.OPEN)) return;
 
-    const messageData = [];
-    for (const [mac, data] of pendingDeviceSockets) {
-        messageData.push({ 'mac': mac, 'pairingCode': data.pairingCode });
-    }
+//     const messageData = [];
+//     for (const [mac, data] of pendingDeviceSockets) {
+//         messageData.push({ 'mac': mac, 'pairingCode': data.pairingCode });
+//     }
 
-    socket.send(JSON.stringify({ type: "pairing.requests", "data": messageData }));
+//     socket.send(JSON.stringify({ type: "pairing.requests", "data": messageData }));
 
-};
+// };
 
-const getWebAdminSockets = () => {
+// const getWebAdminSockets = () => {
 
-    const sockets = [];
+//     const sockets = [];
 
-    for (const client of wss.clients) {
-        if (client.readyState === 1) {
-            if (client._auth && client._auth.token) {
-                if (devices.isWebAdmin(client._auth.token)) sockets.push(client);
-            }
-        }
-    }
+//     for (const client of wss.clients) {
+//         if (client.readyState === 1) {
+//             if (client._auth && client._auth.token) {
+//                 if (devices.isWebAdmin(client._auth.token)) sockets.push(client);
+//             }
+//         }
+//     }
 
-    return sockets;
+//     return sockets;
 
-};
+// };
 
 // -------------------------------------------------
 // WebSocket /ws
@@ -593,7 +588,7 @@ server.on("upgrade", (req, socket, head) => {
     }
 
     // For web admin, connection is accepted if authentification is done
-    if (!getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
+    if (!getSessionTypeAuthenticated(req, services.getSessions()) === SessionManager.SESSION_WEBADMIN) {
         console.log("WSS Upgrade: Unknown client");
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
@@ -622,9 +617,9 @@ wss.on("connection", (ws, req) => {
 
     if (url.pathname === "/ws/admin") { 
         // WebAdmin
-        if (isAuthenticated(req, sessions) && getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
+        if (isAuthenticated(req, services.getSessions()) && getSessionTypeAuthenticated(req, services.getSessions()) === SessionManager.SESSION_WEBADMIN) {
             const sessionToken = getSessionToken(req);
-            const webAdminDevice = devices.registerWebAdmin(sessionToken);
+            const webAdminDevice = services.getDevices().registerWebAdmin(sessionToken, services);
             let clientMgr = new WSClientSession(webAdminDevice, ws);
             csManager.add(clientMgr);
         }
@@ -637,7 +632,7 @@ wss.on("connection", (ws, req) => {
     // For devices, connection is accepted directly 
     if (url.pathname === "/ws/device") {
         // Device
-        const webDevice = devices.registerDevice();
+        const webDevice = services.getDevices().registerDevice(services);
         let clientMgr = new WSClientSession(webDevice, ws);
         csManager.add(clientMgr);
         return;
@@ -650,71 +645,8 @@ wss.on("connection", (ws, req) => {
 
 // wss.on("connection", (ws, req) => {
 
-//     console.log("WS Connection");
-//     console.log("Cookie: " + req.headers.cookie);
-
-//     ws._auth = { 'token': getSessionToken(req) };
-
-//      //Create webadmin devive
-//     if (getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN) {
-//         devices.registerWebAdmin(ws._auth.token);
-//     }
-
-//     ws.on("message", rawMessage => {
-
-//         let message;
-//         try {
-//             message = JSON.parse(rawMessage.toString());
-//         } catch {
-//             ws.close(4002, "Invalid JSON message");
-//             return;
-//         }
-
-//         console.log("WS Message:" + message.type + ", data:");
-//         console.log(message.data);
-
-//         if (!message.type) {
-//             ws.close(4003, "Invalid message type");
-//             return;
-//         }
-        
-//         const isAdmin = getSessionTypeAuthenticated(req, sessions) === SessionManager.SESSION_WEBADMIN;
-//         let boolInvalidCommand = false;
-
 //         switch(message.type) {
-//             case "webadmin.init":
 
-//                 if (isAdmin) {
-                    
-//                     const initData = { 'init': true, 'sensors': sensors.getSensors() };
-//                     if (pendingDeviceSockets.size) {
-//                         initData.pairingrequests = [];
-//                         for (const [mac, data] of pendingDeviceSockets) {
-//                             initData.pairingrequests.push({ 'mac': mac, 'pairingCode': data.pairingCode });
-//                         }
-//                     }
-
-//                     // initData.pairingrequests = [];
-//                     // initData.pairingrequests.push({ 'mac': "02:4A:7D:91:B3:E8", pairingCode: 12342354 });
-//                     // initData.pairingrequests.push({ 'mac': "02:C1:56:AF:28:9D", pairingCode: 77778888 });
-
-//                     ws.send(JSON.stringify({ type: "initialize", data: initData }));
-//                     return;
-
-//                 }
-//                 else {
-//                     boolInvalidCommand = true;
-//                 }
-
-//             case "sensors.get":
-
-//                 ws.send(JSON.stringify({ type: "sensors.list", "data": sensors.getSensors() }));
-//                 break;
-
-//             case "sensors.read":
-
-//                 devices.startListenSensors(ws._auth.token, sensors.getSensors());
-//                 break;
 
 //             case "device.connect":
 
@@ -946,17 +878,27 @@ wss.on("connection", (ws, req) => {
 //     });
 // });
 
+let pairingOpen = false;
+
 // Generate dummy data sensors (arduino loop)
 setInterval(() => {
 
-    // const execNow = Date.now();
+    const sensors = services.getSensors();
+    const devices = services.getDevices();
 
-    // sensors.update();
+    sensors.update();
     
     // //Clean sessions every x Ms // If true check device & clientSessionManager
     // if (sessions.optimizeClean()) {
 
     // }
+
+    const sensorsValue = sensors.getValues();
+
+    for(const device of devices.getConnected()) {
+        const dtSensor = devices.sensorsValueToSend(device.token, sensorsValue);
+        //if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
+    }
 
     // //console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
     // let socketWebAdmin = null;
@@ -977,21 +919,25 @@ setInterval(() => {
     //     }
     // }
 
-    // //Pairing
-    // if (pairingWindowExpireAt) {
+    //Pairing
+    const pairing = services.getPairing();
+    if (pairing.windowIsOpened()) {
 
-    //     const remainingTime = Math.max(0, Math.floor((pairingWindowExpireAt - execNow) / 1000));
-    //     if (pairingWindowRemainingSent === null || pairingWindowRemainingSent != remainingTime) {
-    //         pairingWindowRemainingSent = remainingTime;
-    //         console.log("pairing.remainingms", pairingWindowRemainingSent * 1000);
-    //         if (!socketWebAdmin) console.log("webadmin lost");
-    //         if (socketWebAdmin) socketWebAdmin.send(JSON.stringify({ type: "pairing.remainingms", data: pairingWindowRemainingSent * 1000 } ));
-    //     }
-    //     if (!remainingTime) {
-    //         pairingWindowExpireAt = null; pairingWindowRemainingSent = null;
-    //     }
+        pairingOpen = true;
+        const remainingTimeMs = pairing.getNextRemainingTimeMs();
+        if (remainingTimeMs) {
+            csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: remainingTimeMs }));
+        }
 
-    // }
+    }
+    else {
+
+        if (pairingOpen) {
+            pairingOpen = false;
+            csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: 0 }));
+        }
+        
+    }
 
 }, 100);
 

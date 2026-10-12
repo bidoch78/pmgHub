@@ -76,7 +76,7 @@ class Sensors {
 
     }
 
-    getSensors(ids = null) {
+    get(ids = null) {
 
         const retSensors = [];
         for (const item of this.sensors) {

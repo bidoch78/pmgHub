@@ -3,6 +3,8 @@
  * SessionManager
  * YBI 01/10/2026
  * 
+ * Finally SessionManager is used only by WebAdmin
+ *
  */
 
 const crypto = require("crypto");
@@ -13,8 +15,7 @@ class SessionManager {
     static SESSION_DEVICE = 'device';
 
     /* default max 10 connections & timeout after 1 hour of inactivity */
-    constructor(maxSessions = 10, timeoutMs = 60 * 60 * 1000) {
-        this.maxSessions = maxSessions;
+    constructor(timeoutMs = 60 * 60 * 1000) {
         this.timeoutMs = timeoutMs;
         this.sessions = new Map();
     }
@@ -30,17 +31,18 @@ class SessionManager {
 
     }
 
+    //execute every x Ms
+    optimizeClean() {
+        return false;
+    }
+
     create(session_type) {
 
         this.cleanup();
 
-        if (this.sessions.size >= this.maxSessions) return null;
-
         const token = crypto.randomBytes(32).toString("hex");
 
         this.sessions.set(token, { lastActivity: Date.now(), type: (session_type === SessionManager.SESSION_WEBADMIN ? SessionManager.SESSION_WEBADMIN : SessionManager.SESSION_DEVICE ) });
-
-        console.log("SESSION CREATE SESSION - Nb of Sessions " + this.sessions.size);
 
         return token;
 
@@ -77,7 +79,7 @@ class SessionManager {
 
     remove(token) { return this.sessions.delete(token); }
 
-    getActiveSessions() {
+    countActiveSessions() {
         this.cleanup();
         return this.sessions.size;
     }

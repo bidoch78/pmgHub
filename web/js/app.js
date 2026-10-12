@@ -8,7 +8,7 @@ import {
         logout,
 //     rejectDevice,
 //     rejectPairingRequest,
-//     setPairingWindow,
+//        setPairingWindow,
 //     updateDeviceName,
         sendWSCommand
 } from "./api.js";
@@ -17,10 +17,10 @@ import {
 // const sensorGroups = document.getElementById("sensorGroups");
 // const deviceList = document.getElementById("deviceList");
 // const deviceCount = document.getElementById("deviceCount");
-// const pairingList = document.getElementById("pairingList");
-// const pairingCount = document.getElementById("pairingCount");
-// const pairingWindowStatus = document.getElementById("pairingWindowStatus");
-// const pairingWindowButton = document.getElementById("pairingWindowButton");
+const pairingList = document.getElementById("pairingList");
+const pairingCount = document.getElementById("pairingCount");
+const pairingWindowStatus = document.getElementById("pairingWindowStatus");
+const pairingWindowButton = document.getElementById("pairingWindowButton");
 
 let wsCom = null;
 
@@ -69,24 +69,17 @@ function displaySensors(data, read = false) {
 
     }
 
-//     for (const [id, card] of sensorCards) {
-//         if (!receivedIds.has(id)) {
-//             card.element.remove();
-//             sensorCards.delete(id);
-//         }
-//     }
-
 //     for (const [category, group] of sensorCategoryGroups) {
 //         group.element.hidden = !activeCategories.has(category) || group.grid.childElementCount === 0;
 //     }
 
-//     sensorGroups.querySelector(".empty-state")?.remove();
-//     if (receivedIds.size === 0 && !sensorGroups.querySelector(".empty-state")) {
-//         const emptyState = document.createElement("p");
-//         emptyState.className = "empty-state";
-//         emptyState.textContent = "No sensors are configured on this hub.";
-//         sensorGroups.append(emptyState);
-//     }
+    sensorGroups.querySelector(".empty-state")?.remove();
+    if (receivedIds.size === 0 && !sensorGroups.querySelector(".empty-state")) {
+        const emptyState = document.createElement("p");
+        emptyState.className = "empty-state";
+        emptyState.textContent = "No sensors are configured on this hub.";
+        sensorGroups.append(emptyState);
+    }
 
     if (read) sendWSCommand(wsCom, "sensors.read", "start");
 
@@ -169,14 +162,8 @@ function updateSensorCard(card, sensor, unit) {
     setText(".sensor-id", sensor.id);
 
     setText(".sensor-value", "--");
-
-//     setText(".sensor-value", typeof sensor.value === "number" && Number.isFinite(sensor.value) ? String(sensor.value) : "--");
-
     setText(".sensor-unit", typeof unit.name === "string" ? unit.name : "");
-
-//     setText(".sensor-voltage", typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
-//         ? `${sensor.voltage.toFixed(3)} V`
-//         : "Voltage unavailable");
+    setText(".sensor-voltage", "--V");
 
 //     const hasError = sensor.error === true;
 //     const hasAlarm = sensor.alarm === true;
@@ -208,6 +195,7 @@ function updateSensorsValue(data) {
 
             setText(card.element, ".sensor-value", sensorData.value);
             setText(card.element, ".sensor-rate", sensorData.srate + " reads/s");
+            setText(card.element, ".sensor-voltage", sensorData.voltage + "V");
 
         }
 
@@ -370,10 +358,12 @@ function updateSensorsValue(data) {
 //     displayDevices(await getDevices());
 // }
 
-// async function refreshPairingRequests() {
+function refreshPairingRequests(pairingRequests = []) {
+
 //     const requests = await getPairingRequests();
 //     const signature = JSON.stringify(requests.map(device => [device.mac, device.name]));
-//     pairingCount.textContent = `${requests.length} pending ${requests.length === 1 ? "request" : "requests"}`;
+
+    pairingCount.textContent = `${pairingRequests.length} pending ${pairingRequests.length === 1 ? "request" : "requests"}`;
 
 //     if (signature === pairingRequestSignature) return;
 //     pairingRequestSignature = signature;
@@ -388,127 +378,141 @@ function updateSensorsValue(data) {
 //         }
 //     }
 
-//     if (requests.length === 0) {
-//         if (!pairingList.querySelector(".empty-state")) {
-//             const emptyState = document.createElement("p");
-//             emptyState.className = "empty-state";
-//             emptyState.textContent = "No devices are waiting for approval.";
-//             pairingList.append(emptyState);
-//         }
-//         return;
-//     }
+    if (pairingRequests.length === 0) {
+        if (!pairingList.querySelector(".empty-state")) {
+            const emptyState = document.createElement("p");
+            emptyState.className = "empty-state";
+            emptyState.textContent = "No devices are waiting for approval.";
+            pairingList.append(emptyState);
+        }
+        return;
+    }
 
-//     pairingList.querySelector(".empty-state")?.remove();
+    pairingList.querySelector(".empty-state")?.remove();
 
-//     for (const device of requests) {
+    for (const device of pairingRequests) {
+
 //         if ([...pairingList.querySelectorAll(".pairing-card[data-mac]")]
 //             .some(card => card.dataset.mac === device.mac)) continue;
-//         const card = document.createElement("article");
-//         card.className = "device-card pairing-card";
-//         card.dataset.mac = device.mac;
 
-//         const identity = document.createElement("div");
-//         const name = document.createElement("span");
-//         name.className = "device-name";
-//         name.textContent = device.name || "Unnamed device";
-//         const mac = document.createElement("span");
-//         mac.className = "device-mac";
-//         mac.textContent = device.mac;
-//         identity.append(name, mac);
+        const card = document.createElement("article");
+        card.className = "device-card pairing-card";
+        card.dataset.mac = device.mac;
 
-//         const status = document.createElement("span");
-//         status.className = "device-status pairing";
-//         status.textContent = "Awaiting approval";
+        const identity = document.createElement("div");
+        const name = document.createElement("span");
+        name.className = "device-name";
+        name.textContent = device.name || "Unnamed device";
+        const mac = document.createElement("span");
+        mac.className = "device-mac";
+        mac.textContent = device.mac;
+        identity.append(name, mac);
 
-//         const codeForm = document.createElement("form");
-//         codeForm.className = "pairing-code-form";
-//         const codeLabel = document.createElement("label");
-//         codeLabel.textContent = "Code shown on device";
-//         const codeInput = document.createElement("input");
-//         codeInput.type = "text";
-//         codeInput.inputMode = "numeric";
-//         codeInput.maxLength = 8;
-//         codeInput.pattern = "[0-9]{8}";
-//         codeInput.className = "pairing-code-input";
-//         codeInput.placeholder = "8-digit code";
-//         codeInput.value = pairingCodeDrafts.get(device.mac) || "";
-//         codeInput.autocomplete = "one-time-code";
-//         codeInput.setAttribute("aria-label", `Pairing code displayed by device ${device.mac}`);
-//         codeInput.addEventListener("input", () => pairingCodeDrafts.set(device.mac, codeInput.value));
-//         codeForm.append(codeLabel, codeInput);
+        const status = document.createElement("span");
+        status.className = "device-status pairing";
+        status.textContent = "Awaiting approval";
 
-//         const approveButton = document.createElement("button");
-//         approveButton.type = "submit";
-//         approveButton.textContent = "Approve";
-//         codeForm.append(approveButton);
-//         const codeError = document.createElement("small");
-//         codeError.className = "pairing-code-error";
-//         codeError.setAttribute("role", "status");
-//         codeForm.append(codeError);
+        const codeForm = document.createElement("form");
+        codeForm.className = "pairing-code-form";
 
-//         codeForm.addEventListener("submit", async event => {
-//             event.preventDefault();
-//             const code = codeInput.value.trim();
-//             if (!/^\d{8}$/.test(code)) {
-//                 codeError.textContent = "Enter the 8-digit code shown by the device.";
-//                 return;
-//             }
+        const codeLabel = document.createElement("label");
+        codeLabel.textContent = "Code shown on device";
 
-//             codeError.textContent = "";
-//             approveButton.disabled = true;
-//             try {
-//                 await approveDevice(device.mac, code);
-//                 pairingCodeDrafts.delete(device.mac);
-//                 await Promise.all([refreshDevices(), refreshPairingRequests()]);
-//             } catch (error) {
-//                 console.error(error);
-//                 codeError.textContent = error.message;
-//                 approveButton.disabled = false;
-//             }
-//         });
+        const codeInput = document.createElement("input");
+        codeInput.type = "text";
+        codeInput.inputMode = "numeric";
+        codeInput.maxLength = 8;
+        codeInput.pattern = "[0-9]{8}";
+        codeInput.className = "pairing-code-input";
+        codeInput.placeholder = "8-digit code";
+        codeInput.value = ""; //pairingCodeDrafts.get(device.mac) || "";""
+        codeInput.autocomplete = "one-time-code";
+        codeInput.setAttribute("aria-label", `Pairing code displayed by device ${device.mac}`);
+        //codeInput.addEventListener("input", () => pairingCodeDrafts.set(device.mac, codeInput.value));
+        codeForm.append(codeLabel, codeInput);
 
-//         const rejectButton = document.createElement("button");
-//         rejectButton.type = "button";
-//         rejectButton.className = "reject-device-button";
-//         rejectButton.textContent = "Reject";
-//         rejectButton.addEventListener("click", async () => {
-//             rejectButton.disabled = true;
-//             try {
-//                 await rejectPairingRequest(device.mac);
-//                 await refreshPairingRequests();
-//             } catch (error) {
-//                 console.error(error);
-//                 rejectButton.textContent = "Retry rejection";
-//                 rejectButton.disabled = false;
-//             }
-//         });
-//         const actions = document.createElement("div");
-//         actions.className = "pairing-actions";
-//         actions.append(rejectButton);
+        const approveButton = document.createElement("button");
+        approveButton.type = "submit";
+        approveButton.textContent = "Approve";
+        codeForm.append(approveButton);
 
-//         card.append(identity, status, codeForm, actions);
-//         pairingList.append(card);
-//     }
-// }
+        const codeError = document.createElement("small");
+        codeError.className = "pairing-code-error";
+        codeError.setAttribute("role", "status");
+        codeForm.append(codeError);
 
-// async function refreshPairingWindow() {
-//     const windowStatus = await getPairingWindow();
-//     if (!windowStatus.open) {
-//         pairingWindowStatus.textContent = "Pairing mode is closed";
-//         pairingWindowStatus.classList.remove("pairing-window-open");
-//         pairingWindowButton.textContent = `Open pairing mode (${Math.ceil(windowStatus.durationMs / 1000)} sec)`;
-//         return;
-//     }
+        codeForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const code = codeInput.value.trim();
+            if (!/^\d{8}$/.test(code)) {
+                codeError.textContent = "Enter the 8-digit code shown by the device.";
+                return;
+            }
 
-//     const secondsRemaining = Math.max(0, Math.ceil((windowStatus.expiresAt - Date.now()) / 1000));
-//     pairingWindowStatus.textContent = `Pairing mode open · ${secondsRemaining}s remaining`;
-//     pairingWindowStatus.classList.add("pairing-window-open");
-//     pairingWindowButton.textContent = "Close pairing mode";
-// }
+    //             codeError.textContent = "";
+    //             approveButton.disabled = true;
+    //             try {
+    //                 await approveDevice(device.mac, code);
+    //                 pairingCodeDrafts.delete(device.mac);
+    //                 await Promise.all([refreshDevices(), refreshPairingRequests()]);
+    //             } catch (error) {
+    //                 console.error(error);
+    //                 codeError.textContent = error.message;
+    //                 approveButton.disabled = false;
+    //             }
+        });
+
+        const rejectButton = document.createElement("button");
+        rejectButton.type = "button";
+        rejectButton.className = "reject-device-button";
+        rejectButton.textContent = "Reject";
+        rejectButton.addEventListener("click", async () => {
+    //             rejectButton.disabled = true;
+    //             try {
+    //                 await rejectPairingRequest(device.mac);
+    //                 await refreshPairingRequests();
+    //             } catch (error) {
+    //                 console.error(error);
+    //                 rejectButton.textContent = "Retry rejection";
+    //                 rejectButton.disabled = false;
+    //             }
+        });
+
+        const actions = document.createElement("div");
+        actions.className = "pairing-actions";
+        actions.append(rejectButton);
+
+        card.append(identity, status, codeForm, actions);
+        pairingList.append(card);
+
+    }
+
+}
+
+function refreshPairingWindow(isopen = false, remaingMs = 60000) {
+
+    if (!remaingMs) isopen = false; 
+
+    if (!isopen) {
+        pairingWindowStatus.textContent = "Pairing mode is closed";
+        pairingWindowStatus.classList.remove("pairing-window-open");
+        pairingWindowButton.textContent = `Open pairing mode (${Math.ceil(remaingMs / 1000)} sec)`;
+        return;
+    }
+
+    const secondsRemaining = Math.max(0, Math.ceil((remaingMs / 1000)));
+    pairingWindowStatus.textContent = `Pairing mode open · ${secondsRemaining}s remaining`;
+    pairingWindowStatus.classList.add("pairing-window-open");
+    pairingWindowButton.textContent = "Close pairing mode";
+
+}
 
 async function initialize() {
 
     const status = await getAuthStatus();
+
+    refreshPairingRequests();
+    refreshPairingWindow();
 
 //     try {
 //         displaySensors(await getSensors());
@@ -537,12 +541,6 @@ async function initialize() {
 //         pairingWindowStatus.textContent = "Unable to check pairing mode";
 //     }
 
-// connectWebSocket(displaySensors, status => {
-//     connectionStatus.textContent = status;
-//     connectionStatus.classList.toggle("online", status === "Connected");
-//     connectionStatus.classList.toggle("offline", status !== "Connected");
-// });
-
     wsCom = connectWebSocket(status => {
         connectionStatus.textContent = status;
         connectionStatus.classList.toggle("online", status === "Connected");
@@ -560,11 +558,11 @@ async function initialize() {
 function connectWebSocket(onStatus) {
     
     const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${protocol}://${location.host}/ws`);
+    const socket = new WebSocket(`${protocol}://${location.host}/ws/admin`);
 
     socket.addEventListener("open", () => {
         onStatus?.("Connected");
-        socket.send(JSON.stringify({ 'type': 'sensors.get', 'data': null }));
+        socket.send(JSON.stringify({ 'type': 'webadmin.init', 'data': null }));
     });
 
     socket.addEventListener("message", event => {
@@ -580,12 +578,25 @@ function connectWebSocket(onStatus) {
 
         switch(message.type) {
 
+            case "initialize":
+                displaySensors(message.data.sensors, true);
+                refreshPairingRequests(message.data.pairingrequests);
+                break;
+
             case "sensors.list":
                 displaySensors(message.data, true);
                 break;
             
             case "sensors.value":
                 updateSensorsValue(message.data);
+                break;
+
+            case "pairing.requests":
+                refreshPairingRequests(message.data);
+                break;
+
+            case "pairing.remainingms":
+                refreshPairingWindow(true, message.data);
                 break;
 
         }
@@ -610,19 +621,19 @@ function connectWebSocket(onStatus) {
 
 }
 
-// pairingWindowButton.addEventListener("click", async () => {
-//     pairingWindowButton.disabled = true;
-//     try {
-//         const enabled = !pairingWindowStatus.classList.contains("pairing-window-open");
-//         await setPairingWindow(enabled);
-//         await refreshPairingWindow();
-//         await refreshPairingRequests();
-//     } catch (error) {
-//         pairingWindowStatus.textContent = error.message;
-//     } finally {
-//         pairingWindowButton.disabled = false;
-//     }
-// });
+pairingWindowButton.addEventListener("click", async () => {
+
+    pairingWindowButton.disabled = true;
+    try {
+        const enabled = !pairingWindowStatus.classList.contains("pairing-window-open");
+        sendWSCommand(wsCom, "pairing.window", enabled ? "start" : "stop");
+    } catch (error) {
+            pairingWindowStatus.textContent = error.message;
+    } finally {
+        pairingWindowButton.disabled = false;
+    }
+
+});
 
 document.getElementById("logoutButton").addEventListener("click", async () => {
     try {

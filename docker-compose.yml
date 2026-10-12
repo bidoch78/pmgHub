@@ -12,3 +12,14 @@ services:
       - ./data:/app/data
       - /app/simulator/node_modules
     restart: unless-stopped
+
+  pmgdevice-simulator:
+    build:
+      context: ./web-device
+      dockerfile: Dockerfile
+    container_name: pmgdevice-simulator
+    volumes:
+      - ./web-device/web:/usr/share/nginx/html/
+    ports:
+      - "3001:80"
+    restart: unless-stopped

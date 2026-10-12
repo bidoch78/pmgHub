@@ -14,7 +14,6 @@
             <span class="brand-mark">P</span>
             <span>pmg<span class="brand-accent">Device</span></span>
         </a>
-        <span class="simulator-label"><span class="pulse-dot"></span> DEVICE SIMULATOR</span>
     </header>
 
     <main>
@@ -25,6 +24,13 @@
                 <p class="hero-copy">Create virtual ESP32 devices, pair them with a pmgHub, and monitor their live connection.</p>
             </div>
             <div id="createDeviceControls" class="create-controls">
+                <label class="hub-url-label" for="manualMac">Prefilled</label>
+                <div>
+                    <button data-prefill="1" class="primary-button prefillmactoken" type="button">1</button>
+                    <button data-prefill="2" class="primary-button prefillmactoken" type="button">2</button>
+                    <button data-prefill="3" class="primary-button prefillmactoken" type="button">3</button>
+                    <button data-prefill="X" class="primary-button prefillmactoken" type="button">?</button>
+                </div>
                 <label class="hub-url-label" for="manualMac">MAC address (optional)</label>
                 <input id="manualMac" class="manual-mac-input" type="text" maxlength="17" placeholder="Auto-generate or enter XX:XX:XX:XX:XX:XX" autocomplete="off">
                 <label class="hub-url-label" for="manualToken">Pairing token (optional)</label>
@@ -40,6 +46,7 @@
             <div class="hub-details">
                 <h2 id="hubHeading">Hub connection</h2>
                 <p>Set the address of the pmgHub simulator to pair devices.</p>
+                <p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
             </div>
             <label class="hub-url-label" for="hubUrl">Hub URL</label>
             <input id="hubUrl" class="hub-url-input" type="url" placeholder="http://localhost:3000" autocomplete="url">
@@ -66,7 +73,6 @@
             <div id="sensorData" class="device-sensor-list" aria-live="polite"></div>
         </section>
 
-        <p id="appMessage" class="app-message" role="status" aria-live="polite"></p>
     </main>
 
     <template id="deviceTemplate">

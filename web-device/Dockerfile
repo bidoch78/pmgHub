@@ -1,14 +1,7 @@
-FROM node:22-alpine
+FROM nginx:latest
 
-WORKDIR /app
+COPY web/ /usr/share/nginx/html/
 
-COPY package*.json ./
-RUN npm install --omit=dev
+EXPOSE 80
 
-COPY server.js ./server.js
-COPY web ./web
-
-ENV PORT=3001
-EXPOSE 3001
-
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]

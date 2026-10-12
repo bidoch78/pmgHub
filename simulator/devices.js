@@ -1,10 +1,11 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { isAuthenticated } = require("./auth");
 
 const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
-class DeviceSimulator {
+class Devices {
 
     constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
@@ -15,12 +16,22 @@ class DeviceSimulator {
 //         this.devices = this.load();
     }
 
+    static generateMacAddress() {
+        return Array.from({ length: 6 }, () =>
+            Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+        ).join(':');
+    }
+
     createDeviceObject(token) {
 
         return {
+            uID: crypto.randomUUID(),
             token: token,
             isWebAdmin: false,
-            listenSensors: false
+            listenSensors: false,
+            isConnected: true,
+            initialized: false,
+            MAC: Devices.generateMacAddress()
         };
 
     }
@@ -35,7 +46,17 @@ class DeviceSimulator {
         if (!token) return;
         const webAdmin = this.createDeviceObject(token);
         webAdmin.isWebAdmin = true;
+        webAdmin.isConnected = true;
+        webAdmin.initialized = true;
         this.devices.set(token, webAdmin);
+        return webAdmin;
+    }
+
+    registerDevice() {
+        //Here generate a default token (will be changed later during connection/apairing)
+        const device = this.createDeviceObject(crypto.randomBytes(32).toString("hex"));
+        this.devices.set(device.token, device);
+        return device;
     }
 
     getDevice(token) {
@@ -65,7 +86,6 @@ class DeviceSimulator {
 
     sensorsValueToSend(token, sensorValues) {
 
-        const now = Date.now();
         const sensorsToSend = new Map();
 
         const sensorsData = this.sensorsDataByDevice.get(token);
@@ -245,4 +265,4 @@ class DeviceSimulator {
 
 }
 
-module.exports = DeviceSimulator;
+module.exports = Devices;

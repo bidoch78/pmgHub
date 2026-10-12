@@ -15,5 +15,8 @@ module.exports = {
     auth: {
         sessionTimeoutMs: 60 * 60 * 1000, // web interface timeout
         maxSessions: 10 // web interface + devices
-    }
+    },
+
+    DEBUG_HEARTBEAT: true
+
 };

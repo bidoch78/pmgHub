@@ -59,7 +59,7 @@ button:disabled { cursor: wait; opacity: .58; }
 }
 
 .brand-accent { color: var(--accent); }
-.simulator-label { color: #819099; font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+
 .pulse-dot, .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .pulse-dot { margin-right: 8px; box-shadow: 0 0 12px rgb(88 214 176 / 70%); }
 
@@ -145,7 +145,7 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 .connection-button { min-height: 34px; padding: 0 12px; border: 1px solid #354149; border-radius: 9px; background: transparent; color: #d4e0e4; font-size: 10px; font-weight: 700; }
 .connection-button.reconnect-button { border-color: rgb(88 214 176 / 40%); color: var(--accent); }
 .empty-state { grid-column: 1 / -1; padding: 36px 20px; border: 1px dashed #35434b; border-radius: 14px; color: var(--muted); text-align: center; font-size: 12px; }
-.app-message { min-height: 18px; margin: 18px 0 0; color: #f1bd6c; font-size: 11px; }
+#appMessage { min-height: 18px; margin: 2px 0 0; color: #f1bd6c; font-size: 14px; }
 
 @media (max-width: 720px) {
     main { padding-top: 43px; }
@@ -158,7 +158,6 @@ h1 { margin: 0; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; }
 }
 
 @media (max-width: 420px) {
-    .simulator-label { font-size: 8px; }
     .device-card-footer { align-items: start; flex-direction: column; }
     .device-actions { justify-content: start; width: 100%; }
 }

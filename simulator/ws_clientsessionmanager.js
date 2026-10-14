@@ -63,7 +63,7 @@ class WSClientSessionManager {
 
         client.ws.on('pong', cSocketData.heartbeat.onPong);
         client.ws.on('close', cSocketData.onClose);
-
+        
         this.cSockets.set(clientUID, cSocketData);
 
         console.log(`Client connected: ${clientUID}`);

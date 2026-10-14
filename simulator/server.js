@@ -9,7 +9,6 @@ const Services = require("./services");
 const SessionManager = require("./sessions");
 
 const WSClientSession = require("./ws_clientsession");
-const WSClientSessionManager = require("./ws_clientsessionmanager")
 
 const {
     isValidPassword,
@@ -26,12 +25,11 @@ const {
 } = require("./auth");
 
 const services = new Services();
-const csManager = new WSClientSessionManager();
+const csManager = services.getCSManager();
 
 // const pairedDeviceSockets = new Map();
 // const pendingPairingCodes = new Map();
 // const pendingPairingAttempts = new Map();
-const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
 //const pendingDeviceSockets = new Map();
 let pairingWindowExpireAt = null;
@@ -573,6 +571,11 @@ server.on("upgrade", (req, socket, head) => {
 
     console.log("WSS Upgrade: " + url);
 
+    if (csManager.countSessions() >= config.auth.maxSessions) {
+        ws.close(4010, "Maximum active sessions reached");
+        return;  
+    }
+
     if (!url.pathname.startsWith("/ws")) { 
         console.log("WSS Upgrade: unknown path");
         socket.destroy(); return; 
@@ -642,89 +645,6 @@ wss.on("connection", (ws, req) => {
     return;    
 
 });
-
-// wss.on("connection", (ws, req) => {
-
-//         switch(message.type) {
-
-
-//             case "device.connect":
-
-//                 ////////////////////////////////
-//                 //Check if token is available
-
-
-//                 // //Start pairing
-//                 // if (!pairingWindowExpireAt) {
-//                 //     console.log("pairing window - stop");
-//                 //     ws.send(JSON.stringify({ type: "pairing.rejected", data: "PAIRING_WINDOW_CLOSED" } ));
-//                 //     return;
-//                 // }
-
-//                 // if (pairingWindowExpireAt && message.data && message.data.pairingCode) {
-
-//                 //     if (typeof message.data.mac !== "string" || !macPattern.test(message.data.mac)) {
-//                 //         console.log("wrong mac address - reject");
-//                 //         ws.send(JSON.stringify({ type: "pairing.rejected", data: "MAC_ERROR" } ));
-//                 //         return;
-//                 //     }
-
-//                 //     console.log("pairing request accepted");
-
-//                 //     //save the pairing request
-//                 //     const mac = message.data.mac.toLowerCase();
-//                 //     pendingDeviceSockets.set(mac, { 'pairingCode': message.data.pairingCode, 'socket': ws });
-                    
-//                 //     //Sent pairing requests to webAdmin (resend all)
-//                 //     //const webAdminSockets = getWebAdminSockets();
-//                 //     //for (const sWA of webAdminSockets) sendPairingRequest(sWA);
-
-//                 //     //Sent pending to device
-//                 //     ws.send(JSON.stringify({ type: "pairing.pending", data: null } ));
-//                 //     return;
-
-//                 // }
-
-//                 console.log("pairing request rejected");
-//                 ws.send(JSON.stringify({ type: "pairing.rejected", data: "PAIRING_ERROR" } ));
-//                 break;
-
-//             case "pairing.window":
-
-//                 if (isAdmin) {
-//                     if (!pairingWindowExpireAt && message.data == "start") {
-//                         pairingWindowExpireAt = Date.now() + pairingWindowMs;
-//                         pairingWindowRemainingSent = null;
-//                     }
-//                     if (message.data == "stop") {
-//                         pairingWindowExpireAt = null; pairingWindowRemainingSent = null;
-//                         ws.send(JSON.stringify({ type: "pairing.remainingms", data: 0 } ));
-//                     }
-//                 }
-//                 else {
-//                     boolInvalidCommand = true;
-//                 }
-//                 break;
-//         }
-
-//         if (boolInvalidCommand) {
-//             ws.close(4004, "Invalid Command");
-//             return;            
-//         }
-        
-//     });
-
-//     ws.on("close", (code, reason) => {
-
-//         console.log("WS Close")
-//         if (ws._auth && ws._auth.token) devices.unregister(ws._auth.token);
-
-//     });
-
-// });
-
-
-
 
 
 
@@ -897,7 +817,7 @@ setInterval(() => {
 
     for(const device of devices.getConnected()) {
         const dtSensor = devices.sensorsValueToSend(device.token, sensorsValue);
-        //if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
+        if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
 
     // //console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
@@ -936,7 +856,7 @@ setInterval(() => {
             pairingOpen = false;
             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: 0 }));
         }
-        
+
     }
 
 }, 100);

@@ -45,6 +45,8 @@ class WSClientSession {
         }
 
         let boolInvalidCommand = false;
+        const pairing = this.device.services.getPairing();
+        const csManager = this.device.services.getCSManager();
 
         switch(message.type) {
 
@@ -83,8 +85,7 @@ class WSClientSession {
                 break;
 
             case "pairing.window":
-                
-                const pairing = this.device.services.getPairing();
+
                 if (this.device.isWebAdmin) {
                     
                     if (!pairing.windowIsOpened() && message.data == "start") {
@@ -101,7 +102,40 @@ class WSClientSession {
                     boolInvalidCommand = true;
                 }
                 break;
-            
+
+            case "device.connect":
+
+                const checkPairing = pairing.checkDevicePairingConnect(message.data);    
+                if (checkPairing !== true) {
+                    this.ws.send(JSON.stringify({ type: "pairing.rejected", "data": checkPairing }));
+                    return;
+                }
+                
+                console.log("PAIRING - Request accepted")
+
+                //save the pairing request
+                const mac = message.data.mac.toLowerCase();
+
+                pairing.addPairingDevice(this.device, message.data);
+
+                // Return to all WebAdmin the list of pairing devices
+                csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }))
+
+//                 //     pendingDeviceSockets.set(mac, { 'pairingCode': message.data.pairingCode, 'socket': ws });
+                    
+//                 //     //Sent pairing requests to webAdmin (resend all)
+//                 //     //const webAdminSockets = getWebAdminSockets();
+//                 //     //for (const sWA of webAdminSockets) sendPairingRequest(sWA);
+
+//                 //     //Sent pending to device
+//                 //     ws.send(JSON.stringify({ type: "pairing.pending", data: null } ));
+//                 //     return;
+                
+//                 // }
+
+                this.ws.send(JSON.stringify({ type: "pairing.pending", "data": null }));
+
+                break;
 
         }
 

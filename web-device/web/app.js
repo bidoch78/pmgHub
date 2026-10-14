@@ -267,16 +267,16 @@ function connectDevice(device) {
 
     data.socket = new WebSocket(createHubWebSocketUrl() + '/ws/device');
 
-    // data.socket.addEventListener("open", () => {
-    //     data.socket.send(JSON.stringify({
-    //         type: "device.connect",
-    //         // data: { 
-    //         //     mac: device.mac,
-    //         //     token: device.token || "",
-    //         //     pairingCode: device.pairingCode
-    //         // }
-    //     }));
-    // });
+    data.socket.addEventListener("open", () => {
+        data.socket.send(JSON.stringify({
+            type: "device.connect",
+            data: { 
+                mac: device.mac,
+                token: device.token || "",
+                pairingCode: device.pairingCode
+            }
+        }));
+    });
 
     data.socket.addEventListener("message", event => {
 
@@ -290,7 +290,7 @@ function connectDevice(device) {
         if (message.type === "pairing.pending") {
             const deviceCard = data.device.getCard();
             deviceCard.querySelector(".token-input").value = "";
-            deviceCard.querySelector(".pair-state").textContent = "No valid token · awaiting hub approval";
+            deviceCard.querySelector(".pair-state").textContent = "No valid token - awaiting hub approval";
             setConnectionState(data.device, "waiting");
             setMessage("Pairing request sent. Approve this device in the pmgHub dashboard.");
             return;
@@ -299,7 +299,7 @@ function connectDevice(device) {
 //         if (message.type === "pairing.approved" && message.mac?.toLowerCase() === device.mac.toLowerCase() && typeof message.token === "string") {
 //             device.token = message.token;
 //             deviceCard.querySelector(".token-input").value = device.token;
-//             deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticating";
+//             deviceCard.querySelector(".pair-state").textContent = "Token stored locally - authenticating";
 //             updatePairingCodeDisplay();
 //             pairingRequested = false;
 //             socket.send(JSON.stringify({ type: "device.authenticate", mac: device.mac, token: device.token }));
@@ -316,14 +316,14 @@ function connectDevice(device) {
             return;
         }
 
-//         if (message.type === "device.authenticated") {
+        if (message.type === "device.authenticated") {
 //             setConnectionState("connected");
 //             deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticated";
 //             deviceCard.querySelector(".device-live-reading").classList.remove("is-inactive");
 //             sensorPanel.hidden = false;
 //             setMessage("Device connected to pmgHub.");
 //             return;
-//         }
+        }
 
         if (message.type === "device.authentication_failed") {
 //             device.token = "";

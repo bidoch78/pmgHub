@@ -25,6 +25,13 @@ class Services {
     getPairing() { return this.pairing; }
     getCSManager() { return this.csManager; }
 
+    removeAllPairingDevices() {
+
+        const pairingDeviceUID = this.pairing.getPairingDevicesUID();
+        for(const uID of pairingDeviceUID) this.csManager.remove(uID);
+
+    }
+
 }
 
 module.exports = Services;

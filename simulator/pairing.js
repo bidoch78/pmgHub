@@ -8,7 +8,8 @@ class PairingDeviceManager {
         this.pairingWindowExpireAt = null;
         this.pairingWindowRemainingSent = null;
         this.pairingDevices = new Map();
-        
+        this.pairingCleanLastExec = null;
+
     }
 
     openWindow() {
@@ -32,8 +33,8 @@ class PairingDeviceManager {
         const remainingTime = Math.max(0, Math.floor((this.pairingWindowExpireAt - Date.now()) / 1000));
         if (this.pairingWindowRemainingSent === null || this.pairingWindowRemainingSent != remainingTime) {
             
-            const rTime = remainingTime * 1000;
-            this.pairingWindowRemainingSent = rTime;
+            this.pairingWindowRemainingSent = remainingTime;
+            const rTime = this.pairingWindowRemainingSent * 1000;
 
             if (rTime <= 0) {
                 this.pairingWindowExpireAt = null;
@@ -77,12 +78,65 @@ class PairingDeviceManager {
             pairingData: devicePairingData
         }
 
+        device.pairing = true;
         this.pairingDevices.set(device.uID, pairingDeviceData);
+
     }
 
-    paringDeviceCount() { return this.pairingDevices.size; }
+    checkPairingCode(uID, code) {
+
+        const ret = { 'validate': false, 'remainingAttempts': 0 };
+
+        if (this.pairingDevices.has(uID)) {
+
+            const pairingDevice = this.pairingDevices.get(uID)
+            ret.validate = pairingDevice.code == code;
+            if (!ret.validate) pairingDevice.attempts++;
+            ret.remainingAttempts = 3 - pairingDevice.attempts;
+
+        }
+
+        return ret;
+
+    }
+
+    //Need to do it every second
+    cleanPairingDevices(devices, now = false) {
+
+        if (!this.pairingDevices.size) return false;
+
+        const dtNow = Date.now();
+
+        if (!now) {
+
+            if (this.pairingCleanLastExec && ((dtNow - this.pairingCleanLastExec) < 1000)) {
+                return false;
+            }
+
+        }
+
+        this.pairingCleanLastExec = dtNow;
+        const deviceList = devices.getDevicesByuID([...this.pairingDevices.keys()]);
+        
+        let pairingListUpdated = false;
+        for (const device of deviceList) {
+            if (!device.isConnected && device.pairing) {
+                console.log("remove pairing");
+                this.pairingDevices.delete(device.uID);
+                devices.unregister(device.token);
+                pairingListUpdated = true;
+            }
+        }
+
+        return pairingListUpdated;
+
+    }
+
+    pairingDeviceCount() { return this.pairingDevices.size; }
     
-    getPairingDeviceByUID(uID) { return this.pairingDevices.has(uID) ? null : null; }
+    getPairingDevicesUID() { return [...this.pairingDevices.keys()]; }
+
+    getPairingDeviceByUID(uID) { return this.pairingDevices.has(uID) ? this.pairingDevices.get(uID) : null; }
 
     getPairingDevices(forMessage = false) { 
         

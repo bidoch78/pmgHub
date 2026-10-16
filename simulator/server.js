@@ -527,39 +527,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 // -------------------------------------------------
-// Pairing
-// -------------------------------------------------
-
-// const sendPairingRequest = (socket) => {
-
-//     if (!socket || !(socket.readyState === WebSocket.OPEN)) return;
-
-//     const messageData = [];
-//     for (const [mac, data] of pendingDeviceSockets) {
-//         messageData.push({ 'mac': mac, 'pairingCode': data.pairingCode });
-//     }
-
-//     socket.send(JSON.stringify({ type: "pairing.requests", "data": messageData }));
-
-// };
-
-// const getWebAdminSockets = () => {
-
-//     const sockets = [];
-
-//     for (const client of wss.clients) {
-//         if (client.readyState === 1) {
-//             if (client._auth && client._auth.token) {
-//                 if (devices.isWebAdmin(client._auth.token)) sockets.push(client);
-//             }
-//         }
-//     }
-
-//     return sockets;
-
-// };
-
-// -------------------------------------------------
 // WebSocket /ws
 // -------------------------------------------------
 
@@ -805,6 +772,7 @@ setInterval(() => {
 
     const sensors = services.getSensors();
     const devices = services.getDevices();
+    const pairing = services.getPairing();
 
     sensors.update();
     
@@ -820,32 +788,13 @@ setInterval(() => {
         if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
 
-    // //console.log(JSON.stringify(Object.fromEntries(sensors.getValues())));
-    // let socketWebAdmin = null;
-
-    // for (const client of wss.clients) {
-    //     if (client.readyState === 1) {
-
-    //         if (client._auth && client._auth.token) {
-    //             if (devices.isWebAdmin(client._auth.token)) {
-    //                 socketWebAdmin = client;
-    //                 //Now we need to check with devices object which sensors can be sent based and check if value has changed
-    //                 //So we avoid to resend everything
-    //                 const dtSensor = devices.sensorsValueToSend(client._auth.token, sensors.getValues())
-    //                 if (dtSensor.size) client.send(JSON.stringify({ type: "sensors.value", data: Object.fromEntries(dtSensor) } ));
-    //             }
-    //         }
-   
-    //     }
-    // }
-
     //Pairing
-    const pairing = services.getPairing();
     if (pairing.windowIsOpened()) {
 
         pairingOpen = true;
         const remainingTimeMs = pairing.getNextRemainingTimeMs();
         if (remainingTimeMs) {
+            console.log(remainingTimeMs);
             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: remainingTimeMs }));
         }
 
@@ -854,12 +803,19 @@ setInterval(() => {
 
         if (pairingOpen) {
             pairingOpen = false;
+            //remove all pairing devices
+            services.removeAllPairingDevices();
             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: 0 }));
         }
 
     }
 
-}, 100);
+    //if device in pairing are not reachable
+    if (pairing.cleanPairingDevices(services.getDevices())) {
+        csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
+    }
+
+}, 50);
 
 // -------------------------------------------------
 

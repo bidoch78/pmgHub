@@ -55,16 +55,9 @@ class WSClientSession {
                 if (this.device.isWebAdmin) {
                     
                     const initData = { 'init': true, 'sensors': this.device.services.getSensors().get() };
-//                     if (pendingDeviceSockets.size) {
-//                         initData.pairingrequests = [];
-//                         for (const [mac, data] of pendingDeviceSockets) {
-//                             initData.pairingrequests.push({ 'mac': mac, 'pairingCode': data.pairingCode });
-//                         }
-//                     }
 
-//                     // initData.pairingrequests = [];
-//                     // initData.pairingrequests.push({ 'mac': "02:4A:7D:91:B3:E8", pairingCode: 12342354 });
-//                     // initData.pairingrequests.push({ 'mac': "02:C1:56:AF:28:9D", pairingCode: 77778888 });
+                    //If some pairing device are waiting return them
+                    if (pairing.pairingDeviceCount()) initData.pairingrequests = pairing.getPairingDevices(true);
 
                     this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
 
@@ -95,6 +88,8 @@ class WSClientSession {
                     else if (pairing.windowIsOpened() && message.data == "stop") {
                         console.log("Stop Pairing");
                         pairing.closeWindow();
+                        //remove all pairing devices
+                        this.device.services.removeAllPairingDevices();
                     }
 
                 }
@@ -102,7 +97,46 @@ class WSClientSession {
                     boolInvalidCommand = true;
                 }
                 break;
+            
+            case "pairing.code":
+                
+                if (this.device.isWebAdmin) {
+                    if (message.data && message.data.uID) {
+                        
+                        const check = pairing.checkPairingCode(message.data.uID, message.data.code);
+                        console.log(check);
+                        if (check.validate) {
 
+                        }
+                        else {
+                            if (check.remainingAttempts) {
+                                this.ws.send(JSON.stringify({ type: "pairing.wrongcode", "data": { 'uID': message.data.uID , 'remainingAttempts': check.remainingAttempts } }));
+                            }
+                            else {
+                                //Reject
+                                csManager.remove(message.data.uID);
+                            }
+                        }
+
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+                break;
+
+            case "pairing.reject":
+
+                if (this.device.isWebAdmin) {
+                    if (message.data && message.data.uID) {
+                        csManager.remove(message.data.uID);
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+                break;
+            
             case "device.connect":
 
                 const checkPairing = pairing.checkDevicePairingConnect(message.data);    
@@ -111,27 +145,15 @@ class WSClientSession {
                     return;
                 }
                 
-                console.log("PAIRING - Request accepted")
-
+                console.log("PAIRING - Request accepted");
+                
                 //save the pairing request
                 const mac = message.data.mac.toLowerCase();
 
                 pairing.addPairingDevice(this.device, message.data);
 
                 // Return to all WebAdmin the list of pairing devices
-                csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }))
-
-//                 //     pendingDeviceSockets.set(mac, { 'pairingCode': message.data.pairingCode, 'socket': ws });
-                    
-//                 //     //Sent pairing requests to webAdmin (resend all)
-//                 //     //const webAdminSockets = getWebAdminSockets();
-//                 //     //for (const sWA of webAdminSockets) sendPairingRequest(sWA);
-
-//                 //     //Sent pending to device
-//                 //     ws.send(JSON.stringify({ type: "pairing.pending", data: null } ));
-//                 //     return;
-                
-//                 // }
+                csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
 
                 this.ws.send(JSON.stringify({ type: "pairing.pending", "data": null }));
 

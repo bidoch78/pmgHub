@@ -77,6 +77,7 @@ class WSClientSessionManager {
 
         if (!cSocketData) return;
 
+        console.log("csManager:remove");
         this.cSockets.delete(clientUID);
         
         cSocketData.client.device.isConnected = false;

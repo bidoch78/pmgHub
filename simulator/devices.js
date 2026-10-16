@@ -11,9 +11,9 @@ class Devices {
     constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
         this.devices = new Map();
-
-//         this.storePath = storePath;
+        this.storePath = storePath;
 //         this.devices = this.load();
+
     }
 
     static generateMacAddress() {
@@ -31,6 +31,7 @@ class Devices {
             listenSensors: false,
             isConnected: true,
             initialized: false,
+            pairing: false,
             services: services,
             MAC: Devices.generateMacAddress(),
             sensors: null,
@@ -54,7 +55,11 @@ class Devices {
 
     unregister(token) {
         if (!token) return;
-        this.stopListenSensors();
+        if (this.devices.has(token)) {
+            const device = this.devices.get(token);
+            device.stopListenSensors();
+        }
+        console.log("unregister device");
         this.devices.delete(token);
     }
 
@@ -74,6 +79,21 @@ class Devices {
         this.devices.set(device.token, device);
         return device;
     }
+
+    getDevicesByuID(uIDs) {
+
+        if (!(Array.isArray(uIDs) && uIDs.length > 0)) return [];
+
+        const devFound = [];
+        for (const data of this.devices.values()) {
+            if (uIDs.includes(data.uID)) devFound.push(data);
+        }
+
+        return devFound;
+
+    }
+
+    getNumberOfDevices() { return this.devices.size; }
 
     getDevice(token) {
         return this.devices.get(token) ?? null;

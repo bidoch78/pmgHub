@@ -90,7 +90,11 @@ class PairingDeviceManager {
         if (this.pairingDevices.has(uID)) {
 
             const pairingDevice = this.pairingDevices.get(uID)
-            ret.validate = pairingDevice.code == code;
+            
+            ret.validate = pairingDevice.pairingData.pairingCode == code;
+
+            console.log(code + " " + pairingDevice.pairingData.pairingCode);
+
             if (!ret.validate) pairingDevice.attempts++;
             ret.remainingAttempts = 3 - pairingDevice.attempts;
 

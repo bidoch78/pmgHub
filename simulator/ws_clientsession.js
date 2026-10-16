@@ -106,7 +106,8 @@ class WSClientSession {
                         const check = pairing.checkPairingCode(message.data.uID, message.data.code);
                         console.log(check);
                         if (check.validate) {
-
+                            //Device paired!!!
+                            
                         }
                         else {
                             if (check.remainingAttempts) {

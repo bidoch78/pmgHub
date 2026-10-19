@@ -783,7 +783,7 @@ setInterval(() => {
 
     const sensorsValue = sensors.getValues();
 
-    for(const device of devices.getConnected()) {
+    for(const device of devices.getDevicesConnected()) {
         const dtSensor = devices.sensorsValueToSend(device.token, sensorsValue);
         if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
@@ -794,7 +794,7 @@ setInterval(() => {
         pairingOpen = true;
         const remainingTimeMs = pairing.getNextRemainingTimeMs();
         if (remainingTimeMs) {
-            console.log(remainingTimeMs);
+            //console.log(remainingTimeMs);
             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: remainingTimeMs }));
         }
 

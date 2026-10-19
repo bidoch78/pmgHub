@@ -7,14 +7,15 @@
 const config = require("./config");
 const WebSocket = require('ws');
 
-const DEBUG_HEARTBEAT = config.DEBUG_HEARTBEAT === true;
+const DEBUG_HEARTBEAT = config.DEBUG_HEARTBEAT === false;
 
 class WSClientSessionManager {
 
-    constructor(pingInterval = 10000, pongTimeout = 1000, checkInterval = 250) {
+    constructor(services, pingInterval = 10000, pongTimeout = 1000, checkInterval = 250) {
 
         this.cSockets = new Map();
 
+        this.services = services;
         this.pingInterval = pingInterval;
         this.pongTimeout = pongTimeout;
         this.checkInterval = checkInterval;
@@ -57,7 +58,8 @@ class WSClientSessionManager {
         };
 
         cSocketData.onClose = () => {
-            console.log(`WSS Close (${clientUID})`)
+            console.log(`WSS Close (${clientUID})`);
+            this.services.deviceCloseConnection(clientUID);
             this.remove(clientUID);
         };
 
@@ -80,11 +82,12 @@ class WSClientSessionManager {
         console.log("csManager:remove");
         this.cSockets.delete(clientUID);
         
-        cSocketData.client.device.isConnected = false;
+        cSocketData.client.device.connected = false;
 
         //Remove events
         cSocketData.client.ws.off('pong', cSocketData.heartbeat.onPong);
         cSocketData.client.ws.off('close', cSocketData.onClose);
+        cSocketData.client.ws = null;
 
         console.log(`Client removed: ${clientUID}`);
         console.log(`-- NB SESSIONS: ` + this.cSockets.size);

@@ -6,8 +6,9 @@ class Sensors {
         HIGH: 100
     };
 
-    constructor() {
+    constructor(services) {
 
+        this.services = services;
         this.lastUpdate = null;
 
         this.sensors = [

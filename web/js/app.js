@@ -1,22 +1,13 @@
 import {
         getAuthStatus,
-//     approveDevice,
-//     getDevices,
-//     getPairingRequests,
-//     getPairingWindow,
-//     getSensors,
         logout,
-//     rejectDevice,
-//     rejectPairingRequest,
-//        setPairingWindow,
-//     updateDeviceName,
         sendWSCommand
 } from "./api.js";
 
-// const connectionStatus = document.getElementById("connectionStatus");
-// const sensorGroups = document.getElementById("sensorGroups");
-// const deviceList = document.getElementById("deviceList");
-// const deviceCount = document.getElementById("deviceCount");
+const connectionStatus = document.getElementById("connectionStatus");
+const sensorGroups = document.getElementById("sensorGroups");
+const deviceList = document.getElementById("deviceList");
+const deviceCount = document.getElementById("deviceCount");
 const pairingList = document.getElementById("pairingList");
 const pairingCount = document.getElementById("pairingCount");
 const pairingWindowStatus = document.getElementById("pairingWindowStatus");
@@ -26,9 +17,6 @@ let wsCom = null;
 
 const sensorCards = new Map();
 const sensorCategoryGroups = new Map();
-
-// const pairingCodeDrafts = new Map();
-// let pairingRequestSignature = null;
 
 function displaySensors(data, read = false) {
 
@@ -69,9 +57,9 @@ function displaySensors(data, read = false) {
 
     }
 
-//     for (const [category, group] of sensorCategoryGroups) {
-//         group.element.hidden = !activeCategories.has(category) || group.grid.childElementCount === 0;
-//     }
+    for (const [category, group] of sensorCategoryGroups) {
+        group.element.hidden = !activeCategories.has(category) || group.grid.childElementCount === 0;
+    }
 
     sensorGroups.querySelector(".empty-state")?.remove();
     if (receivedIds.size === 0 && !sensorGroups.querySelector(".empty-state")) {
@@ -250,25 +238,58 @@ function updateSensorsValue(data) {
 //     });
 // }
 
-// function createDeviceCard(device) {
-//     const card = document.createElement("article");
-//     card.className = "device-card";
-//     card.dataset.mac = device.mac;
+function refreshDevices(devices) {
 
-//     const identity = document.createElement("div");
-//     const name = document.createElement("span");
-//     name.className = "device-name";
-//     name.textContent = device.name || "Unnamed device";
-//     const mac = document.createElement("span");
-//     mac.className = "device-mac";
-//     mac.textContent = device.mac;
-//     identity.append(name, mac);
+    // Remove card if needed
+    const domCards = deviceList.querySelectorAll(`.device-card[data-uid]`);
+    for (const card of domCards) {
+        const uid = card.getAttribute("data-uid");
+        let find = false;
+        for (const device of devices) {
+            if (device.uID == uid) { find = true; break; }
+        }
+        if (!find) card.remove();
+    }
 
-//     const status = document.createElement("span");
+    let nbConnected = 0;
+
+    for (const device of devices) {
+        if (device.connected) nbConnected++;
+        createDeviceCard(device);
+    }
+
+    deviceCount.textContent = `${devices.length} ${devices.length === 1 ? "device" : "devices"} · ${nbConnected} connected`;
+
+}
+
+function createDeviceCard(device) {
+
+    const deviceUID = device.uID;
+
+    const domCard = deviceList.querySelector(`.device-card[data-uid='${deviceUID}']`);
+
+    if (domCard) {
+        return;
+    }
+
+    const card = document.createElement("article");
+    card.className = "device-card";
+    card.dataset.uid = device.uID;
+
+    const identity = document.createElement("div");
+    const name = document.createElement("span");
+    name.className = "device-name";
+    name.textContent = device.name || "Unnamed device";
+    const mac = document.createElement("span");
+    mac.className = "device-mac";
+    mac.textContent = device.mac;
+    identity.append(name, mac);
+
+    const status = document.createElement("span");
 //     status.className = `device-status ${device.connected ? "online" : "offline"}`;
 //     status.textContent = device.connected ? "Connected" : "Disconnected";
 
-//     const form = document.createElement("form");
+    const form = document.createElement("form");
 //     form.className = "device-name-form";
 //     const input = document.createElement("input");
 //     input.type = "text";
@@ -297,10 +318,10 @@ function updateSensorsValue(data) {
 //         }
 //     });
 
-//     const rejectButton = document.createElement("button");
-//     rejectButton.type = "button";
-//     rejectButton.className = "reject-device-button";
-//     rejectButton.textContent = "Reject device";
+    const rejectButton = document.createElement("button");
+    rejectButton.type = "button";
+    rejectButton.className = "reject-device-button";
+    rejectButton.textContent = "Reject device";
 //     rejectButton.addEventListener("click", async () => {
 //         const currentName = card.querySelector(".device-name").textContent;
 //         const mac = card.dataset.mac;
@@ -321,9 +342,11 @@ function updateSensorsValue(data) {
 //         }
 //     });
 
-//     card.append(identity, status, form, rejectButton);
-//     return card;
-// }
+    card.append(identity, status, form, rejectButton);
+
+    deviceList.append(card);
+    
+}
 
 // function updateDeviceCard(card, device) {
 //     const name = card.querySelector(".device-name");
@@ -360,23 +383,7 @@ function updateSensorsValue(data) {
 
 function refreshPairingRequests(pairingRequests = []) {
 
-//     const requests = await getPairingRequests();
-//     const signature = JSON.stringify(requests.map(device => [device.mac, device.name]));
-
     pairingCount.textContent = `${pairingRequests.length} pending ${pairingRequests.length === 1 ? "request" : "requests"}`;
-
-//     if (signature === pairingRequestSignature) return;
-//     pairingRequestSignature = signature;
-
-//     const currentMacs = new Set(requests.map(device => device.mac));
-//     for (const card of pairingList.querySelectorAll(".pairing-card[data-mac]")) {
-//         const input = card.querySelector(".pairing-code-input");
-//         if (input && input.value) pairingCodeDrafts.set(card.dataset.mac, input.value);
-//         if (!currentMacs.has(card.dataset.mac)) {
-//             pairingCodeDrafts.delete(card.dataset.mac);
-//             card.remove();
-//         }
-//     }
 
     // Remove card if needed
     const currentPairingCard = [...pairingList.querySelectorAll(".pairing-card[data-uid]")];
@@ -442,10 +449,9 @@ function refreshPairingRequests(pairingRequests = []) {
             codeInput.pattern = "[0-9]{8}";
             codeInput.className = "pairing-code-input";
             codeInput.placeholder = "8-digit code";
-            codeInput.value = ""; //pairingCodeDrafts.get(device.mac) || "";""
+            codeInput.value = "";
             codeInput.autocomplete = "one-time-code";
             codeInput.setAttribute("aria-label", `Pairing code displayed by device ${device.mac}`);
-            //codeInput.addEventListener("input", () => pairingCodeDrafts.set(device.mac, codeInput.value));
             codeForm.append(codeLabel, codeInput);
 
             const approveButton = document.createElement("button");
@@ -592,6 +598,11 @@ function connectWebSocket(onStatus) {
                     button.disabled = false;
                 });
 
+                break;
+
+            case "devices.list":
+
+                refreshDevices( message.data);
                 break;
 
         }

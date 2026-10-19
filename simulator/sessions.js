@@ -15,8 +15,9 @@ class SessionManager {
     static SESSION_DEVICE = 'device';
 
     /* default max 10 connections & timeout after 1 hour of inactivity */
-    constructor(timeoutMs = 60 * 60 * 1000) {
+    constructor(services, timeoutMs = 60 * 60 * 1000) {
         this.timeoutMs = timeoutMs;
+        this.services = services;
         this.sessions = new Map();
     }
 

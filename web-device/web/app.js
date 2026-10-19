@@ -317,12 +317,15 @@ function connectDevice(device) {
         }
 
         if (message.type === "device.authenticated") {
-//             setConnectionState("connected");
-//             deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticated";
-//             deviceCard.querySelector(".device-live-reading").classList.remove("is-inactive");
+            setConnectionState(data.device, "connected");
+            data.device.token = message.data.token;
+            const deviceCard = data.device.getCard();
+            deviceCard.querySelector(".pair-state").textContent = "Token stored locally · authenticated";
+            deviceCard.querySelector(".device-live-reading").classList.remove("is-inactive");
+            deviceCard.querySelector(".token-input").value = data.device.token;
 //             sensorPanel.hidden = false;
-//             setMessage("Device connected to pmgHub.");
-//             return;
+            setMessage("Device connected to pmgHub.");
+            return;
         }
 
         if (message.type === "device.authentication_failed") {

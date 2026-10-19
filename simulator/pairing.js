@@ -2,8 +2,9 @@ const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
 class PairingDeviceManager {
 
-    constructor(pairingWindowMs) {
+    constructor(services, pairingWindowMs) {
 
+        this.services = services;
         this.pairingWindowMs = pairingWindowMs;
         this.pairingWindowExpireAt = null;
         this.pairingWindowRemainingSent = null;
@@ -79,7 +80,18 @@ class PairingDeviceManager {
         }
 
         device.pairing = true;
+        console.log("pairing add new:" + device.uID);
         this.pairingDevices.set(device.uID, pairingDeviceData);
+
+    }
+
+    removePairindDevice(device) {
+
+        device.pairing = false;
+        console.log("pairing remove:" + device.uID);
+        this.pairingDevices.delete(device.uID);
+
+        console.log("pairing count:" + this.pairingDevices.size);
 
     }
 
@@ -120,11 +132,11 @@ class PairingDeviceManager {
         }
 
         this.pairingCleanLastExec = dtNow;
-        const deviceList = devices.getDevicesByuID([...this.pairingDevices.keys()]);
+        const deviceList = devices.getDevicesByuIDs([...this.pairingDevices.keys()]);
         
         let pairingListUpdated = false;
         for (const device of deviceList) {
-            if (!device.isConnected && device.pairing) {
+            if (!device.connected && device.pairing) {
                 console.log("remove pairing");
                 this.pairingDevices.delete(device.uID);
                 devices.unregister(device.token);

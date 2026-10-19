@@ -21,7 +21,7 @@ class WSClientSession {
     }
 
     isConnected() {
-        return this.device.isConnected && (this.ws && this.ws.readyState === WebSocket.OPEN);
+        return this.device.connected && (this.ws && this.ws.readyState === WebSocket.OPEN);
     }
 
     getId() { return this.device.uID; }
@@ -47,6 +47,7 @@ class WSClientSession {
         let boolInvalidCommand = false;
         const pairing = this.device.services.getPairing();
         const csManager = this.device.services.getCSManager();
+        const devices = this.device.services.getDevices();
 
         switch(message.type) {
 
@@ -54,12 +55,13 @@ class WSClientSession {
 
                 if (this.device.isWebAdmin) {
                     
-                    const initData = { 'init': true, 'sensors': this.device.services.getSensors().get() };
+                    const initData = { 'init': true, 'sensors': this.device.services.getSensors().get(), 'devices': devices.getDevices(true) };
 
                     //If some pairing device are waiting return them
                     if (pairing.pairingDeviceCount()) initData.pairingrequests = pairing.getPairingDevices(true);
 
-                    this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
+                    //this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
+                    csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
 
                 }
                 else {
@@ -104,10 +106,23 @@ class WSClientSession {
                     if (message.data && message.data.uID) {
                         
                         const check = pairing.checkPairingCode(message.data.uID, message.data.code);
-                        console.log(check);
                         if (check.validate) {
+
                             //Device paired!!!
+                            console.log("Device accepted");
+
+                            const devicePaired = devices.getDevicesByuID(message.data.uID);
+
+                            pairing.removePairindDevice(devicePaired);
+                            devices.updateToken(devicePaired);
                             
+                            const devicePairedWS = csManager.getById(devicePaired.uID);
+                            devicePairedWS.client.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(devicePaired, true) }));
+
+                            //Update pairing list on webAdmin
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
+
                         }
                         else {
                             if (check.remainingAttempts) {
@@ -143,14 +158,16 @@ class WSClientSession {
                 const checkPairing = pairing.checkDevicePairingConnect(message.data);    
                 if (checkPairing !== true) {
                     this.ws.send(JSON.stringify({ type: "pairing.rejected", "data": checkPairing }));
+                    this.ws.close(4103, "Pairing not available");
+                    devices.unregister(this.device.token);
                     return;
                 }
                 
                 console.log("PAIRING - Request accepted");
                 
-                //save the pairing request
-                const mac = message.data.mac.toLowerCase();
+                this.device.mac = message.data.mac.toLowerCase();
 
+                //save the pairing request
                 pairing.addPairingDevice(this.device, message.data);
 
                 // Return to all WebAdmin the list of pairing devices
@@ -162,7 +179,9 @@ class WSClientSession {
 
         }
 
-        if (boolInvalidCommand) this.ws.close(4102, "Invalid Command"); 
+        if (boolInvalidCommand) {
+            this.ws.close(4102, "Invalid Command");
+        }
 
     }
 

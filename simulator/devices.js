@@ -8,8 +8,9 @@ const macPattern = /^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
 
 class Devices {
 
-    constructor(storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
+    constructor(services, storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
+        this.services = services;
         this.devices = new Map();
         this.storePath = storePath;
 //         this.devices = this.load();
@@ -29,12 +30,13 @@ class Devices {
             token: token,
             isWebAdmin: false,
             listenSensors: false,
-            isConnected: true,
-            initialized: false,
+            connected: true,
             pairing: false,
+            persistent: false,
             services: services,
-            MAC: Devices.generateMacAddress(),
+            mac: Devices.generateMacAddress(),
             sensors: null,
+            nonce: null,
             startListenSensors() {
                 const sensors = this.sensorsUsed();
                 const sensorsData = new Map();
@@ -53,6 +55,31 @@ class Devices {
 
     }
 
+    authenticatedObject(device, withToken) {
+
+        const authDevice = {
+            'mac': device.mac,
+            'nonce': device.nonce
+        };
+
+        if (withToken) authDevice.token = device.token;
+
+        return authDevice;
+
+    }
+
+    connectDevice(device, returnToken) {
+        device.connected = true;
+        device.nonce = crypto.randomBytes(16).toString('base64');
+        return this.authenticatedObject(device, returnToken);
+    }
+
+    updateToken(device) {
+        this.devices.delete(device.token);
+        device.token = crypto.randomBytes(32).toString("hex");
+        this.devices.set(device.token, device);
+    }
+
     unregister(token) {
         if (!token) return;
         if (this.devices.has(token)) {
@@ -67,8 +94,7 @@ class Devices {
         if (!token) return;
         const webAdmin = this.createDeviceObject(token, services);
         webAdmin.isWebAdmin = true;
-        webAdmin.isConnected = true;
-        webAdmin.initialized = true;
+        webAdmin.connected = true;
         this.devices.set(token, webAdmin);
         return webAdmin;
     }
@@ -80,7 +106,14 @@ class Devices {
         return device;
     }
 
-    getDevicesByuID(uIDs) {
+    getDevicesByuID(uID) {
+        for (const data of this.devices.values()) {
+            if (data.uID == uID) return data;
+        }
+        return null;
+    }
+
+    getDevicesByuIDs(uIDs) {
 
         if (!(Array.isArray(uIDs) && uIDs.length > 0)) return [];
 
@@ -94,15 +127,6 @@ class Devices {
     }
 
     getNumberOfDevices() { return this.devices.size; }
-
-    getDevice(token) {
-        return this.devices.get(token) ?? null;
-    }
-
-    isWebAdmin(token) {
-        if (!this.devices.has(token)) return false;
-        return this.devices.get(token).isWebAdmin;
-    }
 
     sensorsValueToSend(token, sensorValues) {
 
@@ -128,12 +152,32 @@ class Devices {
         return sensorsToSend;
     }
 
-    getConnected() {
+    getDevices(forMessage = false) {
 
         const ds = [];
 
-        for (const [id, data] of this.devices) {
-            if (data.isConnected) ds.push(data);
+        for (const [id, device] of this.devices) {
+            if (!forMessage)
+                ds.push(device);
+            else
+                ds.push({
+                    uID: device.uID,
+                    mac: device.mac,
+                    connected: device.connected,
+                    type: (device.isWebAdmin) ? "admin": "device"
+                });
+        }
+        
+        return ds;
+
+    }
+
+    getDevicesConnected() {
+
+        const ds = [];
+
+        for (const [id, device] of this.devices) {
+            if (device.connected) ds.push(device);
         }
         
         return ds;

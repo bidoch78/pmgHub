@@ -60,7 +60,7 @@ class WSClientSession {
                     //If some pairing device are waiting return them
                     if (pairing.pairingDeviceCount()) initData.pairingrequests = pairing.getPairingDevices(true);
 
-                    //this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
+                    this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
                     csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
 
                 }
@@ -130,7 +130,7 @@ class WSClientSession {
                             }
                             else {
                                 //Reject
-                                csManager.remove(message.data.uID);
+                                csManager.close(message.data.uID);
                             }
                         }
 
@@ -144,8 +144,9 @@ class WSClientSession {
             case "pairing.reject":
 
                 if (this.device.isWebAdmin) {
+                    console.log("here");
                     if (message.data && message.data.uID) {
-                        csManager.remove(message.data.uID);
+                        csManager.close(message.data.uID);
                     }
                 }
                 else {
@@ -159,7 +160,6 @@ class WSClientSession {
                 if (checkPairing !== true) {
                     this.ws.send(JSON.stringify({ type: "pairing.rejected", "data": checkPairing }));
                     this.ws.close(4103, "Pairing not available");
-                    devices.unregister(this.device.token);
                     return;
                 }
                 

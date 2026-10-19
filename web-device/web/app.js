@@ -167,13 +167,14 @@ function setConnectionState(device, state, label) {
     const status = deviceCard.querySelector(".device-status");
     status.classList.toggle("connected", state === "connected");
     status.classList.toggle("waiting", state === "waiting");
-    status.classList.toggle("disconnected", ["disconnected", "error"].includes(state));
+    status.classList.toggle("disconnected", ["disconnected", "error", "reject"].includes(state));
     status.querySelector(".status-label").textContent = label || {
         connected: "Connected",
         waiting: "Waiting for approval",
         connecting: "Connecting",
         disconnected: "Inactive",
-        error: "Connection error"
+        error: "Connection error",
+        reject: "Pairing has been rejected"
     }[state];
 
     deviceCount.textContent = state === "connected" ? "1 device · Connected" : "1 device · Inactive";
@@ -206,7 +207,7 @@ function renderDevice(device) {
     deviceCard.querySelector(".pair-state").textContent = device.token
         ? "Token stored locally · ready to authenticate"
         : "No pairing token · request hub approval";
-//     updatePairingCodeDisplay();
+
     deviceCard.querySelector(".device-live-reading").classList.toggle("is-inactive", true);
 
     deviceCard.querySelector(".pair-button").addEventListener("click", () => {
@@ -348,37 +349,19 @@ function connectDevice(device) {
     });
 
     data.socket.addEventListener("error", () => {
-        if (deviceSocket === socket) {
-            setConnectionState(device, "error");
-            setMessage("Unable to connect to the hub WebSocket.");
-        }
+        setConnectionState(data.device, "error");
+        setMessage("Unable to connect to the hub WebSocket.");
     });
 
     data.socket.addEventListener("close", event => {
 
-        console.log("socket closed");
-//         if (deviceSocket !== socket) return;
-//         deviceSocket = null;
-//         pairingRequested = false;
-//         setConnectionState("disconnected");
-//         sensorPanel.hidden = true;
-//         deviceCard.querySelector(".device-live-reading").classList.add("is-inactive");
+        if (event.code === 4200) {
+            setConnectionState(data.device, "reject");
+        }
+        else {
+            setConnectionState(data.device, "error");
+        }
 
-//         if (event.code === 4003 && device.token) {
-//             device.token = "";
-//             device.pairingCode = "";
-//             deviceCard.querySelector(".token-input").value = "";
-//             deviceCard.querySelector(".pair-state").textContent = "Token revoked · reconnect to request approval";
-//             updatePairingCodeDisplay();
-//         } else if (event.code === 4005 && !device.token) {
-//             setConnectionState("error", "Pairing window closed");
-//             setMessage("Open pairing mode on the hub, then click Pair with hub to generate a new code.");
-//         }
-
-//         if (!disconnecting && event.code !== 1000 && !event.reason) {
-//             setMessage("WebSocket disconnected. Select Reconnect to try again.");
-//         }
-//         disconnecting = false;
     });
 
 }

@@ -9,7 +9,7 @@ class PairingDeviceManager {
         this.pairingWindowExpireAt = null;
         this.pairingWindowRemainingSent = null;
         this.pairingDevices = new Map();
-        this.pairingCleanLastExec = null;
+        //this.pairingCleanLastExec = null;
 
     }
 
@@ -117,36 +117,36 @@ class PairingDeviceManager {
     }
 
     //Need to do it every second
-    cleanPairingDevices(devices, now = false) {
+    // cleanPairingDevices(devices, now = false) {
 
-        if (!this.pairingDevices.size) return false;
+    //     if (!this.pairingDevices.size) return false;
 
-        const dtNow = Date.now();
+    //     const dtNow = Date.now();
 
-        if (!now) {
+    //     if (!now) {
 
-            if (this.pairingCleanLastExec && ((dtNow - this.pairingCleanLastExec) < 1000)) {
-                return false;
-            }
+    //         if (this.pairingCleanLastExec && ((dtNow - this.pairingCleanLastExec) < 1000)) {
+    //             return false;
+    //         }
 
-        }
+    //     }
 
-        this.pairingCleanLastExec = dtNow;
-        const deviceList = devices.getDevicesByuIDs([...this.pairingDevices.keys()]);
+    //     this.pairingCleanLastExec = dtNow;
+    //     const deviceList = devices.getDevicesByuIDs([...this.pairingDevices.keys()]);
         
-        let pairingListUpdated = false;
-        for (const device of deviceList) {
-            if (!device.connected && device.pairing) {
-                console.log("remove pairing");
-                this.pairingDevices.delete(device.uID);
-                devices.unregister(device.token);
-                pairingListUpdated = true;
-            }
-        }
+    //     let pairingListUpdated = false;
+    //     for (const device of deviceList) {
+    //         if (!device.connected && device.pairing) {
+    //             console.log("remove pairing");
+    //             this.pairingDevices.delete(device.uID);
+    //             devices.unregister(device.token);
+    //             pairingListUpdated = true;
+    //         }
+    //     }
 
-        return pairingListUpdated;
+    //     return pairingListUpdated;
 
-    }
+    // }
 
     pairingDeviceCount() { return this.pairingDevices.size; }
     

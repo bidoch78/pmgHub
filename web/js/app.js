@@ -265,6 +265,7 @@ function refreshDevices(devices) {
 function createDeviceCard(device) {
 
     const deviceUID = device.uID;
+    const isAdmin = device.type == "admin";
 
     const domCard = deviceList.querySelector(`.device-card[data-uid='${deviceUID}']`);
 
@@ -280,30 +281,37 @@ function createDeviceCard(device) {
     const name = document.createElement("span");
     name.className = "device-name";
     name.textContent = device.name || "Unnamed device";
+    if (isAdmin) name.textContent = "Administrator"
+
     const mac = document.createElement("span");
     mac.className = "device-mac";
     mac.textContent = device.mac;
     identity.append(name, mac);
 
     const status = document.createElement("span");
-//     status.className = `device-status ${device.connected ? "online" : "offline"}`;
-//     status.textContent = device.connected ? "Connected" : "Disconnected";
+    status.className = `device-status ${device.connected ? "online" : "offline"}`;
+    status.textContent = device.connected ? "Connected" : "Disconnected";
 
     const form = document.createElement("form");
-//     form.className = "device-name-form";
-//     const input = document.createElement("input");
-//     input.type = "text";
-//     input.maxLength = 32;
-//     input.value = device.name || "";
+    form.className = "device-name-form";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 32;
+    input.value = device.name || "";
+    if (isAdmin) { 
+        input.value = "Administrator";
+        input.readOnly = true;
+    }
+
 //     input.placeholder = "Add a name";
 //     input.setAttribute("aria-label", `Name for device ${device.mac}`);
-//     const saveButton = document.createElement("button");
-//     saveButton.type = "submit";
-//     saveButton.textContent = "Save name";
-//     form.append(input, saveButton);
+    const saveButton = document.createElement("button");
+    saveButton.type = "submit";
+    saveButton.textContent = "Save name";
+    if (isAdmin) saveButton.disabled = true;
+    form.append(input, saveButton);
 
-//     form.addEventListener("submit", async event => {
-//         event.preventDefault();
+    form.addEventListener("submit", async event => {
 //         saveButton.disabled = true;
 
 //         try {
@@ -316,13 +324,14 @@ function createDeviceCard(device) {
 //         } finally {
 //             saveButton.disabled = false;
 //         }
-//     });
+    });
 
     const rejectButton = document.createElement("button");
     rejectButton.type = "button";
     rejectButton.className = "reject-device-button";
     rejectButton.textContent = "Reject device";
-//     rejectButton.addEventListener("click", async () => {
+    if (isAdmin) rejectButton.disabled = true;
+    rejectButton.addEventListener("click", async () => {
 //         const currentName = card.querySelector(".device-name").textContent;
 //         const mac = card.dataset.mac;
 //         const deviceName = currentName === "Unnamed device" ? mac : currentName;
@@ -340,7 +349,7 @@ function createDeviceCard(device) {
 //             rejectButton.textContent = "Retry rejection";
 //             rejectButton.disabled = false;
 //         }
-//     });
+    });
 
     card.append(identity, status, form, rejectButton);
 
@@ -410,8 +419,6 @@ function refreshPairingRequests(pairingRequests = []) {
 
     for (const device of pairingRequests) {
         
-        console.log(device);
-
         const deviceMAC = device.mac;
         const deviceUID = device.uID;
 

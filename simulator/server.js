@@ -776,14 +776,9 @@ setInterval(() => {
 
     sensors.update();
     
-    // //Clean sessions every x Ms // If true check device & clientSessionManager
-    // if (sessions.optimizeClean()) {
-
-    // }
-
     const sensorsValue = sensors.getValues();
 
-    for(const device of devices.getDevicesConnected()) {
+    for(const device of devices.getDevicesAuthenticated()) {
         const dtSensor = devices.sensorsValueToSend(device.token, sensorsValue);
         if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
@@ -810,10 +805,10 @@ setInterval(() => {
 
     }
 
-    //if device in pairing are not reachable
-    if (pairing.cleanPairingDevices(services.getDevices())) {
-        csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
-    }
+    // //if device in pairing are not reachable
+    // if (pairing.cleanPairingDevices(services.getDevices())) {
+    //     csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
+    // }
 
 }, 50);
 

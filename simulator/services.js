@@ -36,8 +36,24 @@ class Services {
 
         //Remove all dependencies of this device
         //And device itself if not a persistent device
-        console.log(`---- Clean all depencies of ${uID} device`)
+        console.log(`---- Clean all depencies of ${uID} device`);
 
+        const currDevice = this.devices.getDevicesByuID(uID);
+
+        //This case can arrive if 2 admin console is opened at the same time.
+        if (!currDevice) return;
+
+        //if pairing mode
+        this.pairing.removePairindDevice(currDevice);
+        
+        //delete device
+        if (!currDevice.persistent) {
+            this.devices.unregister(currDevice.token);
+        }
+
+        //Broadcast to WebAdmin device list + pairing list
+        this.csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": this.pairing.getPairingDevices(true) }));
+        this.csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": this.devices.getDevices(true, { 'pairing': false } ) }));
 
     }
 

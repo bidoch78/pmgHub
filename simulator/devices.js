@@ -107,8 +107,8 @@ class Devices {
     }
 
     getDevicesByuID(uID) {
-        for (const data of this.devices.values()) {
-            if (data.uID == uID) return data;
+        for (const device of this.devices.values()) {
+            if (device.uID == uID) return device;
         }
         return null;
     }
@@ -118,8 +118,8 @@ class Devices {
         if (!(Array.isArray(uIDs) && uIDs.length > 0)) return [];
 
         const devFound = [];
-        for (const data of this.devices.values()) {
-            if (uIDs.includes(data.uID)) devFound.push(data);
+        for (const device of this.devices.values()) {
+            if (uIDs.includes(device.uID)) devFound.push(device);
         }
 
         return devFound;
@@ -157,6 +157,9 @@ class Devices {
         const ds = [];
 
         for (const [id, device] of this.devices) {
+
+            if (device.pairing) continue;
+
             if (!forMessage)
                 ds.push(device);
             else
@@ -172,7 +175,7 @@ class Devices {
 
     }
 
-    getDevicesConnected() {
+    getDevicesAuthenticated() {
 
         const ds = [];
 

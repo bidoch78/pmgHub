@@ -73,6 +73,16 @@ class WSClientSessionManager {
 
     }
 
+    close(clientUID, error = null, message = null) {
+
+        const cSocketData = this.cSockets.get(clientUID);
+
+        if (!cSocketData) return;        
+
+        if (cSocketData.client.isConnected()) cSocketData.client.ws.close(error ?? 4200, message ?? "device.reject");
+
+    }
+
     remove(clientUID) {
 
         const cSocketData = this.cSockets.get(clientUID);
@@ -87,6 +97,7 @@ class WSClientSessionManager {
         //Remove events
         cSocketData.client.ws.off('pong', cSocketData.heartbeat.onPong);
         cSocketData.client.ws.off('close', cSocketData.onClose);
+
         cSocketData.client.ws = null;
 
         console.log(`Client removed: ${clientUID}`);

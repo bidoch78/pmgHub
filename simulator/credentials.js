@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const credentialsPath = process.env.PMGHUB_CREDENTIALS_PATH || path.join(__dirname, "credentials.json");
+const credentialsPath = process.env.PMGHUB_CREDENTIALS_PATH || path.resolve(__dirname, "../data/credentials.json");
 const scryptOptions = { N: 16384, r: 8, p: 1 };
 
 function createPasswordHash(password) {

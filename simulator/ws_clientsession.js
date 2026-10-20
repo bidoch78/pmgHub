@@ -115,7 +115,8 @@ class WSClientSession {
 
                             pairing.removePairindDevice(devicePaired);
                             devices.updateToken(devicePaired);
-                            
+                            devices.setPersistent(devicePaired, true);
+
                             const devicePairedWS = csManager.getById(devicePaired.uID);
                             devicePairedWS.client.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(devicePaired, true) }));
 

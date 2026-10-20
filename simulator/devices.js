@@ -13,7 +13,7 @@ class Devices {
         this.services = services;
         this.devices = new Map();
         this.storePath = storePath;
-//         this.devices = this.load();
+        this.load();
 
     }
 
@@ -34,6 +34,7 @@ class Devices {
             pairing: false,
             persistent: false,
             services: services,
+            name: null,
             mac: Devices.generateMacAddress(),
             sensors: null,
             nonce: null,
@@ -187,120 +188,62 @@ class Devices {
 
     }
 
-//     load() {
-//         try {
-//             const data = JSON.parse(fs.readFileSync(this.storePath, "utf8"));
-//             if (!Array.isArray(data.devices)) {
-//                 throw new Error("Invalid paired-device store");
-//             }
+    setPeristent(device, persistent) {
 
-//             return data.devices.map(device => ({
-//                 mac: device.mac,
-//                 name: device.name || "",
-//                 paired: device.paired !== false,
-//                 token: device.token || null,
-//                 connected: false
-//             }));
-//         } catch (error) {
-//             if (error.code !== "ENOENT") {
-//                 console.error("Unable to read paired-device store:", error);
-//             }
+        device.persistent = persistent;
+        this.save();
 
-//             return [];
-//         }
-//     }
+    }
 
-//     save() {
-//         fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
-//         fs.writeFileSync(
-//             this.storePath,
-//             `${JSON.stringify({ devices: this.devices }, null, 2)}\n`,
-//             { mode: 0o600 }
-//         );
-//     }
+    load() {
 
-//     toPublic(device) {
-//         const { token, ...publicDevice } = device;
-//         return { ...publicDevice, paired: Boolean(token) || device.paired };
-//     }
+        try {
 
-//     find(mac) {
-//         if (typeof mac !== "string") {
-//             return undefined;
-//         }
+            const persistantDevices = JSON.parse(fs.readFileSync(this.storePath, "utf8"));
+            console.log(persistantDevices);
 
-//         return this.devices.find(item => item.mac.toLowerCase() === mac.toLowerCase());
-//     }
+            if (Array.isArray(persistantDevices)) {
 
-//     isPaired(mac) {
-//         const device = this.find(mac);
-//         return Boolean(device && device.paired && device.token);
-//     }
+                for (const deviceOnFile of persistantDevices) {
 
+                    const pDevice = this.createDeviceObject(deviceOnFile.token, this.services);
+                    pDevice.name = deviceOnFile.name;
+                    pDevice.mac = deviceOnFile.mac;
+                    pDevice.connected = false;
+                    this.devices.set(pDevice.token, pDevice);
 
+                }
 
-//     getPending() {
-//         return this.devices.filter(device => !device.paired).map(device => this.toPublic(device));
-//     }
+            }
 
-//     requestPairing(mac, name = "") {
-//         if (typeof mac !== "string" || !macPattern.test(mac)) {
-//             return null;
-//         }
+        } 
+        catch (error) {
+            if (error.code !== "ENOENT") {
+                console.error("Unable to read paired-device store:", error);
+            }
+        }
 
-//         const existing = this.find(mac);
-//         if (existing) {
-//             if (existing.paired) {
-//                 return { paired: true, device: this.toPublic(existing) };
-//             }
+    }
 
-//             return { paired: false, device: this.toPublic(existing) };
-//         }
+    save() {
 
-//         if (typeof name !== "string" || name.length > 32) {
-//             return null;
-//         }
+        //We save only the persistent device
+        const saveDevices = [];
+        for (const device of this.devices.values()) {
+            if (device.persistent) {
+                saveDevices.push({
+                    'token': device.token,
+                    'mac': device.mac,
+                    'name': device.name
+                });
+            }
+        }
 
-//         const device = {
-//             mac: mac.toUpperCase(),
-//             name: name.trim(),
-//             paired: false,
-//             token: null,
-//             connected: true
-//         };
-//         this.devices.push(device);
-//         this.save();
-//         return { paired: false, device: this.toPublic(device) };
-//     }
+        fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
+        fs.writeFileSync(this.storePath, JSON.stringify( saveDevices, null, 2), 'utf8');
 
-//     approve(mac) {
-//         const device = this.find(mac);
-//         if (!device || device.paired) {
-//             return null;
-//         }
+    }
 
-//         device.paired = true;
-//         device.token = crypto.randomBytes(32).toString("hex");
-//         device.connected = false;
-//         this.save();
-//         return { device: this.toPublic(device), token: device.token };
-//     }
-
-//     isTokenValid(mac, token) {
-//         const device = this.find(mac);
-//         return Boolean(device && device.paired && device.token && token === device.token);
-//     }
-
-//     setConnected(mac, connected) {
-//         const device = this.find(mac);
-//         if (!device || !device.paired) {
-//             return null;
-//         }
-
-//         device.connected = Boolean(connected);
-//         this.save();
-//         return this.toPublic(device);
-//     }
 
 //     setName(mac, name) {
 //         const device = this.find(mac);
@@ -315,29 +258,6 @@ class Devices {
 //         device.name = name.trim();
 //         this.save();
 //         return this.toPublic(device);
-//     }
-
-//     reject(mac) {
-//         const index = this.devices.findIndex(
-//             item => item.mac.toLowerCase() === String(mac).toLowerCase()
-//         );
-
-//         if (index === -1) {
-//             return null;
-//         }
-
-//         const [device] = this.devices.splice(index, 1);
-//         this.save();
-//         return this.toPublic(device);
-//     }
-
-//     rejectPending(mac) {
-//         const device = this.find(mac);
-//         if (!device || device.paired) {
-//             return null;
-//         }
-
-//         return this.reject(device.mac);
 //     }
 
 }

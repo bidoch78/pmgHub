@@ -191,53 +191,6 @@ function updateSensorsValue(data) {
     
 }
 
-// function displayDevices(devices) {
-//     const connectedCount = devices.filter(device => device.connected).length;
-//     deviceCount.textContent = `${devices.length} ${devices.length === 1 ? "device" : "devices"} · ${connectedCount} connected`;
-
-//     if (devices.length === 0) {
-//         for (const card of deviceList.querySelectorAll(".device-card")) {
-//             card.remove();
-//         }
-
-//         if (!deviceList.querySelector(".empty-state")) {
-//             const emptyState = document.createElement("p");
-//             emptyState.className = "empty-state";
-//             emptyState.textContent = "No devices are paired with this hub yet.";
-//             deviceList.append(emptyState);
-//         }
-//         return;
-//     }
-
-//     deviceList.querySelector(".empty-state")?.remove();
-
-//     const existingCards = new Map(
-//         [...deviceList.querySelectorAll(".device-card[data-mac]")]
-//             .map(card => [card.dataset.mac, card])
-//     );
-//     const currentMacs = new Set(devices.map(device => device.mac));
-
-//     for (const [mac, card] of existingCards) {
-//         if (!currentMacs.has(mac)) {
-//             card.remove();
-//         }
-//     }
-
-//     devices.forEach((device, index) => {
-//         let card = existingCards.get(device.mac);
-
-//         if (!card) {
-//             card = createDeviceCard(device);
-//         }
-
-//         updateDeviceCard(card, device);
-//         const position = deviceList.children[index];
-//         if (position !== card) {
-//             deviceList.insertBefore(card, position || null);
-//         }
-//     });
-// }
-
 function refreshDevices(devices) {
 
     // Remove card if needed
@@ -270,6 +223,7 @@ function createDeviceCard(device) {
     const domCard = deviceList.querySelector(`.device-card[data-uid='${deviceUID}']`);
 
     if (domCard) {
+        updateDeviceCard(domCard, device);
         return;
     }
 
@@ -296,6 +250,7 @@ function createDeviceCard(device) {
     form.className = "device-name-form";
     const input = document.createElement("input");
     input.type = "text";
+    input.className = "text-device-name";
     input.maxLength = 32;
     input.value = device.name || "";
     if (isAdmin) { 
@@ -332,38 +287,24 @@ function createDeviceCard(device) {
     
 }
 
-// function updateDeviceCard(card, device) {
-//     const name = card.querySelector(".device-name");
-//     const mac = card.querySelector(".device-mac");
-//     const status = card.querySelector(".device-status");
-//     const input = card.querySelector(".device-name-form input");
-//     const rejectButton = card.querySelector(".reject-device-button");
-//     const displayName = device.name || "Unnamed device";
-//     const statusText = device.connected ? "Connected" : "Disconnected";
+function updateDeviceCard(card, device) {
+    
+    if (device.type == "admin") return;
 
-//     if (name.textContent !== displayName) {
-//         name.textContent = displayName;
-//     }
-//     if (mac.textContent !== device.mac) {
-//         mac.textContent = device.mac;
-//     }
-//     status.classList.toggle("online", device.connected);
-//     status.classList.toggle("offline", !device.connected);
-//     if (status.textContent !== statusText) {
-//         status.textContent = statusText;
-//     }
+    const name = card.querySelector(".device-savename");
+    const nametxt = card.querySelector(".text-device-name");
+    
+    const status = card.querySelector(".device-status");
+    const displayName = device.name || "Unnamed device";
 
-//     if (document.activeElement !== input && input.value !== (device.name || "")) {
-//         input.value = device.name || "";
-//     }
-//     if (rejectButton.getAttribute("aria-label") !== `Reject device ${device.mac}`) {
-//         rejectButton.setAttribute("aria-label", `Reject device ${device.mac}`);
-//     }
-// }
+    name.textContent = displayName;
+    nametxt.value = device.name ? device.name : "";
 
-// async function refreshDevices() {
-//     displayDevices(await getDevices());
-// }
+    status.classList.toggle("online", device.connected);
+    status.classList.toggle("offline", !device.connected);
+    status.textContent = device.connected ? "Connected" : "Disconnected";
+
+}
 
 function refreshPairingRequests(pairingRequests = []) {
 
@@ -545,11 +486,29 @@ function connectWebSocket(onStatus) {
             return;
         }
 
+        let card = null;
         switch(message.type) {
 
             case "initialize":
                 displaySensors(message.data.sensors, true);
                 refreshPairingRequests(message.data.pairingrequests);
+                break;
+
+            case "device.status":
+
+                card = deviceList.querySelector(`.device-card[data-uid='${message.data.uID}']`);
+                if (!card) return;
+
+                const deviceStatus = card.querySelector(".device-status");
+                if (deviceStatus) {
+                    if (message.data.connected) {
+
+                    }
+                    else {
+                        devicesStatus
+                    }
+                }
+
                 break;
 
             case "sensors.list":
@@ -570,7 +529,7 @@ function connectWebSocket(onStatus) {
 
             case "pairing.wrongcode":
                 
-                const card = pairingList.querySelector(`.pairing-card[data-uid='${message.data.uID}']`);
+                card = pairingList.querySelector(`.pairing-card[data-uid='${message.data.uID}']`);
                 if (!card) return;
 
                 const target = card.querySelector(`.pairing-code-error`);

@@ -5,6 +5,7 @@
  * 
  */
 const WebSocket = require('ws');
+const crypto = require("crypto");
 
 class WSClientSession {
 
@@ -87,6 +88,7 @@ class WSClientSession {
                         if (device.persistent) {
                             device.name = message.data.name;
                             devices.save();
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
                         }
                     }
                 }
@@ -182,9 +184,13 @@ class WSClientSession {
             case "pairing.reject":
 
                 if (this.device.isWebAdmin) {
-                    console.log("here");
                     if (message.data && message.data.uID) {
-                        csManager.close(message.data.uID);
+                        if (!csManager.close(message.data.uID)) {
+                            //if return false, device is not connected so clean here
+                            const deviceRejected = devices.getDeviceByuID(message.data.uID);
+                            devices.unregister(deviceRejected.token);
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
+                        }
                     }
                 }
                 else {
@@ -193,6 +199,36 @@ class WSClientSession {
                 break;
             
             case "device.connect":
+
+                // Standard
+                if (message.data && message.data.mac && message.data.nonce && message.data.signature) {
+
+                    console.log("Device connection - init");
+                    const device = devices.getDeviceByMAC(message.data.mac);
+
+                    if (device) {
+                        console.log(`Device ${message.data.mac} found`);
+                        //calculate signature
+                        const expected = crypto.createHmac("sha256", device.token).update(message.data.nonce).digest("hex");
+                        if (expected == message.data.signature) {
+                            console.log(`Device connection - Signature validated`);
+                            console.log(`Device ${message.data.mac} accepted`);
+
+                            //Update the connection device with device
+                            
+
+                        }  
+                        else {
+                            console.log(`Device connection - Signature error`);
+                        }
+                    }
+                    else {
+                        console.log(`Device connection - ${message.data.mac} not found`);
+                    }
+
+                }
+
+                // Pairing
 
                 const checkPairing = pairing.checkDevicePairingConnect(message.data);    
                 if (checkPairing !== true) {

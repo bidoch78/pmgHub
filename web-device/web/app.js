@@ -235,7 +235,38 @@ function createHubWebSocketUrl() {
     return hubUrlInput.value;
 }
 
-function connectDevice(device) {
+function generateNonce() {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function signNonce(token, nonce) {
+    const encoder = new TextEncoder();
+
+    const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(token),
+        {
+            name: "HMAC",
+            hash: "SHA-256",
+        },
+        false,
+        ["sign"]
+    );
+
+    const signature = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        encoder.encode(nonce)
+    );
+
+    return [...new Uint8Array(signature)]
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+}
+
+async function connectDevice(device) {
 
     if (!device) return;
 
@@ -268,14 +299,24 @@ function connectDevice(device) {
 
     data.socket = new WebSocket(createHubWebSocketUrl() + '/ws/device');
 
+    const dataAuth = {
+        mac: device.mac
+    };
+
+    if (device.token) {
+        dataAuth.nonce = this.generateNonce();
+        const signature = await signNonce(device.token, dataAuth.nonce);
+        dataAuth.signature = signature;
+    }
+    else {
+        device.token = "";
+        dataAuth.pairingCode = device.pairingCode;
+    }
+
     data.socket.addEventListener("open", () => {
         data.socket.send(JSON.stringify({
             type: "device.connect",
-            data: { 
-                mac: device.mac,
-                token: device.token || "",
-                pairingCode: device.pairingCode
-            }
+            data: dataAuth
         }));
     });
 

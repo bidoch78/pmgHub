@@ -806,11 +806,6 @@ setInterval(() => {
 
     }
 
-    // //if device in pairing are not reachable
-    // if (pairing.cleanPairingDevices(services.getDevices())) {
-    //     csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
-    // }
-
 }, 50);
 
 // -------------------------------------------------

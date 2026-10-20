@@ -107,6 +107,14 @@ class Devices {
         return device;
     }
 
+    getDeviceByMAC(mac) {
+        if (mac) mac = mac.toLowerCase();
+        for (const device of this.devices.values()) {
+            if (device.mac == mac) return device;
+        }
+        return null;
+    }
+
     getDeviceByuID(uID) {
         for (const device of this.devices.values()) {
             if (device.uID == uID) return device;
@@ -201,7 +209,6 @@ class Devices {
         try {
 
             const persistantDevices = JSON.parse(fs.readFileSync(this.storePath, "utf8"));
-            console.log(persistantDevices);
 
             if (Array.isArray(persistantDevices)) {
 
@@ -245,22 +252,6 @@ class Devices {
         fs.writeFileSync(this.storePath, JSON.stringify( saveDevices, null, 2), 'utf8');
 
     }
-
-
-//     setName(mac, name) {
-//         const device = this.find(mac);
-//         if (!device || !device.paired) {
-//             return null;
-//         }
-
-//         if (typeof name !== "string" || name.length > 32) {
-//             return false;
-//         }
-
-//         device.name = name.trim();
-//         this.save();
-//         return this.toPublic(device);
-//     }
 
 }
 

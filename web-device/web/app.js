@@ -394,6 +394,25 @@ document.querySelectorAll(".prefillmactoken").forEach(button => {
     });
 });
 
+document.getElementById("createDeviceNoActionButton").addEventListener("click", () => {
+
+    //We connect to and do nothing
+    const socket = new WebSocket(createHubWebSocketUrl() + '/ws/device');
+
+    socket.onmessage = (event) => {
+        console.log('NoAction - Received msg:', event.data);
+    };
+
+    socket.onerror = (error) => {
+        console.error('NoAction - Error WS:', error);
+    };
+
+    socket.onclose = (event) => {
+        console.log(`NoAction - Socket closed (code=${event.code}, reason=${event.reason})`);
+    };
+
+});
+
 document.getElementById("createDeviceButton").addEventListener("click", () => {
 
     const enteredMac = manualMacInput.value.trim().toUpperCase();

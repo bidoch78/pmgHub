@@ -107,7 +107,7 @@ class Devices {
         return device;
     }
 
-    getDevicesByuID(uID) {
+    getDeviceByuID(uID) {
         for (const device of this.devices.values()) {
             if (device.uID == uID) return device;
         }
@@ -159,7 +159,7 @@ class Devices {
 
         for (const [id, device] of this.devices) {
 
-            if (device.pairing) continue;
+            if (!(device.isWebAdmin || device.persistent)) continue;
 
             if (!forMessage)
                 ds.push(device);
@@ -168,6 +168,7 @@ class Devices {
                     uID: device.uID,
                     mac: device.mac,
                     connected: device.connected,
+                    name: device.name,
                     type: (device.isWebAdmin) ? "admin": "device"
                 });
         }
@@ -188,7 +189,7 @@ class Devices {
 
     }
 
-    setPeristent(device, persistent) {
+    setPersistent(device, persistent) {
 
         device.persistent = persistent;
         this.save();
@@ -210,6 +211,7 @@ class Devices {
                     pDevice.name = deviceOnFile.name;
                     pDevice.mac = deviceOnFile.mac;
                     pDevice.connected = false;
+                    pDevice.persistent = true;
                     this.devices.set(pDevice.token, pDevice);
 
                 }

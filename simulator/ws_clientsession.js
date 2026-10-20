@@ -78,6 +78,43 @@ class WSClientSession {
                 
                 this.device.startListenSensors();
                 break;
+            
+            case "device.setname":
+
+                if (this.device.isWebAdmin) {
+                    if (message.data && message.data.uID && message.data.name !== null) {
+                        const device = devices.getDeviceByuID(message.data.uID);
+                        if (device.persistent) {
+                            device.name = message.data.name;
+                            devices.save();
+                        }
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+
+                break;
+
+            case "device.reject":
+
+                if (this.device.isWebAdmin) {
+                    if (message.data && message.data.uID) {
+                        console.log("reject device: " + message.data.uID);
+                        const deviceRejected = devices.getDeviceByuID(message.data.uID);
+                        devices.setPersistent(deviceRejected, false);
+                        if (!csManager.close(deviceRejected.uID)) {
+                            //if return false, device is not connected so clean here
+                            devices.unregister(deviceRejected.token);
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
+                        }
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+
+                break;
 
             case "pairing.window":
 
@@ -111,7 +148,7 @@ class WSClientSession {
                             //Device paired!!!
                             console.log("Device accepted");
 
-                            const devicePaired = devices.getDevicesByuID(message.data.uID);
+                            const devicePaired = devices.getDeviceByuID(message.data.uID);
 
                             pairing.removePairindDevice(devicePaired);
                             devices.updateToken(devicePaired);
@@ -177,6 +214,9 @@ class WSClientSession {
                 this.ws.send(JSON.stringify({ type: "pairing.pending", "data": null }));
 
                 break;
+            
+            default:
+                boolInvalidCommand = true;
 
         }
 

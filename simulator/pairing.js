@@ -132,7 +132,7 @@ class PairingDeviceManager {
     //     }
 
     //     this.pairingCleanLastExec = dtNow;
-    //     const deviceList = devices.getDevicesByuIDs([...this.pairingDevices.keys()]);
+    //     const deviceList = devices.s([...this.pairingDevices.keys()]);
         
     //     let pairingListUpdated = false;
     //     for (const device of deviceList) {

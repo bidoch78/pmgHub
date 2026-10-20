@@ -38,7 +38,7 @@ class Services {
         //And device itself if not a persistent device
         console.log(`---- Clean all depencies of ${uID} device`);
 
-        const currDevice = this.devices.getDevicesByuID(uID);
+        const currDevice = this.devices.getDeviceByuID(uID);
 
         //This case can arrive if 2 admin console is opened at the same time.
         if (!currDevice) return;
@@ -53,7 +53,7 @@ class Services {
 
         //Broadcast to WebAdmin device list + pairing list
         this.csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": this.pairing.getPairingDevices(true) }));
-        this.csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": this.devices.getDevices(true, { 'pairing': false } ) }));
+        this.csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": this.devices.getDevices(true) }));
 
     }
 

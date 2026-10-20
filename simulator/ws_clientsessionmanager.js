@@ -11,7 +11,7 @@ const DEBUG_HEARTBEAT = config.DEBUG_HEARTBEAT === false;
 
 class WSClientSessionManager {
 
-    constructor(services, pingInterval = 10000, pongTimeout = 1000, checkInterval = 250) {
+    constructor(services, pingInterval = 10000, pongTimeout = 1000, checkInterval = 250, authenticationTimeout = 250) {
 
         this.cSockets = new Map();
 
@@ -19,7 +19,7 @@ class WSClientSessionManager {
         this.pingInterval = pingInterval;
         this.pongTimeout = pongTimeout;
         this.checkInterval = checkInterval;
-
+        this.authenticationTimeout = authenticationTimeout;
         this.timer = setInterval(() => { this.checkHeartbeat(); }, this.checkInterval);
 
     }
@@ -41,7 +41,9 @@ class WSClientSessionManager {
                 nextPing: dtNow + this.pingInterval,
                 onPong: null
             },
-            onClose: null
+            createAt: dtNow,
+            onClose: null,
+            onMessage: null
         };
 
         cSocketData.heartbeat.onPong = () => {
@@ -63,8 +65,13 @@ class WSClientSessionManager {
             this.remove(clientUID);
         };
 
+        cSocketData.onMessage = () => {
+           cSocketData.createAt = null;
+        };
+
         client.ws.on('pong', cSocketData.heartbeat.onPong);
         client.ws.on('close', cSocketData.onClose);
+        client.ws.on('message', cSocketData.onMessage);
         
         this.cSockets.set(clientUID, cSocketData);
 
@@ -77,9 +84,11 @@ class WSClientSessionManager {
 
         const cSocketData = this.cSockets.get(clientUID);
 
-        if (!cSocketData) return;        
+        if (!cSocketData) return false;        
 
         if (cSocketData.client.isConnected()) cSocketData.client.ws.close(error ?? 4200, message ?? "device.reject");
+
+        return true;
 
     }
 
@@ -97,6 +106,7 @@ class WSClientSessionManager {
         //Remove events
         cSocketData.client.ws.off('pong', cSocketData.heartbeat.onPong);
         cSocketData.client.ws.off('close', cSocketData.onClose);
+        cSocketData.client.ws.off('message', cSocketData.onMessage);
 
         cSocketData.client.ws = null;
 
@@ -117,18 +127,28 @@ class WSClientSessionManager {
             if (!ws) continue;
             
             if (ws.readyState === WebSocket.CLOSED) {
-                this.remove(cSocketData.client.getId());
+                this.services.deviceCloseConnection(clientUID);
+                this.remove(clientUID);
                 continue;
             }
 
             if (ws.readyState !== WebSocket.OPEN) continue;
+
+            // Check if there is an inactivity after open connexion
+            if (cSocketData.createAt && (now - cSocketData.createAt) > this.authenticationTimeout) {
+                console.log(`Authentication timeout: ${clientUID}` );
+                this.services.deviceCloseConnection(clientUID);
+                this.remove(clientUID);
+                ws.terminate();
+                continue;
+            }
 
             // Waiting a Pong
             if (cSocketData.heartbeat.awaitingPong) {
 
                 if (now >= cSocketData.heartbeat.pongDeadline) {
 
-                    if (DEBUG_HEARTBEAT) console.warn(`Heartbeat timeout: ${clientUID}` );
+                    if (DEBUG_HEARTBEAT) console.log(`Heartbeat timeout: ${clientUID}` );
                     this.remove(clientUID);
                     ws.terminate();
                     continue;
@@ -150,6 +170,7 @@ class WSClientSessionManager {
                 ws.ping();
             } catch (error) {
                 if (DEBUG_HEARTBEAT) console.error( `Ping error ${clientUID}:`, error);
+                this.services.deviceCloseConnection(clientUID);
                 this.remove(clientUID);
                 ws.terminate();
             }

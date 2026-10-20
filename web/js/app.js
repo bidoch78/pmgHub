@@ -303,27 +303,17 @@ function createDeviceCard(device) {
         input.readOnly = true;
     }
 
-//     input.placeholder = "Add a name";
-//     input.setAttribute("aria-label", `Name for device ${device.mac}`);
+    input.placeholder = "Add a name";
+    input.setAttribute("aria-label", `Name for device ${device.mac}`);
     const saveButton = document.createElement("button");
-    saveButton.type = "submit";
+    name.className = "device-savename";
     saveButton.textContent = "Save name";
+    saveButton.type = "button";
     if (isAdmin) saveButton.disabled = true;
     form.append(input, saveButton);
 
-    form.addEventListener("submit", async event => {
-//         saveButton.disabled = true;
-
-//         try {
-//             await updateDeviceName(card.dataset.mac, input.value.trim());
-//             saveButton.textContent = "Save name";
-//             await refreshDevices();
-//         } catch (error) {
-//             console.error(error);
-//             saveButton.textContent = "Retry";
-//         } finally {
-//             saveButton.disabled = false;
-//         }
+    saveButton.addEventListener("click", async () => {
+        sendWSCommand(wsCom, "device.setname", { 'uID': device.uID, 'name': input.value });
     });
 
     const rejectButton = document.createElement("button");
@@ -332,23 +322,8 @@ function createDeviceCard(device) {
     rejectButton.textContent = "Reject device";
     if (isAdmin) rejectButton.disabled = true;
     rejectButton.addEventListener("click", async () => {
-//         const currentName = card.querySelector(".device-name").textContent;
-//         const mac = card.dataset.mac;
-//         const deviceName = currentName === "Unnamed device" ? mac : currentName;
-//         if (!window.confirm(`Reject and remove ${deviceName} from this hub?`)) {
-//             return;
-//         }
-
-//         rejectButton.disabled = true;
-
-//         try {
-//             await rejectDevice(mac);
-//             await refreshDevices();
-//         } catch (error) {
-//             console.error(error);
-//             rejectButton.textContent = "Retry rejection";
-//             rejectButton.disabled = false;
-//         }
+        rejectButton.disabled = true;
+        sendWSCommand(wsCom, "device.reject", { 'uID': device.uID });
     });
 
     card.append(identity, status, form, rejectButton);

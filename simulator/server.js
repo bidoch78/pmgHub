@@ -539,7 +539,8 @@ server.on("upgrade", (req, socket, head) => {
     console.log("WSS Upgrade: " + url);
 
     if (csManager.countSessions() >= config.auth.maxSessions) {
-        ws.close(4010, "Maximum active sessions reached");
+        socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
+        socket.destroy();        
         return;  
     }
 

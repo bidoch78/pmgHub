@@ -38,10 +38,15 @@ class Devices {
             mac: Devices.generateMacAddress(),
             sensors: null,
             nonce: null,
-            startListenSensors() {
+            startListenSensors(listOfSensors = null) {
                 const sensors = this.sensorsUsed();
                 const sensorsData = new Map();
-                for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
+                if (!listOfSensors) {
+                    for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
+                }
+                else {
+                    for (const sensorId of listOfSensors) sensorsData.set(sensorId, { 'lastValue': null } );
+                }
                 this.sensors = sensorsData;
                 this.listenSensors = true;
             },
@@ -69,10 +74,37 @@ class Devices {
 
     }
 
+    swapDevice(device_from, device_to) {
+
+        const toToken = device_to.token;
+
+        device_to.token = device_from.token;
+        device_to.isWebAdmin = device_from.isWebAdmin;
+        device_to.listenSensors = device_from.listenSensors;
+        device_to.connected = device_from.connected;
+        device_to.pairing = device_from.pairing;
+        device_to.persistent = device_from.persistent;
+        device_to.name = device_from.name;
+        device_to.mac = device_from.mac;
+        device_to.sensors = device_from.sensors;
+        device_to.nonce = device_from.nonce;
+
+        this.devices.delete(toToken);
+        this.devices.set(device_to.token, device_to);
+
+    }
+
     connectDevice(device, returnToken) {
         device.connected = true;
         device.nonce = crypto.randomBytes(16).toString('base64');
         return this.authenticatedObject(device, returnToken);
+    }
+
+    disconnectDevice(device) {
+
+        device.connected = false;
+        device.stopListenSensors();
+
     }
 
     updateToken(device) {

@@ -43,6 +43,8 @@ class Services {
         //This case can arrive if 2 admin console is opened at the same time.
         if (!currDevice) return;
 
+        this.devices.disconnectDevice(currDevice);
+
         //if pairing mode
         this.pairing.removePairindDevice(currDevice);
         

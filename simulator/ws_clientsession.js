@@ -76,8 +76,14 @@ class WSClientSession {
                 break;
 
             case "sensors.read":
-                
-                this.device.startListenSensors();
+
+                if (this.device.isWebAdmin) {
+                    this.device.startListenSensors();
+                }
+                else {
+                    this.device.startListenSensors(Array.isArray(message.data) ? message.data : []);
+                }
+
                 break;
             
             case "device.setname":
@@ -213,10 +219,11 @@ class WSClientSession {
                         if (expected == message.data.signature) {
                             console.log(`Device connection - Signature validated`);
                             console.log(`Device ${message.data.mac} accepted`);
-
                             //Update the connection device with device
-                            
-
+                            devices.swapDevice(device, this.device);
+                            this.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(this.device, true) }));
+                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
+                            break;
                         }  
                         else {
                             console.log(`Device connection - Signature error`);

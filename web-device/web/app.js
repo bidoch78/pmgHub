@@ -41,112 +41,28 @@ function createPairingCode() {
     return String(bytes[0] % 100_000_000).padStart(8, "0");
 }
 
-// function displaySensorData(data) {
-//     if (!data || !Array.isArray(data.sensors)) return;
+function displaySensor(device, data) {
 
-//     const receivedIds = new Set();
-//     for (const sensor of data.sensors) {
-//         if (!sensor || typeof sensor.id !== "string" || !sensor.id) continue;
-//         if (sensor.id === "engine.rpm") {
-//             displayRpmSensor(sensor);
-//         }
-//         receivedIds.add(sensor.id);
-//         const category = typeof sensor.category === "string" && sensor.category.trim()
-//             ? sensor.category.trim().toUpperCase()
-//             : "UNCATEGORIZED";
-//         let group = receivedSensorGroups.get(category);
-//         if (!group) {
-//             const section = document.createElement("section");
-//             section.className = "device-sensor-category";
-//             const title = document.createElement("h3");
-//             title.textContent = category;
-//             const list = document.createElement("div");
-//             list.className = "device-sensor-grid";
-//             section.append(title, list);
-//             sensorData.append(section);
-//             group = { section, list };
-//             receivedSensorGroups.set(category, group);
-//         }
+    const deviceCard = device.getCard();
+    const sensor = data["engine.coolant-temp"] ?? null;
 
-//         let card = receivedSensorCards.get(sensor.id);
-//         if (!card) {
-//             card = document.createElement("article");
-//             card.className = "device-sensor-card";
-//             card.dataset.sensorId = sensor.id;
-//             const heading = document.createElement("div");
-//             heading.className = "device-sensor-heading";
-//             const name = document.createElement("strong");
-//             name.className = "device-sensor-name";
-//             const flags = document.createElement("div");
-//             flags.className = "sensor-flags";
-//             const error = document.createElement("span");
-//             error.className = "sensor-flag sensor-error";
-//             error.textContent = "Read error";
-//             const alarm = document.createElement("span");
-//             alarm.className = "sensor-flag sensor-alarm";
-//             alarm.textContent = "Alarm";
-//             flags.append(error, alarm);
-//             heading.append(name, flags);
-//             const id = document.createElement("small");
-//             id.className = "device-sensor-id";
-//             const value = document.createElement("strong");
-//             value.className = "device-sensor-value";
-//             const voltage = document.createElement("small");
-//             voltage.className = "device-sensor-voltage";
-//             card.append(heading, id, value, voltage);
-//             receivedSensorCards.set(sensor.id, card);
-//         }
+    const reading = deviceCard.querySelector(".device-live-reading");
+    const valueElement = reading.querySelector(".sensor-value");
 
-//         const setText = (selector, text) => {
-//             const target = card.querySelector(selector);
-//             if (target.textContent !== text) target.textContent = text;
-//         };
-//         setText(".device-sensor-name", sensor.name || sensor.id);
-//         setText(".device-sensor-id", sensor.id);
-//         setText(".device-sensor-value", typeof sensor.value === "number" && Number.isFinite(sensor.value)
-//             ? `${sensor.value} ${sensor.unit || ""}`.trim()
-//             : "--");
-//         setText(".device-sensor-voltage", typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
-//             ? `${sensor.voltage.toFixed(3)} V`
-//             : "Voltage unavailable");
-//         const hasError = sensor.error === true;
-//         const hasAlarm = sensor.alarm === true;
-//         card.classList.toggle("has-error", hasError);
-//         card.classList.toggle("has-alarm", hasAlarm);
-//         card.querySelector(".sensor-error").hidden = !hasError;
-//         card.querySelector(".sensor-alarm").hidden = !hasAlarm;
-//         if (card.parentElement !== group.list) group.list.append(card);
-//     }
+    const value = typeof sensor.value === "number" && Number.isFinite(sensor.value)
+        ? String(sensor.value)  
+        : "--";
+    //const unit = typeof sensor.unit === "string" && sensor.unit ? sensor.unit : "rpm";
+    const voltage = typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
+        ? `${sensor.voltage.toFixed(3)} V`
+        : "--";
 
-//     for (const [id, card] of receivedSensorCards) {
-//         if (!receivedIds.has(id)) {
-//             card.remove();
-//             receivedSensorCards.delete(id);
-//         }
-//     }
+    if (valueElement.textContent !== value) valueElement.textContent = value;
+    const voltageElement = reading.querySelector(".sensor-voltage");
+    if (voltageElement.textContent !== voltage) voltageElement.textContent = voltage;
 
-//     for (const group of receivedSensorGroups.values()) {
-//         group.section.hidden = group.list.childElementCount === 0;
-//     }
-// }
-
-// function displayRpmSensor(sensor) {
-//     if (!deviceCard) return;
-//     const reading = deviceCard.querySelector(".device-live-reading");
-//     const valueElement = reading.querySelector(".rpm-value");
-//     const value = typeof sensor.value === "number" && Number.isFinite(sensor.value)
-//         ? String(sensor.value)
-//         : "--";
-//     const unit = typeof sensor.unit === "string" && sensor.unit ? sensor.unit : "rpm";
-//     const voltage = typeof sensor.voltage === "number" && Number.isFinite(sensor.voltage)
-//         ? `${sensor.voltage.toFixed(3)} V`
-//         : "--";
-
-//     if (valueElement.textContent !== value) valueElement.textContent = value;
 //     const unitElement = reading.querySelector(".rpm-unit");
 //     if (unitElement.textContent !== unit) unitElement.textContent = unit;
-//     const voltageElement = reading.querySelector(".rpm-voltage");
-//     if (voltageElement.textContent !== voltage) voltageElement.textContent = voltage;
 
 //     const hasError = sensor.error === true;
 //     const hasAlarm = sensor.alarm === true;
@@ -154,7 +70,7 @@ function createPairingCode() {
 //     reading.classList.toggle("has-alarm", hasAlarm);
 //     reading.querySelector(".sensor-error").hidden = !hasError;
 //     reading.querySelector(".sensor-alarm").hidden = !hasAlarm;
-// }
+}
 
 function setConnectionState(device, state, label) {
 
@@ -338,17 +254,6 @@ async function connectDevice(device) {
             return;
         }
 
-//         if (message.type === "pairing.approved" && message.mac?.toLowerCase() === device.mac.toLowerCase() && typeof message.token === "string") {
-//             device.token = message.token;
-//             deviceCard.querySelector(".token-input").value = device.token;
-//             deviceCard.querySelector(".pair-state").textContent = "Token stored locally - authenticating";
-//             updatePairingCodeDisplay();
-//             pairingRequested = false;
-//             socket.send(JSON.stringify({ type: "device.authenticate", mac: device.mac, token: device.token }));
-//             setConnectionState("connecting", "Authenticating");
-//             return;
-//         }
-
         if (message.type === "pairing.rejected") {
             const reason = message.data === "PAIRING_WINDOW_CLOSED"
                 ? "Open the hub pairing window, then retry."
@@ -367,25 +272,14 @@ async function connectDevice(device) {
             deviceCard.querySelector(".token-input").value = data.device.token;
 //             sensorPanel.hidden = false;
             setMessage("Device connected to pmgHub.");
+            data.socket.send(JSON.stringify({ type: "sensors.read", data: [ "engine.coolant-temp" ] }));
             return;
         }
 
-        if (message.type === "device.authentication_failed") {
-//             device.token = "";
-//             device.pairingCode = "";
-//             deviceCard.querySelector(".token-input").value = "";
-//             deviceCard.querySelector(".pair-state").textContent = "Token rejected · hub registration unchanged";
-//             updatePairingCodeDisplay();
-//             setConnectionState("error", "Token rejected");
-//             setMessage("The hub kept the existing registration. Ask the administrator to revoke it before pairing this device again.");
-//             return;
-        }
-
-//         if (message.type === "sensor.update") {
+        if (message.type === "sensors.value") {
 //             sensorPanel.hidden = false;
-//             deviceCard.querySelector(".device-live-reading").classList.remove("is-inactive");
-//             displaySensorData(message.data);
-//         }
+            displaySensor(data.device, message.data);
+        }
 
     });
 

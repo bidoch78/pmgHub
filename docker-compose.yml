@@ -13,11 +13,11 @@ services:
       - /app/simulator/node_modules
     restart: unless-stopped
 
-  pmgdevice-simulator:
+  pmgdevicetest-simulator:
     build:
       context: ./web-device
       dockerfile: Dockerfile
-    container_name: pmgdevice-simulator
+    container_name: pmgdevicetest-simulator
     volumes:
       - ./web-device/web:/usr/share/nginx/html/
     ports:

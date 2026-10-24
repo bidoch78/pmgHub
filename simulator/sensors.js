@@ -18,23 +18,23 @@ class Sensors {
             { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "lambda", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
             { info: { id: "engine.oil-pressure", category: "ENGINE", name: "Oil Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 7 ], unit: 'psi' }, unit: null, read: null, _data: null },
 
-            // { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 60 ], unit: 'psi' }, unit: null, read: null, _data: null },
-            // { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage", rate: Sensors.rates.LOW }, sim: { dtype: 'range', data: [ 0, 12 ], out: [ 0, 100 ], unit: 'percentage' }, unit: null, read: null, _data: null },
-            // { info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", rate: Sensors.rates.LOW, type: "bool" }, sim: { dtype: 'pull', data: [ 0, 12], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 60 ], unit: 'psi' }, unit: null, read: null, _data: null },
+            { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage", rate: Sensors.rates.LOW }, sim: { dtype: 'range', data: [ 0, 12 ], out: [ 0, 100 ], unit: 'percentage' }, unit: null, read: null, _data: null },
+            { info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", rate: Sensors.rates.LOW, type: "bool" }, sim: { dtype: 'pull', data: [ 0, 12], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
 
-            // { info: { id: "trans.oil-temp", category: "TRANSMISSION", name: "T. Oil Temperature", type: "temp", rate: Sensors.rates.MEDIUM }, sim: { dtype: "range", data: [ 0, 12 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.sol-a", category: "TRANSMISSION", name: "T. SolA", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.sol-b", category: "TRANSMISSION", name: "T. SolB", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.sol-lockconv", category: "TRANSMISSION", name: "T. SolLC", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.gearsel-na", category: "TRANSMISSION", name: "T. Selector NA", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.gearsel-1", category: "TRANSMISSION", name: "T. Selector 1", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.gearsel-2", category: "TRANSMISSION", name: "T. Selector 2", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "T. Selector D", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "T. Selector R", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.oil-temp", category: "TRANSMISSION", name: "T. Oil Temperature", type: "temp", rate: Sensors.rates.MEDIUM }, sim: { dtype: "range", data: [ 0, 12 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.sol-a", category: "TRANSMISSION", name: "T. SolA", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.sol-b", category: "TRANSMISSION", name: "T. SolB", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.sol-lockconv", category: "TRANSMISSION", name: "T. SolLC", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.gearsel-na", category: "TRANSMISSION", name: "T. Selector NA", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.gearsel-1", category: "TRANSMISSION", name: "T. Selector 1", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.gearsel-2", category: "TRANSMISSION", name: "T. Selector 2", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "T. Selector D", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "T. Selector R", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
 
-            // // Virtual sensors
-            // { info: { id: "trans.gearsel", category: "TRANSMISSION", name: "T. Gear", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null },
-            // { info: { id: "trans.selector", category: "TRANSMISSION", name: "T. Selector", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null }
+            // Virtual sensors
+            { info: { id: "trans.gearsel", category: "TRANSMISSION", name: "T. Gear", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null },
+            { info: { id: "trans.selector", category: "TRANSMISSION", name: "T. Selector", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null }
 
         ];
 

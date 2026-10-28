@@ -69,6 +69,11 @@ class WSClientSession {
                     boolInvalidCommand = true;
                 }
                 break;
+            
+            case "ping":
+
+                this.ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+                break;
 
             case "sensors.get":
 

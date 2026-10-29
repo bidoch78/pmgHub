@@ -72,7 +72,7 @@ class WSClientSession {
             
             case "ping":
 
-                this.ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+                this.ws.send(JSON.stringify({ type: "pong" }));
                 break;
 
             case "sensors.get":
@@ -226,7 +226,7 @@ class WSClientSession {
                             console.log(`Device ${message.data.mac} accepted`);
                             //Update the connection device with device
                             devices.swapDevice(device, this.device);
-                            this.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(this.device, true) }));
+                            this.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(this.device, false) }));
                             csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
                             break;
                         }  

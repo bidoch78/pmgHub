@@ -32,6 +32,8 @@ class Sensors {
             { info: { id: "trans.gearsel-d", category: "TRANSMISSION", name: "T. Selector D", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
             { info: { id: "trans.gearsel-r", category: "TRANSMISSION", name: "T. Selector R", type: "bool", rate: Sensors.rates.MEDIUM }, sim: { dtype: "pull", data: [ 0, 12 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
 
+            { info: { id: "env.daynight", category: "ENV", name: "Day/Night", type: "bool", rate: Sensors.rates.LOW }, sim: { dtype: "pull", data: [ 0, 5 ], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
+
             // Virtual sensors
             { info: { id: "trans.gearsel", category: "TRANSMISSION", name: "T. Gear", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null },
             { info: { id: "trans.selector", category: "TRANSMISSION", name: "T. Selector", type: "virtual", rate: Sensors.rates.MEDIUM }, sim: { dtype: "virtual", data: null, out: [], unit: 'default' }, unit: null, read: null, _data: null }

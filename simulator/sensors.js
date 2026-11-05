@@ -8,10 +8,10 @@ class Sensors {
 
     constructor(services) {
 
-        this.services = services;
-        this.lastUpdate = null;
+        this._services = services;
+        this._lastUpdate = null;
 
-        this.sensors = [
+        this._sensors = [
             { info: { id: "engine.airpressure", category: "ENGINE", name: "Air Pressure", type: "pressure", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5], out: [ -0.5, 2], unit: 'psi' }, unit: null, read: null, _data: null },
             { info: { id: "engine.coolant-temp", category: "ENGINE", name: "Coolant Temperature", type: "temp", rate: Sensors.rates.LOW }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
             { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "lambda", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
@@ -40,7 +40,7 @@ class Sensors {
 
         ];
 
-        for (const item of this.sensors) {
+        for (const item of this._sensors) {
             item.unit = this.getUnit(item.info.type);
             item.read = { 'voltage': 0, 'value': 0, 'srate': 0 };
             item._data = { 'lastread': null, 'count': 0  }
@@ -91,7 +91,7 @@ class Sensors {
     get(ids = null) {
 
         const retSensors = [];
-        for (const item of this.sensors) {
+        for (const item of this._sensors) {
             retSensors.push({ sensor: item.info, unit: item.unit } );
         }
         return retSensors;
@@ -154,7 +154,7 @@ class Sensors {
 
         if (!Array.isArray(ids)) return sensorsVoltage;
 
-        for (const item of this.sensors) {
+        for (const item of this._sensors) {
 
             if (ids.includes(item.info.id)) {
                 sensorsVoltage.set(item.info.id, item.read);
@@ -170,13 +170,13 @@ class Sensors {
 
         const now = Date.now();
 
-        if (!this.lastUpdate) this.lastUpdate = now;
+        if (!this._lastUpdate) this._lastUpdate = now;
 
-        const elapsed = now - this.lastUpdate;
+        const elapsed = now - this._lastUpdate;
         const updateSrate = elapsed >= 1000;
 
         const virtuals = [];
-        for (const item of this.sensors) {
+        for (const item of this._sensors) {
 
             // Calcul du srate et reset
             if (updateSrate) {
@@ -329,201 +329,15 @@ class Sensors {
 
         }
 
-        if (updateSrate) this.lastUpdate = now;
+        if (updateSrate) this._lastUpdate = now;
 
     }
-
-//     update() {
-
-//         const now = Date.now();    
-
-//         if (!this.lastUpdate) this.lastUpdate = now;
-
-//         const virtuals = [];
-
-//         for (const item of this.sensors) {
-
-//             const delta = item._data.lastread
-//     ? now - item._data.lastread
-//     : null;
-
-//             const elapsed = now - this.lastUpdate;
-
-//             console.log(elapsed);
-
-//             //Check aquisition freq
-//             if (item._data.lastread) {
-//                 if ((now - item._data.lastread) < item.info.rate) continue;
-//             }
-           
-//             item._data.lastread = now;
-
-// console.log(
-//     item.info.id,
-//     "rate=", item.info.rate,
-//     "delta=", delta
-// );
-//             item._data.count++;
-
-//             if ((now - this.lastUpdate) >= 1000) {
-//                 item.read.srate = item._data.count / (now - this.lastUpdate) * 1000;
-//                     console.log(
-//         "srate=",
-//         item._data.count
-//     );
-//                 item._data.count = 0;
-
-                
-//             }
-
-//             ///////////////////////////////////////////////////////
-//             //Read sensors
-//             ///////////////////////////////////////////////////////
-
-//             // if (item.info.type == "virtual") { 
-//             //     virtuals.push(item);
-//             //     continue;
-//             // }
-
-//             // item.read.voltage = null;
-//             // item.read.value = null;
-
-//             // switch(item.sim.dtype) {
-//             //     case "range":
-//             //         item.read.voltage = this.roundValue(this.random(item.sim.data[0], item.sim.data[1]));
-//             //         break;
-//             //     case "pull":
-//             //         item.read.voltage = this.roundValue(this.randomToggle(item.sim.data[0], item.sim.data[1]));
-//             //         break;
-//             // }
-
-//             // let value = 0;
-
-//             // switch(item.info.type) {
-                
-//             //     case "bool": 
-//             //         value = (item.read.voltage == item.sim.data[0]) ? item.sim.out[0] : item.sim.out[1];
-//             //         break;
-//             //     //linear conversion
-//             //     case "pressure": 
-//             //     case "temp":
-//             //     case "percentage":
-//             //     case "lambda":
-//             //         value = this.convertLinar(item.read.voltage, item.sim.data[0], item.sim.data[1], item.sim.out[0], item.sim.out[1]);
-//             //         break;
-
-//             // }
-
-//             // if (value !== null) {
-
-//             //     item.read.value = this.roundValue(this.transformUnit(value, item.sim.unit, item.unit), item.unit.decimals);
-
-//             // }
-
-//         }
-
-//         // Virtual sensors
-//         // let sensorsData = null;
-//         // for (const item of virtuals) {
-
-//         //     if (item.info.id == "trans.gearsel") {
-
-//         //         /* if trans.gearsel-na != 0
-
-//         //                 if trans.sol-a = 1 && trans.sol-b = 1
-//         //                     value = 1
-//         //                 else if trans.sol-a = 0 && trans.sol-b = 1
-//         //                     value = 2
-//         //                 else if trans.sol-a = 0 && trans.sol-b = 0
-//         //                     value = 3
-//         //                 else if trans.sol-a = 1 && trans.sol-b = 0
-
-//         //                     if (trans.sol-lockconv = 1) 
-//         //                         value = 5
-//         //                     else 
-//         //                         value = 4
-
-//         //            else
-//         //                 value = "-"
-//         //         */
-                
-//         //         const sensorsToRead = [ 'trans.gearsel-na', 'trans.sol-a', 'trans.sol-b', 'trans.sol-lockconv', 'trans.gearsel-r' ];
-//         //         sensorsData = this.getReadDataOf(sensorsToRead);
-
-//         //         const na = sensorsData.has('trans.gearsel-na') && sensorsData.get('trans.gearsel-na').value === 1;
-
-//         //         // default
-//         //         item.read.value = "-";
-
-//         //         if (na) {
-//         //             item.read.value = 0;
-//         //         }
-//         //         else {
-
-//         //             const rev = sensorsData.has('trans.gearsel-r') && sensorsData.get('trans.gearsel-r').value;
-//         //             if (rev) {
-//         //                 item.read.value = 1;
-//         //                 return;
-//         //             }
-                    
-//         //             const sola = sensorsData.has('trans.sol-a') && sensorsData.get('trans.sol-a').value;
-//         //             const solb = sensorsData.has('trans.sol-b') && sensorsData.get('trans.sol-b').value;
-
-//         //             if (sola && solb) {
-//         //                 item.read.value = 1;
-//         //             }
-//         //             else if (sola === 0 && solb) {
-//         //                 item.read.value = 2;
-//         //             }
-//         //             else if (sola === 0 && solb === 0) {
-//         //                 item.read.value = 3;
-//         //             }
-//         //             else if (sola && solb === 0) {
-                        
-//         //                 const sollc = sensorsData.has('trans.sol-lockconv') && sensorsData.get('trans.sol-lockconv').value == 1;
-//         //                 item.read.value = sollc ? 5 : 4;
-                    
-//         //             }
-
-//         //         }
-
-//         //     }
-//         //     else if (item.info.id == "trans.selector") {
-
-//         //         /*  trans.gearsel-na & trans.gearsel-1 & trans.gearsel-2 & trans.gearsel-d & trans.gearsel-r */
-
-//         //         const sensorsToRead = [ 'trans.gearsel-na', 'trans.gearsel-d', 'trans.gearsel-r', 'trans.gearsel-1', 'trans.gearsel-2' ];
-//         //         sensorsData = this.getReadDataOf(sensorsToRead);
-
-//         //         // default
-//         //         item.read.value = "-";
-
-//         //         for(const sel of sensorsToRead) {
-//         //             if (sensorsData.has(sel) && sensorsData.get(sel).value) {
-//         //                 switch(sel) {
-//         //                     case "trans.gearsel-na": item.read.value = "NA"; break;
-//         //                     case "trans.gearsel-d": item.read.value = "D"; break;
-//         //                     case "trans.gearsel-r": item.read.value = "R"; break;
-//         //                     case "trans.gearsel-1": item.read.value = "1"; break;
-//         //                     case "trans.gearsel-2": item.read.value = "2"; break;
-//         //                 }
-//         //                 break;
-//         //             }
-//         //         }
-
-//         //     }
-
-//         // }
-
-//         if ((now - this.lastUpdate) >= 1000) this.lastUpdate = now;
-
-//     }
 
     getValues() {
 
         const valueSensors = new Map();
 
-        for (const item of this.sensors) valueSensors.set(item.info.id, item.read);
+        for (const item of this._sensors) valueSensors.set(item.info.id, item.read);
 
         return valueSensors;
 

@@ -2,6 +2,7 @@
  * 
  * SessionManager
  * YBI 01/10/2026
+ * YBI 05/11/2026
  * 
  * Finally SessionManager is used only by WebAdmin
  *
@@ -16,9 +17,9 @@ class SessionManager {
 
     /* default max 10 connections & timeout after 1 hour of inactivity */
     constructor(services, timeoutMs = 60 * 60 * 1000) {
-        this.timeoutMs = timeoutMs;
-        this.services = services;
-        this.sessions = new Map();
+        this._timeoutMs = timeoutMs;
+        this._services = services;
+        this._sessions = new Map();
     }
 
     cleanup() {
@@ -26,8 +27,8 @@ class SessionManager {
         const now = Date.now();
 
         /* remove only session with token expired */
-        for (const [token, session] of this.sessions.entries()) {
-            if (now - session.lastActivity > this.timeoutMs) this.sessions.delete(token);
+        for (const [token, session] of this._sessions.entries()) {
+            if (now - session.lastActivity > this._timeoutMs) this._sessions.delete(token);
         }
 
     }
@@ -43,7 +44,7 @@ class SessionManager {
 
         const token = crypto.randomBytes(32).toString("hex");
 
-        this.sessions.set(token, { lastActivity: Date.now(), type: (session_type === SessionManager.SESSION_WEBADMIN ? SessionManager.SESSION_WEBADMIN : SessionManager.SESSION_DEVICE ) });
+        this._sessions.set(token, { lastActivity: Date.now(), type: (session_type === SessionManager.SESSION_WEBADMIN ? SessionManager.SESSION_WEBADMIN : SessionManager.SESSION_DEVICE ) });
 
         return token;
 
@@ -54,7 +55,7 @@ class SessionManager {
     getType(token) {
 
         if (!token) return false;
-        const session = this.sessions.get(token);
+        const session = this._sessions.get(token);
         if (!session) return null;
 
         return session.type
@@ -65,11 +66,11 @@ class SessionManager {
 
         if (!token) return false;
 
-        const session = this.sessions.get(token);
+        const session = this._sessions.get(token);
         if (!session) return false;
 
-        if (Date.now() - session.lastActivity > this.timeoutMs) {
-            this.sessions.delete(token);
+        if (Date.now() - session.lastActivity > this._timeoutMs) {
+            this._sessions.delete(token);
             return false;
         }
 
@@ -78,11 +79,11 @@ class SessionManager {
 
     }
 
-    remove(token) { return this.sessions.delete(token); }
+    remove(token) { return this._sessions.delete(token); }
 
     countActiveSessions() {
         this.cleanup();
-        return this.sessions.size;
+        return this._sessions.size;
     }
 
 }

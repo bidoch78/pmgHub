@@ -2,6 +2,7 @@
  * 
  * WebSocket Client Session
  * YBI 11/10/2026
+ * YBI 05/11/2026
  * 
  */
 const WebSocket = require('ws');
@@ -11,8 +12,8 @@ class WSClientSession {
 
     constructor(device, ws) {
 
-        this.ws = ws;
-        this.device = device;
+        this._ws = ws;
+        this._device = device;
 
         // Correct :
         ws.on('message', (data) => {
@@ -21,11 +22,17 @@ class WSClientSession {
 
     }
 
-    isConnected() {
-        return this.device.connected && (this.ws && this.ws.readyState === WebSocket.OPEN);
+    getDevice() { return this._device; }
+    getWebSocket() { return this._ws; }
+    getId() { return this._device.uID; }
+
+    destroyWebSocket() {
+        this._ws = null;
     }
 
-    getId() { return this.device.uID; }
+    isConnected() {
+        return this._device.connected && (this._ws && this._ws.readyState === WebSocket.OPEN);
+    }
 
     onMessage(rawMessage) {
 
@@ -33,7 +40,7 @@ class WSClientSession {
         try {
             message = JSON.parse(rawMessage.toString());
         } catch {
-            this.ws.close(4100, "Invalid JSON message");
+            this._ws.close(4100, "Invalid JSON message");
             return;
         }
 
@@ -41,27 +48,27 @@ class WSClientSession {
         console.log(message.data);
 
         if (!message.type) {
-            this.ws.close(4101, "Invalid message type");
+            this._ws.close(4101, "Invalid message type");
             return;
         }
 
         let boolInvalidCommand = false;
-        const pairing = this.device.services.getPairing();
-        const csManager = this.device.services.getCSManager();
-        const devices = this.device.services.getDevices();
+        const pairing = this._device.services.getPairing();
+        const csManager = this._device.services.getCSManager();
+        const devices = this._device.services.getDevices();
 
         switch(message.type) {
 
             case "webadmin.init":
 
-                if (this.device.isWebAdmin) {
+                if (this._device.isWebAdmin) {
                     
-                    const initData = { 'init': true, 'sensors': this.device.services.getSensors().get(), 'devices': devices.getDevices(true) };
+                    const initData = { 'init': true, 'sensors': this._device.services.getSensors().get(), 'devices': devices.getDevices(true) };
 
                     //If some pairing device are waiting return them
                     if (pairing.pairingDeviceCount()) initData.pairingrequests = pairing.getPairingDevices(true);
 
-                    this.ws.send(JSON.stringify({ type: "initialize", data: initData }));
+                    this._ws.send(JSON.stringify({ type: "initialize", data: initData }));
                     csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
 
                 }
@@ -72,28 +79,28 @@ class WSClientSession {
             
             case "ping":
 
-                if (this.ws) this.ws.send(JSON.stringify({ type: "pong" }));
+                if (this._ws) this._ws.send(JSON.stringify({ type: "pong" }));
                 break;
 
             case "sensors.get":
 
-                this.ws.send(JSON.stringify({ type: "sensors.list", "data": this.device.sensorsUsed() }));
+                this._ws.send(JSON.stringify({ type: "sensors.list", "data": this._device.sensorsUsed() }));
                 break;
 
             case "sensors.read":
 
-                if (this.device.isWebAdmin) {
-                    this.device.startListenSensors();
+                if (this._device.isWebAdmin) {
+                    this._device.startListenSensors();
                 }
                 else {
-                    this.device.startListenSensors(Array.isArray(message.data) ? message.data : []);
+                    this._device.startListenSensors(Array.isArray(message.data) ? message.data : []);
                 }
 
                 break;
             
             case "device.setname":
 
-                if (this.device.isWebAdmin) {
+                if (this._device.isWebAdmin) {
                     if (message.data && message.data.uID && message.data.name !== null) {
                         const device = devices.getDeviceByuID(message.data.uID);
                         if (device.persistent) {
@@ -109,18 +116,20 @@ class WSClientSession {
 
                 break;
 
+            case "pairing.reject":
             case "device.reject":
 
-                if (this.device.isWebAdmin) {
+                if (this._device.isWebAdmin) {
                     if (message.data && message.data.uID) {
                         console.log("reject device: " + message.data.uID);
                         const deviceRejected = devices.getDeviceByuID(message.data.uID);
                         devices.setPersistent(deviceRejected, false);
                         if (!csManager.close(deviceRejected.uID)) {
                             //if return false, device is not connected so clean here
-                            devices.unregister(deviceRejected.token);
+                            devices.unregister(deviceRejected);
                             csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
                         }
+                        console.log("la2");
                     }
                 }
                 else {
@@ -131,7 +140,7 @@ class WSClientSession {
 
             case "pairing.window":
 
-                if (this.device.isWebAdmin) {
+                if (this._device.isWebAdmin) {
                     
                     if (!pairing.windowIsOpened() && message.data == "start") {
                         console.log("Start Pairing");
@@ -141,7 +150,7 @@ class WSClientSession {
                         console.log("Stop Pairing");
                         pairing.closeWindow();
                         //remove all pairing devices
-                        this.device.services.removeAllPairingDevices();
+                        this._device.services.removeAllPairingDevices();
                     }
 
                 }
@@ -152,7 +161,7 @@ class WSClientSession {
             
             case "pairing.code":
                 
-                if (this.device.isWebAdmin) {
+                if (this._device.isWebAdmin) {
                     if (message.data && message.data.uID) {
                         
                         const check = pairing.checkPairingCode(message.data.uID, message.data.code);
@@ -164,11 +173,14 @@ class WSClientSession {
                             const devicePaired = devices.getDeviceByuID(message.data.uID);
 
                             pairing.removePairindDevice(devicePaired);
-                            devices.updateToken(devicePaired);
+                            devicePaired.updateToken();
                             devices.setPersistent(devicePaired, true);
 
                             const devicePairedWS = csManager.getById(devicePaired.uID);
-                            devicePairedWS.client.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(devicePaired, true) }));
+                            devicePairedWS.client.getWebSocket().send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(devicePaired, true) }));
+
+                            //Remove all previous MAC (if there is a token update)
+                            devices.cleanMACDevices(devicePaired);
 
                             //Update pairing list on webAdmin
                             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
@@ -177,7 +189,7 @@ class WSClientSession {
                         }
                         else {
                             if (check.remainingAttempts) {
-                                this.ws.send(JSON.stringify({ type: "pairing.wrongcode", "data": { 'uID': message.data.uID , 'remainingAttempts': check.remainingAttempts } }));
+                                this._ws.send(JSON.stringify({ type: "pairing.wrongcode", "data": { 'uID': message.data.uID , 'remainingAttempts': check.remainingAttempts } }));
                             }
                             else {
                                 //Reject
@@ -192,41 +204,26 @@ class WSClientSession {
                 }
                 break;
 
-            case "pairing.reject":
-
-                if (this.device.isWebAdmin) {
-                    if (message.data && message.data.uID) {
-                        if (!csManager.close(message.data.uID)) {
-                            //if return false, device is not connected so clean here
-                            const deviceRejected = devices.getDeviceByuID(message.data.uID);
-                            devices.unregister(deviceRejected.token);
-                            csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
-                        }
-                    }
-                }
-                else {
-                    boolInvalidCommand = true;
-                }
-                break;
-            
             case "device.connect":
 
                 // Standard
                 if (message.data && message.data.mac && message.data.nonce && message.data.signature) {
 
                     console.log("Device connection - init");
-                    const device = devices.getDeviceByMAC(message.data.mac);
+                    const device = devices.getPersistentDeviceByMAC(message.data.mac);
 
                     if (device) {
                         console.log(`Device ${message.data.mac} found`);
                         //calculate signature
                         const expected = crypto.createHmac("sha256", device.token).update(message.data.nonce).digest("hex");
+                        console.log(`${device.token} - ${message.data.nonce}`);
                         if (expected == message.data.signature) {
                             console.log(`Device connection - Signature validated`);
                             console.log(`Device ${message.data.mac} accepted`);
                             //Update the connection device with device
-                            devices.swapDevice(device, this.device);
-                            this.ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(this.device, false) }));
+                            devices.swapDevice(device, this._device);
+                            this._device.nonce = message.data.nonce; //keep the new nonce
+                            this._ws.send(JSON.stringify({ type: "device.authenticated", "data": devices.connectDevice(this._device, false) }));
                             csManager.broadcastToWebAdmin(JSON.stringify({ type: "devices.list", "data": devices.getDevices(true) }));
                             break;
                         }  
@@ -245,22 +242,22 @@ class WSClientSession {
 
                 const checkPairing = pairing.checkDevicePairingConnect(message.data);    
                 if (checkPairing !== true) {
-                    this.ws.send(JSON.stringify({ type: "pairing.rejected", "data": checkPairing }));
-                    this.ws.close(4103, "Pairing not available");
+                    this._ws.send(JSON.stringify({ type: "pairing.rejected", "data": checkPairing }));
+                    this._ws.close(4103, "Pairing not available");
                     return;
                 }
                 
                 console.log("PAIRING - Request accepted");
                 
-                this.device.mac = message.data.mac.toLowerCase();
+                this._device.mac = message.data.mac.toLowerCase();
 
                 //save the pairing request
-                pairing.addPairingDevice(this.device, message.data);
+                pairing.addPairingDevice(this._device, message.data);
 
                 // Return to all WebAdmin the list of pairing devices
                 csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.requests", "data": pairing.getPairingDevices(true) }));
 
-                this.ws.send(JSON.stringify({ type: "pairing.pending", "data": null }));
+                this._ws.send(JSON.stringify({ type: "pairing.pending", "data": null }));
 
                 break;
             
@@ -270,7 +267,7 @@ class WSClientSession {
         }
 
         if (boolInvalidCommand) {
-            this.ws.close(4102, "Invalid Command");
+            this._ws.close(4102, "Invalid Command");
         }
 
     }

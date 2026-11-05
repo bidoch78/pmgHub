@@ -2,6 +2,7 @@
  * 
  * COOKIE MANAGEMENT
  * YBI 01/10/2026
+ * YBI 05/11/2026
  * 
  */
 

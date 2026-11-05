@@ -10,9 +10,9 @@ class Devices {
 
     constructor(services, storePath = process.env.PMGHUB_DEVICE_STORE_PATH || path.resolve(__dirname, "../data/paired-devices.json")) {
 
-        this.services = services;
-        this.devices = new Map();
-        this.storePath = storePath;
+        this._services = services;
+        this._devices = new Map();
+        this._storePath = storePath;
         this.load();
 
     }
@@ -23,11 +23,11 @@ class Devices {
         ).join(':');
     }
 
-    createDeviceObject(token, services) {
+    createDeviceObject(services) {
 
         return {
             uID: crypto.randomUUID(),
-            token: token,
+            token: null,
             isWebAdmin: false,
             listenSensors: false,
             connected: true,
@@ -56,8 +56,41 @@ class Devices {
             },
             sensorsUsed() {
                 return this.services.getSensors().get();
+            },
+            generateNonce() {
+
+                const bytes = new Uint8Array(32);
+                crypto.getRandomValues(bytes);
+
+                this.nonce = btoa(String.fromCharCode(...bytes))
+                    .replace(/\+/g, "-")
+                    .replace(/\//g, "_")
+                    .replace(/=+$/, "");
+
+            },
+            updateToken() {
+                this.token = crypto.randomBytes(32).toString("hex");
             }
         };
+
+    }
+
+    swapDevice(device_from, device_to) {
+
+        device_to.token = device_from.token;
+        device_to.isWebAdmin = device_from.isWebAdmin;
+        device_to.listenSensors = device_from.listenSensors;
+        device_to.connected = device_from.connected;
+        device_to.pairing = device_from.pairing;
+        device_to.persistent = device_from.persistent;
+        device_to.name = device_from.name;
+        device_to.mac = device_from.mac;
+        device_to.sensors = device_from.sensors;
+        device_to.nonce = device_from.nonce;
+
+        this._devices.delete(device_from.uID);
+
+        this.save();
 
     }
 
@@ -74,29 +107,8 @@ class Devices {
 
     }
 
-    swapDevice(device_from, device_to) {
-
-        const toToken = device_to.token;
-
-        device_to.token = device_from.token;
-        device_to.isWebAdmin = device_from.isWebAdmin;
-        device_to.listenSensors = device_from.listenSensors;
-        device_to.connected = device_from.connected;
-        device_to.pairing = device_from.pairing;
-        device_to.persistent = device_from.persistent;
-        device_to.name = device_from.name;
-        device_to.mac = device_from.mac;
-        device_to.sensors = device_from.sensors;
-        device_to.nonce = device_from.nonce;
-
-        this.devices.delete(toToken);
-        this.devices.set(device_to.token, device_to);
-
-    }
-
     connectDevice(device, returnToken) {
         device.connected = true;
-        device.nonce = crypto.randomBytes(16).toString('base64');
         return this.authenticatedObject(device, returnToken);
     }
 
@@ -107,74 +119,69 @@ class Devices {
 
     }
 
-    updateToken(device) {
-        this.devices.delete(device.token);
-        device.token = crypto.randomBytes(32).toString("hex");
-        this.devices.set(device.token, device);
+    cleanMACDevices(deviceToKeep) {
+        
+        if (!deviceToKeep) return;
+
+        for (const device of this._devices.values()) {
+            if (device.uID == deviceToKeep.uID) continue;
+            if (device.mac == deviceToKeep.mac) this.unregister(device);
+        }
+
     }
 
-    unregister(token) {
-        if (!token) return;
-        if (this.devices.has(token)) {
-            const device = this.devices.get(token);
+    unregister(device) {
+        if (!device) return;
+        device.stopListenSensors();
+        console.log(`unregister device ${device.uID}`);
+        this._devices.delete(device.uID);
+    }
+
+    unregisterByUID(uID) {
+        if (!uID) return;
+        if (this._devices.has(uID)) {
+            const device = this._devices.get(uID);
             device.stopListenSensors();
         }
-        console.log("unregister device");
-        this.devices.delete(token);
+        console.log(`unregister device ${uID}`);
+        this._devices.delete(uID);
     }
 
     registerWebAdmin(token, services) {
         if (!token) return;
-        const webAdmin = this.createDeviceObject(token, services);
+        const webAdmin = this.createDeviceObject(services);
+        webAdmin.token = this.token;
         webAdmin.isWebAdmin = true;
         webAdmin.connected = true;
-        this.devices.set(token, webAdmin);
+        this._devices.set(webAdmin.uID, webAdmin);
         return webAdmin;
     }
 
     registerDevice(services) {
-        //Here generate a default token (will be changed later during connection/apairing)
-        const device = this.createDeviceObject(crypto.randomBytes(32).toString("hex"), services);
-        this.devices.set(device.token, device);
+        const device = this.createDeviceObject(services);
+        this._devices.set(device.uID, device);
         return device;
     }
 
-    getDeviceByMAC(mac) {
+    getPersistentDeviceByMAC(mac) {
         if (mac) mac = mac.toLowerCase();
-        for (const device of this.devices.values()) {
-            if (device.mac == mac) return device;
+        for (const device of this._devices.values()) {
+            if (device.persistent && device.mac == mac) return device;
         }
         return null;
     }
 
     getDeviceByuID(uID) {
-        for (const device of this.devices.values()) {
-            if (device.uID == uID) return device;
-        }
-        return null;
+        return this._devices.get(uID);
     }
 
-    getDevicesByuIDs(uIDs) {
+    getNumberOfDevices() { return this._devices.size; }
 
-        if (!(Array.isArray(uIDs) && uIDs.length > 0)) return [];
+    sensorsValueToSend(device, sensorValues) {
 
-        const devFound = [];
-        for (const device of this.devices.values()) {
-            if (uIDs.includes(device.uID)) devFound.push(device);
-        }
-
-        return devFound;
-
-    }
-
-    getNumberOfDevices() { return this.devices.size; }
-
-    sensorsValueToSend(token, sensorValues) {
-
-        if (!this.devices.has(token)) return;
+        if (!device) return;
 
         const sensorsToSend = new Map();
-        const device = this.devices.get(token);
 
         if (!device.sensors) return sensorsToSend;
             
@@ -191,13 +198,14 @@ class Devices {
         }
 
         return sensorsToSend;
+
     }
 
     getDevices(forMessage = false) {
 
         const ds = [];
 
-        for (const [id, device] of this.devices) {
+        for (const device of this._devices.values()) {
 
             if (!(device.isWebAdmin || device.persistent)) continue;
 
@@ -210,7 +218,8 @@ class Devices {
                     connected: device.connected,
                     name: device.name,
                     type: (device.isWebAdmin) ? "admin": "device"
-                });
+            });
+
         }
         
         return ds;
@@ -221,7 +230,7 @@ class Devices {
 
         const ds = [];
 
-        for (const [id, device] of this.devices) {
+        for (const device of this._devices.values()) {
             if (device.connected) ds.push(device);
         }
         
@@ -240,18 +249,19 @@ class Devices {
 
         try {
 
-            const persistantDevices = JSON.parse(fs.readFileSync(this.storePath, "utf8"));
+            const persistantDevices = JSON.parse(fs.readFileSync(this._storePath, "utf8"));
 
             if (Array.isArray(persistantDevices)) {
 
                 for (const deviceOnFile of persistantDevices) {
 
-                    const pDevice = this.createDeviceObject(deviceOnFile.token, this.services);
+                    const pDevice = this.createDeviceObject(this._services);
+                    pDevice.token = deviceOnFile.token;
                     pDevice.name = deviceOnFile.name;
                     pDevice.mac = deviceOnFile.mac;
                     pDevice.connected = false;
                     pDevice.persistent = true;
-                    this.devices.set(pDevice.token, pDevice);
+                    this._devices.set(pDevice.uID, pDevice);
 
                 }
 
@@ -270,8 +280,8 @@ class Devices {
 
         //We save only the persistent device
         const saveDevices = [];
-        for (const device of this.devices.values()) {
-            if (device.persistent) {
+        for (const device of this._devices.values()) {
+            if (device.persistent && device.token) {
                 saveDevices.push({
                     'token': device.token,
                     'mac': device.mac,
@@ -280,8 +290,8 @@ class Devices {
             }
         }
 
-        fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
-        fs.writeFileSync(this.storePath, JSON.stringify( saveDevices, null, 2), 'utf8');
+        fs.mkdirSync(path.dirname(this._storePath), { recursive: true });
+        fs.writeFileSync(this._storePath, JSON.stringify( saveDevices, null, 2), 'utf8');
 
     }
 

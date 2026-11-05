@@ -4,42 +4,42 @@ class PairingDeviceManager {
 
     constructor(services, pairingWindowMs) {
 
-        this.services = services;
-        this.pairingWindowMs = pairingWindowMs;
-        this.pairingWindowExpireAt = null;
-        this.pairingWindowRemainingSent = null;
-        this.pairingDevices = new Map();
-        //this.pairingCleanLastExec = null;
+        this._services = services;
+        this._pairingWindowMs = pairingWindowMs;
+        this._pairingWindowExpireAt = null;
+        this._pairingWindowRemainingSent = null;
+        this._pairingDevices = new Map();
+        this._pairingCleanLastExec = null;
 
     }
 
     openWindow() {
-        this.pairingWindowExpireAt = Date.now() + this.pairingWindowMs;
-        this.pairingWindowRemainingSent = null;
+        this._pairingWindowExpireAt = Date.now() + this._pairingWindowMs;
+        this._pairingWindowRemainingSent = null;
     }
 
     closeWindow() {
-        this.pairingWindowExpireAt = null;
-        this.pairingWindowRemainingSent = null;
+        this._pairingWindowExpireAt = null;
+        this._pairingWindowRemainingSent = null;
     }
 
     windowIsOpened() {
-        return Date.now() < this.pairingWindowExpireAt;
+        return Date.now() < this._pairingWindowExpireAt;
     }
 
     getNextRemainingTimeMs() {
         
         if (!this.windowIsOpened()) return null;
 
-        const remainingTime = Math.max(0, Math.floor((this.pairingWindowExpireAt - Date.now()) / 1000));
-        if (this.pairingWindowRemainingSent === null || this.pairingWindowRemainingSent != remainingTime) {
+        const remainingTime = Math.max(0, Math.floor((this._pairingWindowExpireAt - Date.now()) / 1000));
+        if (this._pairingWindowRemainingSent === null || this._pairingWindowRemainingSent != remainingTime) {
             
-            this.pairingWindowRemainingSent = remainingTime;
-            const rTime = this.pairingWindowRemainingSent * 1000;
+            this._pairingWindowRemainingSent = remainingTime;
+            const rTime = this._pairingWindowRemainingSent * 1000;
 
             if (rTime <= 0) {
-                this.pairingWindowExpireAt = null;
-                this.pairingWindowRemainingSent = null;
+                this._pairingWindowExpireAt = null;
+                this._pairingWindowRemainingSent = null;
             }
 
             return rTime;
@@ -75,13 +75,12 @@ class PairingDeviceManager {
         const pairingDeviceData = {
             uID: device.uID,
             attempts: 0,
-            resync: devicePairingData.token != "",
             pairingData: devicePairingData
         }
 
         device.pairing = true;
         console.log("pairing add new:" + device.uID);
-        this.pairingDevices.set(device.uID, pairingDeviceData);
+        this._pairingDevices.set(device.uID, pairingDeviceData);
 
     }
 
@@ -89,9 +88,9 @@ class PairingDeviceManager {
 
         device.pairing = false;
         console.log("pairing remove:" + device.uID);
-        this.pairingDevices.delete(device.uID);
+        this._pairingDevices.delete(device.uID);
 
-        console.log("pairing count:" + this.pairingDevices.size);
+        console.log("pairing count:" + this._pairingDevices.size);
 
     }
 
@@ -99,9 +98,9 @@ class PairingDeviceManager {
 
         const ret = { 'validate': false, 'remainingAttempts': 0 };
 
-        if (this.pairingDevices.has(uID)) {
+        if (this._pairingDevices.has(uID)) {
 
-            const pairingDevice = this.pairingDevices.get(uID)
+            const pairingDevice = this._pairingDevices.get(uID)
             
             ret.validate = pairingDevice.pairingData.pairingCode == code;
 
@@ -116,51 +115,38 @@ class PairingDeviceManager {
 
     }
 
-    //Need to do it every second
-    // cleanPairingDevices(devices, now = false) {
+    //Need to do it every 5 second
+    cleanPairingDevices() {
 
-    //     if (!this.pairingDevices.size) return false;
+        if (!this._pairingDevices.size || this.windowIsOpened()) return null;
 
-    //     const dtNow = Date.now();
+        const dtNow = Date.now();
 
-    //     if (!now) {
-
-    //         if (this.pairingCleanLastExec && ((dtNow - this.pairingCleanLastExec) < 1000)) {
-    //             return false;
-    //         }
-
-    //     }
-
-    //     this.pairingCleanLastExec = dtNow;
-    //     const deviceList = devices.s([...this.pairingDevices.keys()]);
+        if (this._pairingCleanLastExec && (dtNow - this._pairingCleanLastExec) < 5000) return null;
         
-    //     let pairingListUpdated = false;
-    //     for (const device of deviceList) {
-    //         if (!device.connected && device.pairing) {
-    //             console.log("remove pairing");
-    //             this.pairingDevices.delete(device.uID);
-    //             devices.unregister(device.token);
-    //             pairingListUpdated = true;
-    //         }
-    //     }
+        this.pairingCleanLastExec = dtNow;
 
-    //     return pairingListUpdated;
+        const deviceUIDs = [...this._pairingDevices.keys()];
+        
+        for (const [key, data] of this._pairingDevices) {
+            this._pairingDevices.delete(key);
+        }
 
-    // }
+        return deviceUIDs;
 
-    pairingDeviceCount() { return this.pairingDevices.size; }
+    }
+
+    pairingDeviceCount() { return this._pairingDevices.size; }
     
-    getPairingDevicesUID() { return [...this.pairingDevices.keys()]; }
-
-    getPairingDeviceByUID(uID) { return this.pairingDevices.has(uID) ? this.pairingDevices.get(uID) : null; }
+    getPairingDevicesUID() { return [...this._pairingDevices.keys()]; }
 
     getPairingDevices(forMessage = false) { 
         
-        if (!forMessage) return [...this.pairingDevices.values()];
+        if (!forMessage) return [...this._pairingDevices.values()];
 
         const devData = [];
 
-        for (const [uID, data] of this.pairingDevices) {
+        for (const [uID, data] of this._pairingDevices) {
 
             devData.push({
                 uID: uID,

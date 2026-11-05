@@ -369,14 +369,20 @@ setInterval(() => {
     const sensors = services.getSensors();
     const devices = services.getDevices();
     const pairing = services.getPairing();
+    const csMgr = services.getCSManager();
 
+    //Check connections
+    csMgr.checkHeartbeat();
+
+    //Read sensors
     sensors.update();
     
+    //Sent sensors values
     const sensorsValue = sensors.getValues();
 
     for(const device of devices.getDevicesAuthenticated()) {
-        const dtSensor = devices.sensorsValueToSend(device.token, sensorsValue);
-        if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
+        const dtSensor = devices.sensorsValueToSend(device, sensorsValue);
+        //if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
 
     //Pairing
@@ -397,6 +403,15 @@ setInterval(() => {
             //remove all pairing devices
             services.removeAllPairingDevices();
             csManager.broadcastToWebAdmin(JSON.stringify({ type: "pairing.remainingms", data: 0 }));
+        }
+
+        //Remove zombies
+        const devicesDeleted = pairing.cleanPairingDevices();
+        if (devicesDeleted) {
+            for(const dUID in devicesDeleted) {
+                devices.unregisterByUID(dUID);
+                csManager.close(dUID);
+            }
         }
 
     }

@@ -72,7 +72,7 @@ class WSClientSession {
             
             case "ping":
 
-                this.ws.send(JSON.stringify({ type: "pong" }));
+                if (this.ws) this.ws.send(JSON.stringify({ type: "pong" }));
                 break;
 
             case "sensors.get":
@@ -240,6 +240,7 @@ class WSClientSession {
 
                 }
 
+                //////////////////////////////////////////////////
                 // Pairing
 
                 const checkPairing = pairing.checkDevicePairingConnect(message.data);    

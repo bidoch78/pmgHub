@@ -11,14 +11,6 @@ function createPasswordHash(password) {
     return { algorithm: "scrypt", salt, hash };
 }
 
-// function persistCredentials(credentials) {
-//     fs.writeFileSync(
-//         credentialsPath,
-//         JSON.stringify(credentials, null, 2) + "\n",
-//         { mode: 0o600 }
-//     );
-// }
-
 function readCredentials() {
 
     try {
@@ -76,16 +68,6 @@ function isValidPassword(password) {
         const expectedHash = Buffer.from(credentials.hash, "hex");
         return expectedHash.length === attemptedHash.length && crypto.timingSafeEqual(attemptedHash, expectedHash);
     }
-
-//     // Accept existing username/password files once, then migrate them to a password-only hash.
-//     if (typeof credentials.password === "string") {
-//         const attemptedPassword = Buffer.from(password);
-//         const savedPassword = Buffer.from(credentials.password);
-//         if (attemptedPassword.length === savedPassword.length && crypto.timingSafeEqual(attemptedPassword, savedPassword)) {
-//             persistCredentials(createPasswordHash(password));
-//             return true;
-//         }
-//     }
 
     return false;
 

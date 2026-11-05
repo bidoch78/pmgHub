@@ -115,16 +115,16 @@ class PairingDeviceManager {
 
     }
 
-    //Need to do it every 5 second
+    //Need to do it every 10 seconds
     cleanPairingDevices() {
 
-        if (!this._pairingDevices.size || this.windowIsOpened()) return null;
-
         const dtNow = Date.now();
+        if (this._pairingCleanLastExec && (dtNow - this._pairingCleanLastExec) < 10000) return null;
+        this._pairingCleanLastExec = dtNow;
 
-        if (this._pairingCleanLastExec && (dtNow - this._pairingCleanLastExec) < 5000) return null;
-        
-        this.pairingCleanLastExec = dtNow;
+        console.log("Clean pairing devices");
+
+        if (!this._pairingDevices.size || this.windowIsOpened()) return null;
 
         const deviceUIDs = [...this._pairingDevices.keys()];
         

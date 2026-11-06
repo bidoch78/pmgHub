@@ -271,6 +271,15 @@ function createDeviceCard(device) {
         sendWSCommand(wsCom, "device.setname", { 'uID': device.uID, 'name': input.value });
     });
 
+    const identifyButton = document.createElement("button");
+    identifyButton.type = "button";
+    identifyButton.className = "identify-device-button";
+    identifyButton.textContent = "Identify";
+    if (isAdmin) identifyButton.disabled = true;
+    identifyButton.addEventListener("click", async () => {
+        sendWSCommand(wsCom, "device.identify", { 'uID': device.uID });
+    });
+
     const rejectButton = document.createElement("button");
     rejectButton.type = "button";
     rejectButton.className = "reject-device-button";
@@ -281,7 +290,7 @@ function createDeviceCard(device) {
         sendWSCommand(wsCom, "device.reject", { 'uID': device.uID });
     });
 
-    card.append(identity, status, form, rejectButton);
+    card.append(identity, status, form, identifyButton, rejectButton);
 
     deviceList.append(card);
     

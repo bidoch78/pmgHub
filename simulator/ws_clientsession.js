@@ -98,6 +98,22 @@ class WSClientSession {
 
                 break;
             
+            case "device.identify":
+
+                if (this._device.isWebAdmin) {
+                    if (message.data && message.data.uID) {
+                        const device = devices.getDeviceByuID(message.data.uID);
+                        if (device.persistent) {
+                            csManager.sendToDevice(device.uID,JSON.stringify({ type: "device.identify" }));
+                        }
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+
+                break;
+
             case "device.setname":
 
                 if (this._device.isWebAdmin) {

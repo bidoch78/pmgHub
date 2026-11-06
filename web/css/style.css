@@ -202,7 +202,7 @@ div.sensor-title {
 
 .device-card {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) auto minmax(260px, 1.2fr) auto;
+    grid-template-columns: minmax(180px, 1fr) auto minmax(260px, 1.2fr) auto auto;
     align-items: center;
     gap: 20px;
     padding: 18px 20px;

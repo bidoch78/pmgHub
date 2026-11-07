@@ -80,11 +80,13 @@ class WSClientSession {
             case "ping":
 
                 if (this._ws) this._ws.send(JSON.stringify({ type: "pong" }));
+                
                 break;
 
             case "sensors.get":
 
-                this._ws.send(JSON.stringify({ type: "sensors.list", "data": this._device.sensorsUsed() }));
+                const sensorsList = Array.isArray(message.data) ? message.data : [];
+                this._ws.send(JSON.stringify({ type: "sensors.list", "data": this._device.services.getSensors().get(sensorsList, true) }));
                 break;
 
             case "sensors.read":
@@ -93,7 +95,7 @@ class WSClientSession {
                     this._device.startListenSensors();
                 }
                 else {
-                    this._device.startListenSensors(Array.isArray(message.data) ? message.data : []);
+                    this._device.startListenSensors(Array.isArray(message.data) ? message.data : [], message.addSensorUnit);
                 }
 
                 break;

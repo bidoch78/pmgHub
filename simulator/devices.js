@@ -17,6 +17,8 @@ class Devices {
 
     }
 
+    getService() { return this._services; }
+
     static generateMacAddress() {
         return Array.from({ length: 6 }, () =>
             Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
@@ -38,15 +40,26 @@ class Devices {
             mac: Devices.generateMacAddress(),
             sensors: null,
             nonce: null,
-            startListenSensors(listOfSensors = null) {
+            startListenSensors(listOfSensors = null, addSensorUnit = null) {
+
                 const sensors = this.sensorsUsed();
                 const sensorsData = new Map();
+                
                 if (!listOfSensors) {
-                    for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null } );
+                    for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null, 'addUnits': null } );
                 }
                 else {
-                    for (const sensorId of listOfSensors) sensorsData.set(sensorId, { 'lastValue': null } );
+                    for (const sensorId of listOfSensors) sensorsData.set(sensorId, { 'lastValue': null, 'addUnits': null } );
                 }
+
+                if (addSensorUnit) {
+                    console.log(addSensorUnit);
+                    for(const sensorId in addSensorUnit) {
+                        const sData = sensorsData.get(sensorId);
+                        if (sData) sData.addUnits = addSensorUnit[sensorId];
+                    }
+                }
+
                 this.sensors = sensorsData;
                 this.listenSensors = true;
             },
@@ -177,7 +190,7 @@ class Devices {
 
     getNumberOfDevices() { return this._devices.size; }
 
-    sensorsValueToSend(device, sensorValues) {
+    sensorsValueToSend(device, sensorValues, sensors) {
 
         if (!device) return;
 
@@ -192,7 +205,15 @@ class Devices {
             const sensorData = device.sensors.get(id);
             if (!sensorData.lastValue || sensorData.lastValue != data.value) {
                 sensorData.lastValue = data.value;
-                sensorsToSend.set(id, data);
+                
+                const dataToSend = (sensorData.addUnits) ? structuredClone(data) : data;
+                if (sensorData.addUnits) {
+                    dataToSend["uConv"] = {};
+                    for(const unit of sensorData.addUnits) {
+                        dataToSend.uConv[unit] = sensors.convertSensor(id, dataToSend.value, unit);
+                    }
+                }
+                sensorsToSend.set(id, dataToSend);
             }
 
         }

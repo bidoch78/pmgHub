@@ -381,7 +381,7 @@ setInterval(() => {
     const sensorsValue = sensors.getValues();
 
     for(const device of devices.getDevicesAuthenticated()) {
-        const dtSensor = devices.sensorsValueToSend(device, sensorsValue);
+        const dtSensor = devices.sensorsValueToSend(device, sensorsValue, sensors);
         if (dtSensor.size) csManager.sendToDevice(device.uID, JSON.stringify({ 'type': "sensors.value", data: Object.fromEntries(dtSensor) }));
     }
 

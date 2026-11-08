@@ -43,6 +43,7 @@ class Sensors {
 
         this._sensorById = new Map();
 
+        // Initialize data + unit
         for (const item of this._sensors) {
             this._sensorById.set(item.info.id, item);
             item.unit = this.getUnits(item.info.type)[0];
@@ -61,28 +62,28 @@ class Sensors {
      *  First item is unit used by the hub (initial value)
      * 
      */
-    getUnits(type) {
+    getUnits(type, defaultUnit) {
 
         let units = null;
 
         switch(type) {
             case "bool":
-                units = [{ type: type, id: 'on', 'name': 'SW', decimals: 0 }];
+                units = [{ type: type, id: 'on', 'name': 'SW', decimals: 0, 'default': defaultUnit == "on" }];
                 break;
             case "pressure": 
-                units = [{ type: type, id: 'bar', 'name': 'Bar', decimals: 2 }, { type: type, id: 'psi', 'name': 'PSI', decimals: 2 }];
+                units = [{ type: type, id: 'bar', 'name': 'Bar', decimals: 2, 'default': defaultUnit == "bar" }, { type: type, id: 'psi', 'name': 'PSI', decimals: 2, 'default': defaultUnit == "psi" }];
                 break;
             case "temperature":
-                units = [{ type: type, id: 'celsius', 'name': '°C', decimals: 0 }, { type: type, id: 'fahrenheit', 'name': '°F', decimals: 0 }];                
+                units = [{ type: type, id: 'celsius', 'name': '°C', decimals: 0, 'default': defaultUnit == "celsius" }, { type: type, id: 'fahrenheit', 'name': '°F', decimals: 0, 'default': defaultUnit == "fahrenheit" }];                
                 break;
             case "percentage":
-                units = [{ type: type, id: 'pct', 'name': '%', decimals: 0 }];
+                units = [{ type: type, id: 'pct', 'name': '%', decimals: 0, 'default': defaultUnit == "pct" }];
                 break;
             case "lambda":
-                units = [{ type: type, id: 'lambda', 'name': 'λ', decimals: 2 }, { type: type, id: 'afr', 'name': 'AFR', decimals: 2 }];
+                units = [{ type: type, id: 'lambda', 'name': 'λ', decimals: 2, 'default': defaultUnit == "lambda" }, { type: type, id: 'afr', 'name': 'AFR', decimals: 2, 'default': defaultUnit == "afr" }];
                 break;
             default:
-                units = [{ type: type, id: '-', 'name': '', decimals: 0 }];
+                units = [{ type: type, id: '-', 'name': '', decimals: 0, 'default': defaultUnit == "-" }];
                 
         }
 
@@ -118,11 +119,22 @@ class Sensors {
 
     }
 
+    find(id) {
+        return this._sensorById.get(id);
+    }
+
     get(ids = null, withAllUnits = false) {
 
         const retSensors = [];
         for (const item of this._sensors) {
-            if (!ids || ids.includes(item.info.id)) retSensors.push({ sensor: item.info, unit: (!withAllUnits) ? item.unit : this.getUnits(item.info.type) } );
+            if (!ids || ids.includes(item.info.id)) {
+                if (withAllUnits) {
+                    retSensors.push({ sensor: item.info, units: this.getUnits(item.info.type, item.unit ? item.unit.id : null) } );
+                }
+                else {
+                    retSensors.push({ sensor: item.info, unit: item.unit } );
+                }
+            }
         }
         return retSensors;
 

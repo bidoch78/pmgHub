@@ -39,11 +39,13 @@ class Devices {
             name: null,
             mac: Devices.generateMacAddress(),
             sensors: null,
+            typeUnits: null,
             nonce: null,
             startListenSensors(listOfSensors = null, addSensorUnit = null) {
 
                 const sensors = this.sensorsUsed();
                 const sensorsData = new Map();
+                const typeUnits = new Map();
                 
                 if (!listOfSensors) {
                     for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null, 'addUnits': null } );
@@ -55,17 +57,26 @@ class Devices {
                 if (addSensorUnit) {
                     console.log(addSensorUnit);
                     for(const sensorId in addSensorUnit) {
-                        const sData = sensorsData.get(sensorId);
-                        if (sData) sData.addUnits = addSensorUnit[sensorId];
+                        
+                        if (sensorId.startsWith("type.")) {
+                            typeUnits.set(sensorId.slice(5), addSensorUnit[sensorId]);
+                        }
+                        else {
+                            const sData = sensorsData.get(sensorId);
+                            if (sData) sData.addUnits = addSensorUnit[sensorId];
+                        }
+
                     }
                 }
 
+                this.typeUnits = (typeUnits.size) ? typeUnits : null;
                 this.sensors = sensorsData;
                 this.listenSensors = true;
             },
             stopListenSensors() {
                 this.sensors = null;
                 this.listenSensors = false;
+                this.typeUnits = null;
             },
             sensorsUsed() {
                 return this.services.getSensors().get();
@@ -99,6 +110,7 @@ class Devices {
         device_to.name = device_from.name;
         device_to.mac = device_from.mac;
         device_to.sensors = device_from.sensors;
+        device_to.typeUnits = device_from.typeUnits;
         device_to.nonce = device_from.nonce;
 
         this._devices.delete(device_from.uID);
@@ -207,12 +219,30 @@ class Devices {
                 sensorData.lastValue = data.value;
                 
                 const dataToSend = (sensorData.addUnits) ? structuredClone(data) : data;
-                if (sensorData.addUnits) {
-                    dataToSend["uConv"] = {};
-                    for(const unit of sensorData.addUnits) {
-                        dataToSend.uConv[unit] = sensors.convertSensor(id, dataToSend.value, unit);
+
+                if (sensorData.addUnits || device.typeUnits) {
+
+                    //console.log("Sensor: " + id);
+                    const sensorObj = sensors.find(id);
+                    let sensorAddUnits = sensorData.addUnits ?? [];
+
+                    //Check if global 
+                    if (device.typeUnits && sensorObj) {
+                        const globalConv = device.typeUnits.get(sensorObj.info.type);
+                        if (globalConv && !sensorAddUnits.includes(globalConv)) sensorAddUnits.push(globalConv);
                     }
+
+                    if (sensorAddUnits.length) {
+
+                        dataToSend["uConv"] = {};
+                        for(const unit of sensorAddUnits) {
+                            dataToSend.uConv[unit] = sensors.convertSensor(id, dataToSend.value, unit);
+                        }
+
+                    }
+
                 }
+
                 sensorsToSend.set(id, dataToSend);
             }
 

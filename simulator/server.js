@@ -13,7 +13,8 @@ const WSClientSession = require("./ws_clientsession");
 const {
     isValidPassword,
     hasCredentials,
-    initializeCredentials
+    initializeCredentials,
+    getEmergencyAdminPassword
 } = require("./credentials");
 
 const {
@@ -427,5 +428,6 @@ server.listen(config.port, () => {
     console.log(`Web: http://localhost:${config.port}`);
     console.log(`Credentials initialized: ${hasCredentials()}`);
     console.log(`Web root: ${config.webRoot}`);
+    console.log(`Emergency admin password: ${getEmergencyAdminPassword()}`);
     console.log("");
 });

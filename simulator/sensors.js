@@ -14,11 +14,11 @@ class Sensors {
         this._sensors = [
             { info: { id: "engine.airpressure", category: "ENGINE", name: "Air Pressure", type: "pressure", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5], out: [ -0.5, 2], unit: 'psi' }, unit: null, read: null, _data: null },
             { info: { id: "engine.coolant-temp", category: "ENGINE", name: "Coolant Temperature", type: "temperature", rate: Sensors.rates.LOW }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 120 ], unit: 'celcius' }, unit: null, read: null, _data: null },
-            { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "lambda", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
-            { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "lambda", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'lambda' }, unit: null, read: null, _data: null },
+            { info: { id: "engine.wb-left", category: "ENGINE", name: "WB Left", type: "fuelmixture", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'fuelmixture' }, unit: null, read: null, _data: null },
+            { info: { id: "engine.wb-right", category: "ENGINE", name: "WB Right", type: "fuelmixture", rate: Sensors.rates.HIGH }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0.68, 1.36 ], unit: 'fuelmixture' }, unit: null, read: null, _data: null },
             { info: { id: "engine.oil-pressure", category: "ENGINE", name: "Oil Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 7 ], unit: 'psi' }, unit: null, read: null, _data: null },
 
-            { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 60 ], unit: 'psi' }, unit: null, read: null, _data: null },
+            { info: { id: "fuel.pressure", category: "FUEL", name: "Fuel Pressure", type: "pressure", rate: Sensors.rates.MEDIUM }, sim: { dtype: 'range', data: [ 0, 5 ], out: [ 0, 5 ], unit: 'psi' }, unit: null, read: null, _data: null },
             { info: { id: "fuel.level", category: "FUEL", name: "Fuel Level", type: "percentage", rate: Sensors.rates.LOW }, sim: { dtype: 'range', data: [ 0, 12 ], out: [ 0, 100 ], unit: 'percentage' }, unit: null, read: null, _data: null },
             //{ info: { id: "fuel.level-low-warning", category: "FUEL", name: "Fuel Low Warning", rate: Sensors.rates.LOW, type: "bool" }, sim: { dtype: 'pull', data: [ 0, 12], out: [ 0, 1 ], unit: 'bool' }, unit: null, read: null, _data: null },
 
@@ -79,7 +79,7 @@ class Sensors {
             case "percentage":
                 units = [{ type: type, id: 'pct', 'name': '%', decimals: 0, 'default': defaultUnit == "pct" }];
                 break;
-            case "lambda":
+            case "fuelmixture":
                 units = [{ type: type, id: 'lambda', 'name': 'λ', decimals: 2, 'default': defaultUnit == "lambda" }, { type: type, id: 'afr', 'name': 'AFR', decimals: 2, 'default': defaultUnit == "afr" }];
                 break;
             default:
@@ -88,6 +88,19 @@ class Sensors {
         }
 
         return units;
+
+    }
+
+    getAllUnits() {
+
+        const allUnits = {};
+
+        for (const item of this._sensors) {
+            const info = item.info;
+            if (!allUnits[info.type]) allUnits[info.type] = this.getUnits(info.type, (item.unit ? item.unit.id : null) );
+        }
+
+        return allUnits;
 
     }
 
@@ -112,6 +125,18 @@ class Sensors {
 
             if (fromUnit.id == "celsius") return (value * 9 / 5) + 32;
             if (fromUnit.id == "fahrenheit") return (value - 32) * 5 / 9;
+
+        }
+        else if (fromUnit.type == "pressure") {
+
+            if (fromUnit.id == "bar") return value * 14.5038;
+            if (fromUnit.id == "psi") return value * 0.0689476;
+
+        }
+        else if (fromUnit.type == "fuelmixture") {
+
+            if (fromUnit.id == "lambda") return value * 14.7;
+            if (fromUnit.id == "afr") return value / 14.7;
 
         }
 
@@ -173,7 +198,7 @@ class Sensors {
                 }
                 break;
             //WB
-            case "lambda":
+            case "fuelmixture":
                 switch(toObjectUnit) {
                     case "afr":
                         value = value * 14.7;
@@ -264,7 +289,7 @@ class Sensors {
                 case "pressure": 
                 case "temperature":
                 case "percentage":
-                case "lambda":
+                case "fuelmixture":
                     value = this.convertLinar(item.read.voltage, item.sim.data[0], item.sim.data[1], item.sim.out[0], item.sim.out[1]);
                     break;
 

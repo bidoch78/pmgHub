@@ -463,3 +463,18 @@ dialog form {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+#sensorsunits {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#sensorsunits > div {
+    flex: 1;
+}
+
+#sensorsunits select {
+    margin-left: 10px;
+}

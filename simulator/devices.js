@@ -45,7 +45,6 @@ class Devices {
 
                 const sensors = this.sensorsUsed();
                 const sensorsData = new Map();
-                const typeUnits = new Map();
                 
                 if (!listOfSensors) {
                     for (const item of sensors) sensorsData.set(item.sensor.id, { 'lastValue': null, 'addUnits': null } );
@@ -54,29 +53,40 @@ class Devices {
                     for (const sensorId of listOfSensors) sensorsData.set(sensorId, { 'lastValue': null, 'addUnits': null } );
                 }
 
-                if (addSensorUnit) {
-                    console.log(addSensorUnit);
-                    for(const sensorId in addSensorUnit) {
-                        
-                        if (sensorId.startsWith("type.")) {
-                            typeUnits.set(sensorId.slice(5), addSensorUnit[sensorId]);
-                        }
-                        else {
-                            const sData = sensorsData.get(sensorId);
-                            if (sData) sData.addUnits = addSensorUnit[sensorId];
-                        }
-
-                    }
-                }
-
-                this.typeUnits = (typeUnits.size) ? typeUnits : null;
                 this.sensors = sensorsData;
+                if (addSensorUnit) this.updateUnitSensors(addSensorUnit);
                 this.listenSensors = true;
+
             },
             stopListenSensors() {
                 this.sensors = null;
                 this.listenSensors = false;
                 this.typeUnits = null;
+            },
+            updateUnitSensors(data) {
+                
+                const typeUnits = new Map();
+
+                for(const sensorId in data) {
+
+                    if (sensorId.startsWith("type.")) {
+                        typeUnits.set(sensorId.slice(5), data[sensorId]);
+                    }
+                    else {
+                        const sData = this.sensors.get(sensorId);
+                        if (sData) sData.addUnits = data[sensorId];
+                    }
+
+                }          
+                
+                if (typeUnits.size) {
+                    if (!this.typeUnits) this.typeUnits = new Map();
+                    for(const [ type, unit ] of typeUnits) {
+                        this.typeUnits.set(type, unit);
+                    }
+                }
+
+
             },
             sensorsUsed() {
                 return this.services.getSensors().get();
@@ -222,7 +232,6 @@ class Devices {
 
                 if (sensorData.addUnits || device.typeUnits) {
 
-                    //console.log("Sensor: " + id);
                     const sensorObj = sensors.find(id);
                     let sensorAddUnits = sensorData.addUnits ?? [];
 

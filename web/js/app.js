@@ -12,6 +12,7 @@ const pairingList = document.getElementById("pairingList");
 const pairingCount = document.getElementById("pairingCount");
 const pairingWindowStatus = document.getElementById("pairingWindowStatus");
 const pairingWindowButton = document.getElementById("pairingWindowButton");
+const sensorUnitsContainer = document.getElementById("sensorsunits"); 
 
 let wsCom = null;
 
@@ -146,6 +147,10 @@ function updateSensorCard(card, sensor, unit) {
         if (target.textContent !== text) target.textContent = text;
     };
 
+    //Update unit
+    card.element.dataset.unitType = unit.type;
+    card.element.dataset.unitId = unit.id;
+
     setText(".sensor-name", typeof sensor.name === "string" && sensor.name ? sensor.name : sensor.id);
     setText(".sensor-id", sensor.id);
 
@@ -181,7 +186,13 @@ function updateSensorsValue(data) {
         let card = sensorCards.get(sensorId);
         if (card) {
 
-            setText(card.element, ".sensor-value", (sensorData.value !== null ? sensorData.value : "-" ));
+            let sensorValue = sensorData.value;
+            if (sensorData.uConv) {
+                const unitId = card.element.dataset.unitId;
+                if (sensorData.uConv[unitId]) sensorValue = sensorData.uConv[unitId];
+            }
+
+            setText(card.element, ".sensor-value", (sensorValue !== null ? sensorValue : "-" ));
             setText(card.element, ".sensor-rate", sensorData.srate + " reads/s");
             setText(card.element, ".sensor-voltage", (sensorData.voltage !== null ? sensorData.voltage : "-") + "V");
 
@@ -459,6 +470,78 @@ function refreshPairingWindow(isopen = false, remaingMs = 60000) {
 
 }
 
+function updateUnitSensors(unit) {
+
+    const cards = sensorGroups.querySelectorAll(`[data-unit-type="${unit.type}"]`);
+
+    cards.forEach(card => {
+        
+        card.dataset.unitId = unit.id;
+        //Update label
+
+        card.querySelector(".sensor-unit").textContent = unit.name;
+
+    });
+
+}
+
+function createSensorsUnit(unitdata) {
+
+    if (!unitdata) return;
+
+    for(const unitType in unitdata) {
+
+        const units = unitdata[unitType];
+
+        if (units.length > 1) {
+
+            const labelUnit = document.createElement("label");
+            labelUnit.htmlFor = `unit-${unitType}`; 
+            labelUnit.textContent = unitType;
+
+            const selectUnit = document.createElement("select");
+            selectUnit.className = "select-sensor-unit";
+            selectUnit.id = `unit-${unitType}`;
+            
+            for(const unit of units) {
+
+                const optionUnit = document.createElement("option");
+                optionUnit.value = unit.id;
+                optionUnit.textContent = unit.name;
+                selectUnit.append(optionUnit);
+
+            }
+
+            selectUnit.addEventListener("change", async () => {
+
+                const data = {};
+                data[`type.${unitType}`] = selectUnit.value;
+
+                sendWSCommand(wsCom, "sensors.setunit", data);
+
+                // update all current sensors card
+                for(const unit of units) {
+                    if (unit.id == selectUnit.value) {
+                        updateUnitSensors(unit);
+                        break;
+                    }
+                }
+
+            });
+
+            const unitContainer = document.createElement("div");
+            unitContainer.id = `container-${unitType}`; 
+
+            unitContainer.append(labelUnit, selectUnit);
+
+            sensorUnitsContainer.append(unitContainer);
+
+        }
+
+    }
+
+}
+
 async function initialize() {
 
     const status = await getAuthStatus();
@@ -501,23 +584,7 @@ function connectWebSocket(onStatus) {
             case "initialize":
                 displaySensors(message.data.sensors, true);
                 refreshPairingRequests(message.data.pairingrequests);
-                break;
-
-            case "device.status":
-
-                card = deviceList.querySelector(`.device-card[data-uid='${message.data.uID}']`);
-                if (!card) return;
-
-                const deviceStatus = card.querySelector(".device-status");
-                if (deviceStatus) {
-                    if (message.data.connected) {
-
-                    }
-                    else {
-                        devicesStatus
-                    }
-                }
-
+                createSensorsUnit(message.data.units);
                 break;
 
             case "sensors.list":

@@ -63,7 +63,7 @@ class WSClientSession {
 
                 if (this._device.isWebAdmin) {
                     
-                    const initData = { 'init': true, 'sensors': this._device.services.getSensors().get(), 'devices': devices.getDevices(true) };
+                    const initData = { 'init': true, 'sensors': this._device.services.getSensors().get(), 'devices': devices.getDevices(true), 'units': this._device.services.getSensors().getAllUnits() };
 
                     //If some pairing device are waiting return them
                     if (pairing.pairingDeviceCount()) initData.pairingrequests = pairing.getPairingDevices(true);
@@ -87,6 +87,10 @@ class WSClientSession {
 
                 const sensorsList = Array.isArray(message.data) ? message.data : [];
                 this._ws.send(JSON.stringify({ type: "sensors.list", "data": this._device.services.getSensors().get(sensorsList, true) }));
+                break;
+
+            case "sensors.setunit":
+                this._device.updateUnitSensors(message.data);
                 break;
 
             case "sensors.read":

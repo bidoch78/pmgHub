@@ -2,10 +2,14 @@ Import("env")
 
 import csv
 import os
+import subprocess
 
 PROJECT_DIR = env.subst("$PROJECT_DIR")
 BUILD_DIR = env.subst("$BUILD_DIR")
-PARTITIONS_FILE = os.path.join(PROJECT_DIR, "partitions.csv")
+PARTITIONS_OPTION = env.GetProjectOption("board_build.partitions")
+PARTITIONS_FILE = os.path.abspath(
+    os.path.join(PROJECT_DIR, PARTITIONS_OPTION or "partitions.csv")
+)
 
 PARTITION_NAME = "web"
 
@@ -69,17 +73,21 @@ def find_partition(name):
 
 
 def upload_web(source, target, env):
-
     partition = find_partition(PARTITION_NAME)
 
-    image = os.path.join(
-        BUILD_DIR,
-        "littlefs.bin"
-    )
+    image = os.path.join(BUILD_DIR, "littlefs.bin")
 
     if not os.path.isfile(image):
         raise RuntimeError(
             f"LittleFS image not found: {image}"
+        )
+
+    image_size = os.path.getsize(image)
+
+    if image_size > partition["size"]:
+        raise RuntimeError(
+            f"LittleFS image ({image_size} bytes) exceeds "
+            f"partition '{PARTITION_NAME}' ({partition['size']} bytes)"
         )
 
     offset = "0x{:X}".format(partition["offset"])
@@ -91,64 +99,34 @@ def upload_web(source, target, env):
     print(f"Partition : {PARTITION_NAME}")
     print(f"Offset    : {offset}")
     print(f"Size      : {partition['size']} bytes")
+    print(f"Image size: {image_size} bytes")
     print(f"Image     : {image}")
     print("========================================")
     print()
 
-    #
-    # Reuse PlatformIO uploader.
-    #
-    # We replace only the arguments because uploadfs chose
-    # the wrong filesystem partition in our multi-FS layout.
-    #
-
     uploader = env.subst("$UPLOADER")
+    python = env.subst("$PYTHONEXE")
 
-    if not uploader:
+    if not uploader or not python:
         raise RuntimeError(
-            "PlatformIO uploader not available"
+            "PlatformIO Python or esptool uploader not available"
         )
 
     upload_port = env.subst("$UPLOAD_PORT")
     upload_speed = env.subst("$UPLOAD_SPEED")
 
-    flags = [
-        "--chip",
-        "esp32s3",
-
-        "--port",
-        upload_port,
-
-        "--baud",
-        upload_speed,
-
-        "--before",
-        "default_reset",
-
-        "--after",
-        "hard_reset",
-
+    subprocess.check_call([
+        python,
+        uploader,
+        "--chip", "esp32s3",
+        "--port", upload_port,
+        "--baud", upload_speed,
+        "--before", "default_reset",
+        "--after", "hard_reset",
         "write_flash",
-
         offset,
         image
-    ]
-
-    command = env.Command(
-        target=None,
-        source=None,
-        action=[
-            env.VerboseAction(
-                '"{}" {}'.format(
-                    uploader,
-                    " ".join(flags)
-                ),
-                "Uploading WEB filesystem..."
-            )
-        ]
-    )
-
-    env.Execute(command)
+    ])
 
 
 env.AddCustomTarget(

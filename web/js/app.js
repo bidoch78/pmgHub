@@ -489,6 +489,8 @@ function createSensorsUnit(unitdata) {
 
     if (!unitdata) return;
 
+    if (sensorUnitsContainer.children.length) return;
+
     for(const unitType in unitdata) {
 
         const units = unitdata[unitType];
@@ -539,6 +541,16 @@ function createSensorsUnit(unitdata) {
         }
 
     }
+
+    //Add reset button
+    const resetUserDataButton = document.createElement("button");
+    resetUserDataButton.textContent = "Reset User Data";
+    resetUserDataButton.id = "resetUserData";
+    resetUserDataButton.addEventListener("click", async () => {
+        sendWSCommand(wsCom, "sensor.resetuservalues", {});
+    });
+
+    sensorUnitsContainer.append(resetUserDataButton);
 
 }
 
@@ -631,7 +643,11 @@ function connectWebSocket(onStatus) {
 
         //Wait an try to reconnect
         setTimeout(() => {
-            connectWebSocket(onData, onStatus);
+                wsCom = connectWebSocket(status => {
+                    connectionStatus.textContent = status;
+                    connectionStatus.classList.toggle("online", status === "Connected");
+                    connectionStatus.classList.toggle("offline", status !== "Connected");
+                });             
         }, 2000);
 
     });

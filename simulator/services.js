@@ -11,7 +11,7 @@ class Services {
 
     constructor() {
 
-        this._sessions = new SessionManager(this, this,config.auth.sessionTimeoutMs);
+        this._sessions = new SessionManager(this, config.auth.sessionTimeoutMs);
         this._sensors = new Sensors(this);
         this._devices = new Devices(this);
         this._pairing = new PairingDeviceManager(this, Number(process.env.PAIRING_WINDOW_MS || 60000));

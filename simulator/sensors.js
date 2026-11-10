@@ -43,6 +43,8 @@ class Sensors {
 
         this._sensorById = new Map();
 
+        this._userData = null; // FOR DEBUG ONLY
+
         // Initialize data + unit
         for (const item of this._sensors) {
             this._sensorById.set(item.info.id, item);
@@ -51,6 +53,15 @@ class Sensors {
             item.read = { 'voltage': 0, 'value': 0, 'srate': 0 };
             item._data = { 'lastread': null, 'count': 0  }
         }
+
+        this.addUserData("trans.sol-a", "", null, 12);
+        this.addUserData("trans.sol-b", "", null, 0);
+        this.addUserData("trans.sol-lockconv", "", null, 12);
+        this.addUserData("trans.gearsel-na", "", null, 0);
+        this.addUserData("trans.gearsel-1", "", null, 0);
+        this.addUserData("trans.gearsel-2", "", null, 0);
+        this.addUserData("trans.gearsel-d", "", null, 1);
+        this.addUserData("trans.gearsel-r", "", null, 0);
 
     }
 
@@ -120,29 +131,36 @@ class Sensors {
     convertValue(value, fromUnit, toUnit) {
 
         if (!fromUnit || !toUnit || fromUnit.id == toUnit.id || fromUnit.type != toUnit.type) return value;
-        
-        if (fromUnit.type == "temperature") {
+        return this.transformUnit(value, fromUnit.type, fromUnit.id, toUnit.id);
 
-            if (fromUnit.id == "celsius") return (value * 9 / 5) + 32;
-            if (fromUnit.id == "fahrenheit") return (value - 32) * 5 / 9;
+    }
+
+    transformUnit(value, type, fromUnit, toUnit) {
+
+        if (fromUnit == toUnit) return value;
+
+        if (type == "temperature") {
+
+            if (fromUnit == "celsius") return (value * 9 / 5) + 32;
+            if (fromUnit == "fahrenheit") return (value - 32) * 5 / 9;
 
         }
-        else if (fromUnit.type == "pressure") {
+        else if (type == "pressure") {
 
-            if (fromUnit.id == "bar") return value * 14.5038;
-            if (fromUnit.id == "psi") return value * 0.0689476;
+            if (fromUnit == "bar") return value * 14.5038;
+            if (fromUnit == "psi") return value * 0.0689476;
 
         }
-        else if (fromUnit.type == "fuelmixture") {
+        else if (type == "fuelmixture") {
 
-            if (fromUnit.id == "lambda") return value * 14.7;
-            if (fromUnit.id == "afr") return value / 14.7;
+            if (fromUnit == "lambda") return value * 14.7;
+            if (fromUnit == "afr") return value / 14.7;
 
         }
 
         return value;
-
-    }
+        
+    }    
 
     find(id) {
         return this._sensorById.get(id);
@@ -176,39 +194,6 @@ class Sensors {
         //never before min and after max
         return Math.min(Math.max(result, Math.min(outMin, outMax)), Math.max(outMin, outMax));
 
-    }
-
-    transformUnit(value, unit, toObjectUnit) {
-        
-        switch(unit) {
-            //Pressure
-            case "psi":
-                switch(toObjectUnit) {
-                    case "bar":
-                        value = value * 0.0689476;
-                        break;
-                }
-                break;
-            //Temp
-            case "celcius":
-                 switch(toObjectUnit) {
-                    case "fahrenheit":
-                        value = (value * 9 / 5) + 32
-                        break;
-                }
-                break;
-            //WB
-            case "fuelmixture":
-                switch(toObjectUnit) {
-                    case "afr":
-                        value = value * 14.7;
-                        break;
-                }
-                break;
-        }
-
-        return value;
-        
     }
 
     roundValue(value, decimals = 2) {
@@ -278,6 +263,9 @@ class Sensors {
                     break;
             }
 
+            const userData = (this._userData) ? this._userData.get(item.info.id) : null;
+            if (userData != null && userData != undefined) item.read.voltage = userData;
+
             let value = 0;
 
             switch(item.info.type) {
@@ -297,7 +285,7 @@ class Sensors {
 
             if (value !== null) {
 
-                item.read.value = this.roundValue(this.transformUnit(value, item.sim.unit, item.unit), item.unit.decimals);
+                item.read.value = this.roundValue(this.transformUnit(value, item.type, item.sim.unit, item.unit), item.unit.decimals);
 
             }
 
@@ -436,6 +424,61 @@ class Sensors {
         for (const item of this._sensors) valueSensors.set(item.info.id, item.read);
 
         return valueSensors;
+
+    }
+
+    /*********************** */
+    /** FOR DEBUG ONLY */
+
+    resetUserData() {
+        if (this._userData) this._userData.clear();
+        this._userData = null;
+    }
+
+    addUserData(sensorId, unitId, value, voltage) {
+
+        // get sensor detail
+        const sensor = this._sensorById.get(sensorId);
+        if (!sensor) return;
+
+        // get default unit
+        const unit = sensor.unit;
+        if (!unit) return;
+
+        ////////////////////////////////
+        
+        let sensorVoltage = voltage;
+
+        if (voltage == null) {
+            if (value != null) {
+                let sensorValue = value;
+                //calculate voltage
+                //First convertion in the default unit
+                let convValue = this.transformUnit(sensorValue, unit.type, unitId, unit.id);
+                console.log(`${sensorValue} - ${unit.type} - from unit ${unitId} to ${unit.id} = ${convValue} `);
+
+                //Convert into voltage
+                switch(sensor.info.type) {
+                
+                    case "bool": 
+                        sensorVoltage = value ? sensor.sim.data[1] : sensor.sim.data[0];
+                        break;
+                    //linear conversion
+                    case "pressure": 
+                    case "temperature":
+                    case "percentage":
+                    case "fuelmixture":
+                        sensorVoltage = Math.round(this.convertLinar(convValue, sensor.sim.out[0], sensor.sim.out[1], sensor.sim.data[0], sensor.sim.data[1]),4);
+                        break;
+
+                }
+            }
+        }
+
+        if (sensorVoltage !== null) {
+            if (!this._userData) this._userData = new Map();
+            this._userData.set(sensorId, sensorVoltage);
+        }
 
     }
 

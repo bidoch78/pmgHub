@@ -83,6 +83,29 @@ class WSClientSession {
                 
                 break;
 
+            
+            case "sensor.resetuservalues":
+
+                if (this._device.isWebAdmin) {
+                    this._device.services.getSensors().resetUserData();
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+                break;
+
+            case "sensor.setuservalue":
+
+                if (this._device.isWebAdmin) {
+                    if (message.data) {
+                        this._device.services.getSensors().addUserData(message.data.sensor, message.data.unit, message.data.value, message.data.voltage);
+                    }
+                }
+                else {
+                    boolInvalidCommand = true;
+                }
+                break;
+
             case "sensors.get":
 
                 const sensorsList = Array.isArray(message.data) ? message.data : [];

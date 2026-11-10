@@ -9,7 +9,6 @@ BUILD_DIR = env.subst("$BUILD_DIR")
 
 PARTITIONS_FILE = os.path.join(
     PROJECT_DIR,
-    "firmware",
     "partitions.csv"
 )
 

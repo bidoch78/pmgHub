@@ -1,0 +1,12 @@
+{
+    "folders": [
+        {
+            "name":"pmghub",
+            "path": "."
+        },
+        {
+            "name":"firmware",
+            "path": "./firmware"
+        }
+    ]
+}

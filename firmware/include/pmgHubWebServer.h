@@ -76,6 +76,7 @@ namespace pmgHub {
                 }
 
                 // Start the server only after the WiFi stack has initialized lwIP.
+                _server.on("/", [this]() { this->handleHTTPRequest(); });
                 _server.onNotFound([this]() { this->handleHTTPRequest(); });
                 _server.begin();
 

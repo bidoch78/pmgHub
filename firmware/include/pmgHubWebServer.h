@@ -16,6 +16,7 @@ namespace pmgHub {
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
             WebServer _server;
+            fs::LittleFSFS _webFS;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
             {
@@ -41,10 +42,55 @@ namespace pmgHub {
                 }
             }
 
+            const char *getContentType(const String &path)
+            {
+                const int extensionStart = path.lastIndexOf('.') + 1;
+                String extension = path.substring(extensionStart);
+                extension.toLowerCase();
+
+                if (extension == "html") return "text/html";
+                if (extension == "css") return "text/css";
+                if (extension == "js") return "application/javascript";
+                if (extension == "json") return "application/json";
+                if (extension == "svg") return "image/svg+xml";
+                if (extension == "png") return "image/png";
+                if (extension == "jpg" || extension == "jpeg") return "image/jpeg";
+                if (extension == "ico") return "image/x-icon";
+                if (extension == "woff") return "font/woff";
+                if (extension == "woff2") return "font/woff2";
+                return "application/octet-stream";
+            }            
+
+            bool isWebFile(uri) {
+
+                bool isFile = false;
+
+                if (_webFS.exists(uri)) {
+                    File file = _webFS.open(uri, "r");
+                    isFile = file && !file.isDirectory();
+                    file.close();
+                }
+                return isFile;
+
+            }
+
+            void returnFile(uri) {
+
+                if (_webFS.exists(uri)) return;
+                    File file = _webFS.open(uri, "r");
+                    server.streamFile(file, getContentType(path));
+                    file.close();
+                    return true;
+                }
+                
+                return false;
+
+            }
+
             void handleHTTPRequest() {
 
                 String path = _server.uri();
-
+                
                 // -------------------------------
                 // ---- WEB
                 // ----
@@ -52,6 +98,20 @@ namespace pmgHub {
                 // ---------- STATIC ASSETS ----------
 
                 Serial.println(path);
+
+                constexpr webFile = path;
+
+                if (isWebFile(webFile)) {
+                    if (returnFile(webFile)) return;
+                }
+
+
+                // ---------- DEFAULT PAGE ----------
+                if (path == "/" && _server.method() == HTTP_GET) {
+                    returnFile("index.html");
+                    return;
+                }
+
                 _server.send(404, "text/plain", String("Not found: ") + path);
 
             }
@@ -63,6 +123,10 @@ namespace pmgHub {
             }
 
             void initialize() {
+
+                if (!_webFS.begin(false, "/web", 10, "web")) {
+                    Serial.println("Failed to mount web filesystem");
+                }
 
                 //WIFI
                 WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });

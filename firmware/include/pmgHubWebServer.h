@@ -15,6 +15,7 @@ namespace pmgHub {
 
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
+            WebServer _server;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
             {
@@ -40,11 +41,33 @@ namespace pmgHub {
                 }
             }
 
+            handleHTTPRequest() {
+
+                String path = server.uri();
+
+                // -------------------------------
+                // ---- WEB
+                // ----
+
+                // ---------- STATIC ASSETS ----------
+                
+                Serial.println(path);
+
+            }
 
         public:
 
+            webServer() : _server(80) {
+
+            }
+
             void initialize() {
 
+                //HTTP Server
+                server.onNotFound([this]() { this->handleHTTPRequest(); }
+                server.begin();
+
+                //WIFI
                 WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });
                 WiFi.mode(pmgHub::config::WIFI_MODE);
 
@@ -54,7 +77,7 @@ namespace pmgHub {
                 else {
                     WiFi.softAP(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
                 }
-            
+
             }
 
             void process() {
@@ -75,6 +98,9 @@ namespace pmgHub {
                     }
 
                 }
+
+                //ServerWeb
+                _server.handleClient();
 
             }
 

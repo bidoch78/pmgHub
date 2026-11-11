@@ -81,32 +81,14 @@ void setup()
     Serial.begin(115200);
     webServer.initialize();
 
-    //
-    // 
-
     // Serial.println("pmgHub started");
     // Serial.printf("PSRAM total: %u", ESP.getPsramSize());
     // Serial.printf("PSRAM free: %u", ESP.getFreePsram());
 
-    // WiFi.mode(WIFI_STA);
-    // if (!WiFi.begin(WIFI_AP_SSID, WIFI_AP_PASSWORD))
-    // {
-    //     Serial.println("Failed to connect to Wi-Fi network");
-    //     return;
-    // }
-
-    // while(WiFi.status() != WL_CONNECTED)
-    // {
-    //     delay(500);
-    //     Serial.println("Connecting to Wi-Fi...");
-    // }
-
-    // Serial.printf("Open http://%s/ to access pmgHub\n", WiFi.localIP().toString().c_str());
-
     // startWebServer();
+    
 }
 
 void loop()
 {
-//    server.handleClient();
 }

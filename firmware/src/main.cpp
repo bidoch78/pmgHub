@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include <config.h>
+#include <pmgHubConfig.h>
+#include <pmgHubWebServer.h>
 
 // namespace
 // {
@@ -72,10 +73,16 @@
 // }
 // }
 
+pmgHub::webServer webServer;
+
 void setup()
 {
 
-    // Serial.begin(115200);
+    Serial.begin(115200);
+    webServer.initialize();
+
+    //
+    // 
 
     // Serial.println("pmgHub started");
     // Serial.printf("PSRAM total: %u", ESP.getPsramSize());

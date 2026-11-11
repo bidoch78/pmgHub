@@ -1,3 +1,7 @@
+#pragma once
+
+#include <WiFi.h>
+
 namespace pmgHub::config {
     
     constexpr char WIFI_STA_SSID[] = "ilnyenapas";

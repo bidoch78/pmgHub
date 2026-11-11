@@ -1,7 +1,9 @@
+#pragma once
+
+#include <pmgHubConfig.h>
+#include <WiFi.h>
 #include <LittleFS.h>
 #include <WebServer.h>
-#include <WiFi.h>
-#include <pmgHubConfig.h>
 
 namespace pmgHub {
 
@@ -9,7 +11,7 @@ namespace pmgHub {
 
         private:
 
-            constexpr uint32_t CHECK_WIFI_EVERY = 500;
+            static constexpr uint32_t CHECK_WIFI_EVERY = 500;
 
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
@@ -19,6 +21,7 @@ namespace pmgHub {
                 switch (event)
                 {
                     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+                        _firstConnection = false;
                         Serial.println("[WiFi] Connected");
                         break;
 
@@ -35,7 +38,7 @@ namespace pmgHub {
                     default:
                         break;
                 }
-            }            
+            }
 
 
         public:
@@ -49,9 +52,9 @@ namespace pmgHub {
                     WiFi.begin(pmgHub::config::WIFI_STA_SSID, pmgHub::config::WIFI_STA_PASSWORD);
                 }
                 else {
-                    WiFi.begin(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
+                    WiFi.softAP(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
                 }
-
+            
             }
 
             void process() {
@@ -75,6 +78,6 @@ namespace pmgHub {
 
             }
 
-    }
+    };
 
-}
+};

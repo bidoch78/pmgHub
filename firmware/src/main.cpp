@@ -91,4 +91,5 @@ void setup()
 
 void loop()
 {
+    webServer.process();
 }

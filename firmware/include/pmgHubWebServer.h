@@ -11,7 +11,7 @@ namespace pmgHub {
 
         private:
 
-            static constexpr uint32_t CHECK_WIFI_EVERY = 500;
+            static constexpr uint32_t CHECK_WIFI_EVERY = 5000;
 
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
@@ -22,11 +22,11 @@ namespace pmgHub {
                 switch (event)
                 {
                     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-                        _firstConnection = false;
                         Serial.println("[WiFi] Connected");
                         break;
 
                     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+                        _firstConnection = false;
                         Serial.print("[WiFi] IP: ");
                         Serial.println(WiFi.localIP());
                         Serial.println(WiFi.macAddress());
@@ -41,17 +41,18 @@ namespace pmgHub {
                 }
             }
 
-            handleHTTPRequest() {
+            void handleHTTPRequest() {
 
-                String path = server.uri();
+                String path = _server.uri();
 
                 // -------------------------------
                 // ---- WEB
                 // ----
 
                 // ---------- STATIC ASSETS ----------
-                
+
                 Serial.println(path);
+                _server.send(404, "text/plain", String("Not found: ") + path);
 
             }
 
@@ -63,10 +64,6 @@ namespace pmgHub {
 
             void initialize() {
 
-                //HTTP Server
-                server.onNotFound([this]() { this->handleHTTPRequest(); }
-                server.begin();
-
                 //WIFI
                 WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });
                 WiFi.mode(pmgHub::config::WIFI_MODE);
@@ -77,6 +74,10 @@ namespace pmgHub {
                 else {
                     WiFi.softAP(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
                 }
+
+                // Start the server only after the WiFi stack has initialized lwIP.
+                _server.onNotFound([this]() { this->handleHTTPRequest(); });
+                _server.begin();
 
             }
 
@@ -91,7 +92,6 @@ namespace pmgHub {
                     if (!_firstConnection) {
 
                         if (WiFi.status() != WL_CONNECTED) {
-                            WiFi.disconnect();
                             WiFi.reconnect();
                         }
 

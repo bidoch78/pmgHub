@@ -6,6 +6,7 @@
 #include <WebServer.h>
 #include <pmgHubServices.h>
 #include <pmgHubSessionManager.h>
+//#include <ArduinoJson.h>
 
 namespace pmgHub {
 
@@ -146,6 +147,32 @@ namespace pmgHub {
 
                 // ----------  API PUBLIC ROUTES ----------
 
+                if (path.startsWith("/api/")) {
+
+                    // ---------- API CREDENTIALS IS CREATED ?----------
+                    if (path == "/api/auth/status" && _server.method() == HTTP_GET) {
+
+                        String json = "{\"initialized\":" + (hasCredentials() ? "true": "false" ) + "}";
+                        _server.send(200, "application/json", json);
+                        return;
+
+                    }
+
+                    // ---------- API LOGOUT  ----------
+                    if (path == "/api/logout" && _server.method() == HTTP_GET) {
+                        
+                        const String token = getSessionToken();
+
+                        if (token.isEmpty()) services.getSessions().remove(token);
+
+                        clearSessionCookie();
+                        _server.send(200, "application/json", "{\"ok\":true}");
+                        return;
+
+                    }                    
+
+                }
+
                 // ----------  LOGIN REDIRECTION ----------                
                 if (!isAuth) {
 
@@ -184,6 +211,12 @@ namespace pmgHub {
            
                 _server.send(404, "text/plain", String("Not found: ") + path);
 
+            }
+
+            bool function hasCredentials() {
+                
+                return false;
+                //return readCredentials() !== null; 
             }
 
         public:
@@ -252,9 +285,9 @@ namespace pmgHub {
 //     res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${ (Math.floor(maxAgeMs / 1000)) }`);
 // }
 
-// function clearSessionCookie(res) {
-//     res.setHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
-// }
+            void function clearSessionCookie() {
+                _server.sendHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+            }
 
             bool isAuthenticated(sessionManager& sessions) {
                 String token = getSessionToken();

@@ -193,6 +193,12 @@ namespace pmgHub {
 
                     if (path.startsWith("/api/")) {
 
+                        if (path == "/api/auth/initialize" && _server.method() == HTTP_POST) {
+
+                            
+
+                        }
+
                     }
                     else {
                         

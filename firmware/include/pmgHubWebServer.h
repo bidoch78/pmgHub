@@ -223,7 +223,7 @@ namespace pmgHub {
 //     res.setHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
 // }
 
-            bool isAuthenticated(sessions& sessions) { return sessions.validate(getSessionToken(req)); }
+            bool isAuthenticated(sessions& sessions) { return sessions.validate(getSessionToken()); }
 
 // function getSessionTypeAuthenticated(req, sessions) { 
 //     const token = getSessionToken(req);

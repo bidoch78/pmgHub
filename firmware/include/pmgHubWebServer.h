@@ -154,7 +154,7 @@ namespace pmgHub {
                     }
                     else {
                         
-                        if (url != "/login") {
+                        if (path != "/login") {
                             _server.sendHeader("Location", "/login");
                             _server.send(302);
                             return;
@@ -171,7 +171,7 @@ namespace pmgHub {
                 }
 
                 // ---------- LOGIN PAGE ----------
-                if (url == "/login" && _server.method() == HTTP_GET) {
+                if (path == "/login" && _server.method() == HTTP_GET) {
                     if (isAuth) {
                         // redirect to /
                         _server.sendHeader("Location", "/");

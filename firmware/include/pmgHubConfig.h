@@ -13,6 +13,6 @@ namespace pmgHub::config {
     constexpr wifi_mode_t WIFI_MODE = WIFI_STA;
 
     constexpr uint32_t sessionTimeoutMs = 60 * 60 * 1000; // web interface timeout
-    constexpr uint32_t maxSessions: 10; / web interface + devices
+    constexpr uint32_t maxSessions = 10; // web interface + devices
 
 }

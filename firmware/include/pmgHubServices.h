@@ -1,23 +1,21 @@
 #pragma once
 
 #include <pmgHubConfig.h>
-#include <pmgHubSessions.h>
+#include <pmgHubSessionManager.h>
 
 namespace pmgHub {
 
-    class Services {
+    class services {
 
         private:
 
-            Sessions& _sessions;
+            sessionManager _sessions;
 
         public:
 
-            Services():   {
-                _sessions = new Sessions(this, pmgHub::config::sessionTimeoutMs);
-            }
+            services() : _sessions(*this, pmgHub::config::sessionTimeoutMs) {}
          
-            Sessions& getSessions() const { return _sessions; }
+            sessionManager& getSessions() { return _sessions; }
         
     };
 

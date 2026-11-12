@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <pmgHubConfig.h>
 #include <pmgHubWebServer.h>
-#include <pmgServices.h>
+#include <pmgHubServices.h>
 
 pmgHub::webServer webServer;
-pmgHub::Services services;
+pmgHub::services services;
 
 void setup()
 {

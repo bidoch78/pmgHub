@@ -1,11 +1,13 @@
 #pragma once
 
-#include <pmgHubServices.h>
+#include <Arduino.h>
 #include <map>
 
 namespace pmgHub {
 
-    class SessionManager {
+    class services;
+
+    class sessionManager {
 
         public:
 
@@ -19,9 +21,9 @@ namespace pmgHub {
             struct SessionData {
                 uint32_t lastActivity;
                 SessionType type;
-            }
+            };
 
-            Services& _service;
+            services& _services;
             uint32_t _timeoutMs;
             String _storePath;
             std::map<String, SessionType> _sessions;
@@ -40,11 +42,11 @@ namespace pmgHub {
 
         public:
 
-            SessionManager(Services& services, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json") 
+            sessionManager(services& services, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json")
                 : _services(services), _timeoutMs(timeoutMs), _storePath(storePath) {
 
                 //Load last sessions stored    
-                loadSessions();
+                loadSession();
             }
 
             String create(SessionType session_type) {
@@ -69,7 +71,7 @@ namespace pmgHub {
 
             uint32_t countActiveSessions() {
                 cleanup();
-                return this._sessions.size();
+                return _sessions.size();
             }
 
     };

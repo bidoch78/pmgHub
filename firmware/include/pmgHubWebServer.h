@@ -139,7 +139,7 @@ namespace pmgHub {
                     if (returnFile(webFile)) return;
                 }
 
-                const bool isAuth = isAuthenticated(req, services.getSessions());
+                const bool isAuth = false; // isAuthenticated(services.getSessions());
 
                 // ---------- DEFAULT PAGE ----------
                 if (path == "/" && _server.method() == HTTP_GET) {
@@ -211,7 +211,7 @@ namespace pmgHub {
 
             /////////////////////////
 
-            String getSessionToken() { return getCookieData(_server.header("Cookie"), 'session'); }
+            String getSessionToken() { return getCookieData(_server.header("Cookie"), "session"); }
 
 // function setSessionCookie(res, token, maxAgeMs = 3600) {
 //     res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${ (Math.floor(maxAgeMs / 1000)) }`);

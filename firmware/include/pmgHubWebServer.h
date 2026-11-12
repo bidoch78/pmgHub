@@ -56,8 +56,6 @@ namespace pmgHub {
                 if (extension == "png") return "image/png";
                 if (extension == "jpg" || extension == "jpeg") return "image/jpeg";
                 if (extension == "ico") return "image/x-icon";
-                if (extension == "woff") return "font/woff";
-                if (extension == "woff2") return "font/woff2";
                 return "application/octet-stream";
             }            
 
@@ -140,7 +138,6 @@ namespace pmgHub {
                 }
 
                 // Start the server only after the WiFi stack has initialized lwIP.
-                _server.on("/", [this]() { this->handleHTTPRequest(); });
                 _server.onNotFound([this]() { this->handleHTTPRequest(); });
                 _server.begin();
 
@@ -153,7 +150,7 @@ namespace pmgHub {
                 //Check wifi connection
                 if (now - _lastWifiCheckStatus >= CHECK_WIFI_EVERY) {
 
-                    _lastWifiCheckStatus = millis();
+                    _lastWifiCheckStatus = now;
                     if (!_firstConnection) {
 
                         if (WiFi.status() != WL_CONNECTED) {

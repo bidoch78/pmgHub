@@ -144,12 +144,44 @@ namespace pmgHub {
 
                 const bool isAuth = isAuthenticated(_services.getSessions());
 
+                // ----------  API PUBLIC ROUTES ----------
+
+                // ----------  LOGIN REDIRECTION ----------                
+                if (!isAuth) {
+
+                    if (path.startsWith("/api/")) {
+
+                    }
+                    else {
+                        
+                        if (url != "/login") {
+                            _server.sendHeader("Location", "/login");
+                            _server.send(302);
+                            return;
+                        }
+
+                    }
+
+                }
+
                 // ---------- DEFAULT PAGE ----------
                 if (path == "/" && _server.method() == HTTP_GET) {
                     returnFile("/index.html");
                     return;
                 }
 
+                // ---------- LOGIN PAGE ----------
+                if (url == "/login" && _server.method() == HTTP_GET) {
+                    if (isAuth) {
+                        // redirect to /
+                        _server.sendHeader("Location", "/");
+                        _server.send(302);
+                        return;
+                    }
+                    returnFile("/login.html");
+                    return;
+                }
+           
                 _server.send(404, "text/plain", String("Not found: ") + path);
 
             }

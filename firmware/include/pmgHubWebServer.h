@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <LittleFS.h>
 #include <WebServer.h>
+#include <pmhHubServices.h>
 
 namespace pmgHub {
 
@@ -17,6 +18,7 @@ namespace pmgHub {
             bool _firstConnection = true;
             WebServer _server;
             fs::LittleFSFS _webFS;
+            services* _services;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
             {
@@ -139,7 +141,7 @@ namespace pmgHub {
                     if (returnFile(webFile)) return;
                 }
 
-                const bool isAuth = false; // isAuthenticated(services.getSessions());
+                const bool isAuth = isAuthenticated(_services.getSessions());
 
                 // ---------- DEFAULT PAGE ----------
                 if (path == "/" && _server.method() == HTTP_GET) {
@@ -153,7 +155,7 @@ namespace pmgHub {
 
         public:
 
-            webServer() : _server(80) {
+            webServer(services& services) : _server(80), _services(services) {
 
             }
 
@@ -221,7 +223,7 @@ namespace pmgHub {
 //     res.setHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
 // }
 
-//            bool isAuthenticated(sessions) { return sessions.validate(getSessionToken(req)); }
+            bool isAuthenticated(sessions& sessions) { return sessions.validate(getSessionToken(req)); }
 
 // function getSessionTypeAuthenticated(req, sessions) { 
 //     const token = getSessionToken(req);

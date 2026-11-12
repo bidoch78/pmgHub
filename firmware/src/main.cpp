@@ -3,8 +3,8 @@
 #include <pmgHubWebServer.h>
 #include <pmgHubServices.h>
 
-pmgHub::webServer webServer;
 pmgHub::services services;
+pmgHub::webServer webServer(services);
 
 void setup()
 {

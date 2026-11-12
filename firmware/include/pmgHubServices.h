@@ -15,7 +15,7 @@ namespace pmgHub {
 
             services() : _sessions(*this, pmgHub::config::sessionTimeoutMs) {}
          
-            sessionManager& getSessions() { return _sessions; }
+            sessionManager& getSessions() const { return _sessions; }
         
     };
 

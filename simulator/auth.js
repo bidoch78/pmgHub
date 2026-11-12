@@ -6,7 +6,7 @@
  * 
  */
 
-function parseCookies(cookieHeader = "") {
+function getCookieData(cookieHeader = "", cookieName) {
 
     const cookies = {};
 
@@ -20,14 +20,15 @@ function parseCookies(cookieHeader = "") {
         const value = part.slice(index + 1).trim();
 
         if (name) cookies[name] = value;
+        
 
     });
 
-    return cookies;
+    return cookies[cookieName] ? cookies[cookieName] : "";
 
 }
 
-function getSessionToken(req) { return parseCookies(req.headers.cookie).session || null; }
+function getSessionToken(req) { return getCookieData(req.headers.cookie, "session") || null; }
 
 function setSessionCookie(res, token, maxAgeMs = 3600) {
     res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${ (Math.floor(maxAgeMs / 1000)) }`);
@@ -46,7 +47,6 @@ function getSessionTypeAuthenticated(req, sessions) {
 }
 
 module.exports = {
-    parseCookies,
     getSessionToken,
     isAuthenticated,
     setSessionCookie,

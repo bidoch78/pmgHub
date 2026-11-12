@@ -42,7 +42,7 @@ namespace pmgHub {
                 }
             }
 
-            const char *getContentType(const String &path)
+            const char *getContentType(const String& path)
             {
                 const int extensionStart = path.lastIndexOf('.') + 1;
                 String extension = path.substring(extensionStart);
@@ -61,7 +61,7 @@ namespace pmgHub {
                 return "application/octet-stream";
             }            
 
-            bool isWebFile(uri) {
+            bool isWebFile(const String& uri) {
 
                 bool isFile = false;
 
@@ -74,11 +74,11 @@ namespace pmgHub {
 
             }
 
-            void returnFile(uri) {
+            bool returnFile(const String& uri) {
 
-                if (_webFS.exists(uri)) return;
+                if (_webFS.exists(uri)) {;
                     File file = _webFS.open(uri, "r");
-                    server.streamFile(file, getContentType(path));
+                    _server.streamFile(file, getContentType(uri));
                     file.close();
                     return true;
                 }
@@ -99,7 +99,7 @@ namespace pmgHub {
 
                 Serial.println(path);
 
-                constexpr webFile = path;
+                const String& webFile = path;
 
                 if (isWebFile(webFile)) {
                     if (returnFile(webFile)) return;
@@ -108,7 +108,7 @@ namespace pmgHub {
 
                 // ---------- DEFAULT PAGE ----------
                 if (path == "/" && _server.method() == HTTP_GET) {
-                    returnFile("index.html");
+                    returnFile("/index.html");
                     return;
                 }
 

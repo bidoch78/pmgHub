@@ -94,7 +94,7 @@ namespace pmgHub {
                 _server.sendHeader("Set-Cookie", cookie);
             }
 
-            void function clearSessionCookie() {
+            void clearSessionCookie() {
                 _server.sendHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
             }
 
@@ -134,7 +134,7 @@ namespace pmgHub {
 
             }
 
-            bool function hasCredentials() {
+            bool hasCredentials() {
                 return false;
                 //return readCredentials() !== null; 
             }
@@ -166,7 +166,8 @@ namespace pmgHub {
                     // ---------- API CREDENTIALS IS CREATED ?----------
                     if (path == "/api/auth/status" && _server.method() == HTTP_GET) {
 
-                        String json = "{\"initialized\":" + (hasCredentials() ? "true": "false" ) + "}";
+                        String credentialsStatus = hasCredentials() ? "true" : "false";
+                        String json = "{\"initialized\":" + credentialsStatus + "}";
                         _server.send(200, "application/json", json);
                         return;
 
@@ -177,7 +178,7 @@ namespace pmgHub {
                         
                         const String token = getSessionToken();
 
-                        if (token.isEmpty()) services.getSessions().remove(token);
+                        if (token.isEmpty()) _services.getSessions().remove(token);
 
                         clearSessionCookie();
                         _server.send(200, "application/json", "{\"ok\":true}");

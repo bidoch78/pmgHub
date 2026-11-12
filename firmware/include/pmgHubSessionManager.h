@@ -53,19 +53,19 @@ namespace pmgHub {
                 return "";
             }
 
-            bool isType(String& token, SessionType session_type) {
+            bool isType(const String& token, SessionType session_type) {
                 return false;
             }
 
-            SessionType getType(String& token) {
+            SessionType getType(const String& token) {
                 return SessionType::webAdmin;
             }
 
-            bool validate(String& token) {
+            bool validate(const String& token) {
                 return false;
             }
 
-            void remove(String& token) {
+            void remove(const String& token) {
 
             }
 

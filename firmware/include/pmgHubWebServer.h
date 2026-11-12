@@ -89,6 +89,15 @@ namespace pmgHub {
 
             }
             
+            void setSessionCookie(String& token, uint32_t maxAgeMs = pmgHub::config::sessionTimeoutMs) {
+                String cookie = "session=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + String(maxAgeMs/1000);
+                _server.sendHeader("Set-Cookie", cookie);
+            }
+
+            void function clearSessionCookie() {
+                _server.sendHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+            }
+
             String getCookieData(const String& cookieHeader, const String& cookieName) {
 
                 int32_t start = 0;
@@ -123,6 +132,11 @@ namespace pmgHub {
                 return "";
 
 
+            }
+
+            bool function hasCredentials() {
+                return false;
+                //return readCredentials() !== null; 
             }
 
             void handleHTTPRequest() {
@@ -213,12 +227,6 @@ namespace pmgHub {
 
             }
 
-            bool function hasCredentials() {
-                
-                return false;
-                //return readCredentials() !== null; 
-            }
-
         public:
 
             webServer(services& services) : _server(80), _services(services) {
@@ -280,14 +288,6 @@ namespace pmgHub {
             /////////////////////////
 
             String getSessionToken() { return getCookieData(_server.header("Cookie"), "session"); }
-
-// function setSessionCookie(res, token, maxAgeMs = 3600) {
-//     res.setHeader("Set-Cookie", `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${ (Math.floor(maxAgeMs / 1000)) }`);
-// }
-
-            void function clearSessionCookie() {
-                _server.sendHeader("Set-Cookie", "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
-            }
 
             bool isAuthenticated(sessionManager& sessions) {
                 String token = getSessionToken();

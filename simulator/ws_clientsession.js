@@ -260,7 +260,7 @@ class WSClientSession {
                     if (device) {
                         console.log(`Device ${message.data.mac} found`);
                         //calculate signature
-                        const expected = crypto.createHmac("sha256", device.token).update(message.data.nonce).digest("hex");
+                        const expected = crypto.createHmac("sha256", Buffer.from(device.token, "hex")).update(message.data.nonce, "utf8").digest("hex");
                         console.log(`${device.token} - ${message.data.nonce}`);
                         if (expected == message.data.signature) {
                             console.log(`Device connection - Signature validated`);

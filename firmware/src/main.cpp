@@ -15,8 +15,6 @@ void setup()
     // Serial.println("pmgHub started");
     // Serial.printf("PSRAM total: %u", ESP.getPsramSize());
     // Serial.printf("PSRAM free: %u", ESP.getFreePsram());
-
-    // startWebServer();
     
 }
 

@@ -160,13 +160,19 @@ function generateNonce() {
 async function signNonce(token, nonce) {
     const encoder = new TextEncoder();
 
+    if (!/^[0-9a-fA-F]{64}$/.test(token)) {
+        throw new Error("Invalid token");
+    }
+
+    const tokenBytes = Uint8Array.from(
+        token.match(/.{2}/g),
+        byte => parseInt(byte, 16)
+    );    
+
+    // Import de la clé HMAC
     const key = await crypto.subtle.importKey(
         "raw",
-        encoder.encode(token),
-        {
-            name: "HMAC",
-            hash: "SHA-256",
-        },
+        tokenBytes, { name: "HMAC", hash: "SHA-256" },
         false,
         ["sign"]
     );
@@ -176,10 +182,11 @@ async function signNonce(token, nonce) {
         key,
         encoder.encode(nonce)
     );
-
-    return [...new Uint8Array(signature)]
+ 
+    return Array.from(new Uint8Array(signature))
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
+
 }
 
 async function connectDevice(device) {
@@ -393,3 +400,5 @@ window.addEventListener("pagehide", () => {
 });
 
 hubUrlInput.value = "http://localhost:3000";
+
+alert("IL FAUT REGARDER LA PARTIE HMAC & UTILISER POUR LE SIMULATEUR LE MEME ALGO DE HASH");

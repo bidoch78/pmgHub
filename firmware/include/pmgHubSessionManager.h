@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <map>
+#include <pmgHubCryptoManager.h>
 
 namespace pmgHub {
 
@@ -11,22 +12,24 @@ namespace pmgHub {
 
         public:
 
-            enum class SessionType : uint32_t {
-                device = 0,
-                webAdmin = 1
+            enum class sessionType : uint32_t {
+                unknown = 0,
+                device = 1,
+                webAdmin = 2
             };
 
         private:
 
-            struct SessionData {
+            struct sessionData {
                 uint32_t lastActivity;
-                SessionType type;
+                sessionType type;
+                sessionData(uint32_t lActivity, sessionType sType): lastActivity(lActivity), type(sType) {};
             };
 
             services& _services;
             uint32_t _timeoutMs;
             String _storePath;
-            std::map<String, SessionType> _sessions;
+            std::map<String, sessionData> _sessions;
 
             void loadSession() {
 
@@ -38,6 +41,20 @@ namespace pmgHub {
 
             void cleanup(bool save = true) {
                 
+                uint32_t now = millis();
+                uint32_t removedCount = 0;
+
+                for (auto it = _sessions.begin(); it != _sessions.end(); ) {
+                    if (now - it->second.lastActivity > _timeoutMs) {
+                        it = _sessions.erase(it);
+                        removedCount++;
+                    } else {
+                        ++it;
+                    }
+                }
+
+                if (removedCount > 0 && save) saveSessions();
+
             }
 
         public:
@@ -49,28 +66,59 @@ namespace pmgHub {
                 loadSession();
             }
 
-            String create(SessionType session_type) {
-                return "";
+            String create(sessionType session_type) {
+                
+                cleanup();
+
+                //If number of sessions is greater than maxSessions, remove the oldest session based on the lastActivity timestamp
+                if (_sessions.size() >= pmgHub::config::maxSessions) {
+                    
+                }
+
+                //Create a new session token and ensure it's unique
+                String token;
+                do {
+                    token = CryptoManager::generateToken();
+                } while (!_sessions.emplace(token, sessionData(millis(), session_type)).second);
+
+                return token;
+
             }
 
-            bool isType(const String& token, SessionType session_type) {
-                return false;
+            bool isType(const String& token, sessionType session_type) {
+                return getType(token) == session_type;
             }
 
-            SessionType getType(const String& token) {
-                return SessionType::webAdmin;
+            sessionType getType(const String& token) {
+                auto it = _sessions.find(token);
+                return it != _sessions.end() ? it->second.type : sessionType::unknown;
             }
 
             bool validate(const String& token) {
+                auto it = _sessions.find(token);
+                if (it != _sessions.end()) {
+
+                    uint32_t now = millis();
+
+                    if (now - it->second.lastActivity > _timeoutMs) {
+                        remove(token);
+                        return false;
+                    }
+
+                    it->second.lastActivity = now;
+                    return true;
+
+                }
                 return false;
             }
 
-            void remove(const String& token) {
-
+            bool remove(const String& token) {
+                bool removed = _sessions.erase(token) > 0;
+                saveSessions();
+                return removed;
             }
 
             uint32_t countActiveSessions() {
-                cleanup();
                 return _sessions.size();
             }
 

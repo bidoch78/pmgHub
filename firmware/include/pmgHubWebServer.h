@@ -6,7 +6,8 @@
 #include <WebServer.h>
 #include <pmgHubServices.h>
 #include <pmgHubSessionManager.h>
-//#include <ArduinoJson.h>
+#include <ArduinoJson.h>
+#include <pmgHubCryptoManager.h>
 
 namespace pmgHub {
 
@@ -20,6 +21,7 @@ namespace pmgHub {
             bool _firstConnection = true;
             WebServer _server;
             fs::LittleFSFS _webFS;
+            fs::LittleFSFS _storageFS;
             services& _services;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
@@ -64,6 +66,11 @@ namespace pmgHub {
             }            
 
             bool isWebFile(const String& uri) {
+
+                //Little tweak
+                // API is not a file, so we don't want to serve it as a static file
+                if (uri.startsWith("/api/")) return false;
+                if (uri == "/login") return false;
 
                 bool isFile = false;
 
@@ -134,9 +141,105 @@ namespace pmgHub {
 
             }
 
+            JsonDocument readCredentials() {
+
+                File file = _storageFS.open("/credentials.json", "r");
+                if (!file) {
+                    Serial.println("Failed to open credentials file for reading.");
+                    return JsonDocument();
+                }
+
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, file);
+                file.close();
+
+                if (error) {
+                    Serial.println("Failed to parse credentials JSON.");
+                    doc.clear();
+                }
+
+                return doc;
+
+            }
+
             bool hasCredentials() {
+                JsonDocument doc = readCredentials();
+                return (doc.is<JsonObject>() && doc.size() > 0);
+            }
+
+            bool isValidPassword(const String& password) {
+
+                if (password.isEmpty()) return false;
+
+                // if (password == emergencyPasswordAdmin) {
+                //     resetCredentials();
+                //     return true;
+                // }
+
+                const JsonDocument credentials = readCredentials();
+
+                if (!credentials.is<JsonObject>() && credentials.size() == 0) return false;
+
+                const String algorithm = credentials["algorithm"].as<String>();
+
+                if (algorithm == "pbkdf2-sha256") {
+                    
+                    const String salt = credentials["salt"].as<String>();
+                    const String expectedHash = credentials["hash"].as<String>();
+                    const uint32_t iterations = credentials["iterations"].as<uint32_t>();
+
+                    String computedHash;
+
+                    bool success = pmgHub::CryptoManager::hashPassword(password, salt, computedHash, iterations);
+
+                    if (success) return (computedHash == expectedHash);
+
+                }
+
                 return false;
-                //return readCredentials() !== null; 
+
+            }
+
+            bool initializeCredentials(const String& password) {
+                
+                if (hasCredentials()) return false;
+
+                // Save credentials
+                String salt = pmgHub::CryptoManager::generateSalt();
+                String hash;
+
+                bool success = pmgHub::CryptoManager::hashPassword(password, salt, hash, pmgHub::config::PBKDF2_HMAC_SHA256_iterations);
+                if (success) {
+                    
+                    JsonDocument doc;
+
+                    doc["algorithm"] = "pbkdf2-sha256";
+                    doc["iterations"] = pmgHub::config::PBKDF2_HMAC_SHA256_iterations;
+                    doc["salt"] = salt;
+                    doc["hash"] = hash;
+
+                    Serial.println("Credentials initialized successfully.");
+
+                    File file = _storageFS.open("/credentials.json", "w");
+                    if (!file) {
+                        Serial.println("Failed to open credentials file for writing.");
+                        return false;
+                    }
+
+                    size_t bytesWritten = serializeJson(doc, file);
+                    file.close();
+
+                    if (bytesWritten == 0) {
+                        Serial.println("Error during JSON writing");
+                        return false;
+                    }
+
+                } else {
+                    Serial.println("Failed to hash password.");
+                    return false;
+                }
+
+                return true;
             }
 
             void handleHTTPRequest() {
@@ -158,6 +261,7 @@ namespace pmgHub {
                 }
 
                 const bool isAuth = isAuthenticated(_services.getSessions());
+                Serial.printf("Is Authenticated: %u", isAuth);
 
                 // ----------  API PUBLIC ROUTES ----------
 
@@ -195,9 +299,68 @@ namespace pmgHub {
 
                         if (path == "/api/auth/initialize" && _server.method() == HTTP_POST) {
 
-                            
+                            String body = _server.arg("plain");
+                            JsonDocument doc;
+                            DeserializationError error = deserializeJson(doc, body);
+                            if (error) {
+                                _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+                                return;
+                            }  
+
+                            JsonVariantConst password = doc["password"];
+                            if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                                _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
+                                return;
+                            }
+
+                            String passwordString = password.as<String>();
+
+                            // Save credentials
+                            if (!initializeCredentials(passwordString)) {
+                                _server.send(409, "application/json", "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
+                                return;
+                            }
+
+                            _server.send(200, "application/json", "{\"ok\":true}");
+                            return;
 
                         }
+
+                        // ---------- API AUTHENTICATION - LOGIN  ----------
+                        if (path == "/api/login" && _server.method() == HTTP_POST) {
+
+                            String body = _server.arg("plain");
+                            JsonDocument doc;
+                            DeserializationError error = deserializeJson(doc, body);
+                            if (error) {
+                                _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+                                return;
+                            }  
+
+                            JsonVariantConst password = doc["password"];
+                            if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                                _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
+                                return;
+                            
+                            }
+
+                            if (!isValidPassword(password.as<String>())) {
+                                _server.send(401, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
+                                return;
+                            }   
+
+                            String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
+                            setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
+
+                            _server.send(200, "application/json", "{\"ok\":true}");
+
+                            return;
+
+                        }
+
+                        // ---------- ERROR ----------
+                        _server.send(500, "text/plain", "Internal server error (2)");
+                        return;                        
 
                     }
                     else {
@@ -244,6 +407,10 @@ namespace pmgHub {
 
                 if (!_webFS.begin(false, "/web", 10, "web")) {
                     Serial.println("Failed to mount web filesystem");
+                }
+
+                if (!_storageFS.begin(true, "/storage", 10, "storage")) {
+                    Serial.println("Failed to mount storage filesystem");
                 }
 
                 //WIFI
@@ -298,14 +465,16 @@ namespace pmgHub {
 
             bool isAuthenticated(sessionManager& sessions) {
                 String token = getSessionToken();
+                Serial.printf("Session Token: %s", token.c_str());
+                Serial.printf("Cookie Header: %s", _server.header("Cookie").c_str());
                 return sessions.validate(token);
             }
 
-// function getSessionTypeAuthenticated(req, sessions) { 
-//     const token = getSessionToken(req);
-//     if (!sessions.validate(token)) return null;
-//     return sessions.getType(token);
-// }
+            sessionManager::sessionType getSessionTypeAuthenticated(sessionManager& sessions) { 
+                String token = getSessionToken();
+                if (!sessions.validate(token)) return sessionManager::sessionType::unknown;
+                return sessions.getType(token);
+            }
 
     };
 

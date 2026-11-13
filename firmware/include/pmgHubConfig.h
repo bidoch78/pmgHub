@@ -15,4 +15,6 @@ namespace pmgHub::config {
     constexpr uint32_t sessionTimeoutMs = 60 * 60 * 1000; // web interface timeout
     constexpr uint32_t maxSessions = 10; // web interface + devices
 
+    constexpr uint32_t PBKDF2_HMAC_SHA256_iterations = 10000; // default iterations for password hashing
+
 }

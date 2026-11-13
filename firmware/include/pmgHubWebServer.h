@@ -261,7 +261,6 @@ namespace pmgHub {
                 }
 
                 const bool isAuth = isAuthenticated(_services.getSessions());
-                Serial.printf("Is Authenticated: %u", isAuth);
 
                 // ----------  API PUBLIC ROUTES ----------
 
@@ -465,8 +464,6 @@ namespace pmgHub {
 
             bool isAuthenticated(sessionManager& sessions) {
                 String token = getSessionToken();
-                Serial.printf("Session Token: %s", token.c_str());
-                Serial.printf("Cookie Header: %s", _server.header("Cookie").c_str());
                 return sessions.validate(token);
             }
 

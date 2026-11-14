@@ -18,6 +18,8 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
             Serial.print("[WiFi] IP: ");
             Serial.println(WiFi.localIP());
             Serial.println(WiFi.macAddress());
+            //Start the http server
+            startHttpServer();
             break;
 
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
@@ -30,11 +32,29 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 };
 
-bool webServer::returnFile(const String& uri) {
+bool webServer::returnFile(httpd_req_t* req, const String& uri) {
 
-    if (_webFS.exists(uri)) {;
+    if (_webFS.exists(uri)) {
+        
         File file = _webFS.open(uri, "r");
-        //_server.streamFile(file, getContentType(uri));
+
+        // define MIME
+        httpd_resp_set_type(req, getContentType(uri));
+
+        char buffer[1024];
+        while (file.available()) {
+            size_t len = file.readBytes(buffer, sizeof(buffer));
+            if (httpd_resp_send_chunk(req, buffer, len) != ESP_OK) {
+                file.close();
+                return false;
+            }
+        }
+
+        file.close();
+
+        // end of chunked
+        httpd_resp_send_chunk(req, nullptr, 0);
+
         file.close();
         return true;
     }
@@ -85,63 +105,111 @@ void webServer::initialize() {
         Serial.println("Failed to mount web filesystem");
     }
 
-//                 if (!_storageFS.begin(true, "/storage", 10, "storage")) {
-//                     Serial.println("Failed to mount storage filesystem");
-//                 }
+    //WIFI
+    WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });
+    WiFi.mode(pmgHub::config::WIFI_MODE);
 
-//                 //WIFI
-//                 WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });
-//                 WiFi.mode(pmgHub::config::WIFI_MODE);
-
-//                 if (pmgHub::config::WIFI_MODE == WIFI_STA) {
-//                     WiFi.begin(pmgHub::config::WIFI_STA_SSID, pmgHub::config::WIFI_STA_PASSWORD);
-//                 }
-//                 else {
-//                     WiFi.softAP(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
-//                 }
-
-//                 // Start the server only after the WiFi stack has initialized lwIP.
-//                 _server.onNotFound([this]() { this->handleHTTPRequest(); });
-
-//                 // Need to read Cookie header
-//                 const char* headerKeys[] = { "Cookie" };
-//                 _server.collectHeaders(headerKeys, 1);
-
-//                 // Start the http server
-//                 _server.begin();
+    if (pmgHub::config::WIFI_MODE == WIFI_STA) {
+        WiFi.begin(pmgHub::config::WIFI_STA_SSID, pmgHub::config::WIFI_STA_PASSWORD);
+    }
+    else {
+        WiFi.softAP(pmgHub::config::WIFI_AP_SSID, pmgHub::config::WIFI_AP_PASSWORD);
+    }
 
 };
+
+void webServer::startHttpServer() {
+
+    if (_server != nullptr) return;
+
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.server_port = 80;
+    config.uri_match_fn = httpd_uri_match_wildcard;
+
+    if (httpd_start(&_server, &config) != ESP_OK) {
+        _server = nullptr;
+        Serial.println("Unable to start HTTP server");
+        return;
+    }
+
+    //Routes
+    httpd_uri_t httpGetUri = {
+        .uri      = "/*",
+        .method   = HTTP_GET,
+        .handler  = httpUriHandler,
+        .user_ctx = this
+    };
+
+    if (httpd_register_uri_handler(_server, &httpGetUri) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler");
+    }
+
+    httpd_uri_t httpPOSTUri = {
+        .uri      = "/*",
+        .method   = HTTP_POST,
+        .handler  = httpUriHandler,
+        .user_ctx = this
+    };
+
+    if (httpd_register_uri_handler(_server, &httpPOSTUri) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler");
+    }
+
+}
 
 void webServer::process() {
 
-//                 uint32_t now = millis();
-    
-//                 //Check wifi connection
-//                 if (now - _lastWifiCheckStatus >= CHECK_WIFI_EVERY) {
+    uint32_t now = millis();
 
-//                     _lastWifiCheckStatus = now;
-//                     if (!_firstConnection) {
+    //Check wifi connection
+    if (now - _lastWifiCheckStatus >= CHECK_WIFI_EVERY) {
 
-//                         if (WiFi.status() != WL_CONNECTED) {
-//                             WiFi.reconnect();
-//                         }
+        _lastWifiCheckStatus = now;
+        if (!_firstConnection) {
 
-//                     }
+            if (WiFi.status() != WL_CONNECTED) {
+                WiFi.reconnect();
+            }
 
-//                 }
+        }
 
-//                 //ServerWeb
-//                 _server.handleClient();
+    }
 
 };
 
+esp_err_t webServer::httpUriHandler(httpd_req_t* req) {
+    
+    //Becasue it's static function we get the context and execute webHandler to retrieve context
+    webServer* self = static_cast<webServer*>(req->user_ctx);
+    return self->webHandler(req);
+
+}
+
 esp_err_t webServer::webHandler(httpd_req_t *req) {
 
+    String path = _server.uri();
+
+    // -------------------------------
+    // ---- WEB
+    // ----
+
+    // ---------- STATIC ASSETS ----------
+
+    Serial.println(path);
+
+    const String& webFile = path;
+
+    if (isWebFile(webFile)) {
+        if (returnFile(webFile)) return;
+    }
+
+    return ESP_OK;
 
 };
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
+    return ESP_OK;
 
 };
 

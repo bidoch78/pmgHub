@@ -307,7 +307,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                     String passwordString = password.as<String>();
 
                     // Save credentials
-                    if (!initializeCredentials(passwordString)) {
+                    if (!_webCredentials.initializeCredentials(passwordString)) {
                         httpd_resp_set_status(req, "400 Bad Request");
                         httpd_resp_set_type(req, "application/json");
                         httpd_resp_sendstr(req, "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
@@ -325,30 +325,32 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                 String body;
                 if (!getPostData(req, body)) return ESP_FAIL;
 
-                JsonDocument doc;
-                DeserializationError error = deserializeJson(doc, body);
-                if (error) {
-                    httpd_resp_set_status(req, "400 Bad Request");
-                    httpd_resp_set_type(req, "application/json");
-                    httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
-                    return ESP_OK;
-                }  
+                // JsonDocument doc;
+                // DeserializationError error = deserializeJson(doc, body);
+                // if (error) {
+                //     httpd_resp_set_status(req, "400 Bad Request");
+                //     httpd_resp_set_type(req, "application/json");
+                //     httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
+                //     return ESP_OK;
+                // }  
 
-                JsonVariantConst password = doc["password"];
-                if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-                    httpd_resp_set_status(req, "400 Bad Request");
-                    httpd_resp_set_type(req, "application/json");
-                    httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
-                    return ESP_OK;
-                }
+                // JsonVariantConst password = doc["password"];
+                // if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                //     httpd_resp_set_status(req, "400 Bad Request");
+                //     httpd_resp_set_type(req, "application/json");
+                //     httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                //     return ESP_OK;
+                // }
 
-//                             if (!isValidPassword(password.as<String>())) {
-//                                 _server.send(401, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-//                             }   
+                // if (!_webCredentials.isValidPassword(password.as<String>())) {
+                //     httpd_resp_set_status(req, "400 Bad Request");
+                //     httpd_resp_set_type(req, "application/json");
+                //     httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                //     return ESP_OK;
+                // }   
 
-//                             String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
-//                             setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
+                // String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
+                // _webAuth.setSessionCookie(req, token, pmgHub::config::sessionTimeoutMs);
 
                 String json = "{\"ok\":true}";
                 return sendJson(req, json);

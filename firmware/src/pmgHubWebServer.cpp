@@ -247,7 +247,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 //                             if (error) {
 //                                 _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
 //                                 return;
-//                             }  
+//                             }
 
 //                             JsonVariantConst password = doc["password"];
 //                             if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {

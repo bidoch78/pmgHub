@@ -42,6 +42,7 @@ namespace pmgHub {
             esp_err_t wsHandler(httpd_req_t *req);
 
             static esp_err_t httpUriHandler(httpd_req_t* req);
+            static esp_err_t webSocketHandler(httpd_req_t* req);
 
         public:
 

@@ -231,6 +231,30 @@ void webServer::startHttpServer() {
         Serial.println("Unable to register HTTP handler");
     }
 
+    httpd_uri_t wsAdmin = {
+        .uri      = "/ws/admin",
+        .method   = HTTP_GET,
+        .handler  = webSocketHandler,
+        .user_ctx = this,
+        .is_websocket = true
+    };
+
+    if (httpd_register_uri_handler(_server, &wsAdmin ) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler");
+    }
+
+    httpd_uri_t ws = {
+        .uri      = "/ws",
+        .method   = HTTP_GET,
+        .handler  = webSocketHandler,
+        .user_ctx = this,
+        .is_websocket = true
+    };
+
+    if (httpd_register_uri_handler(_server, &ws ) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler");
+    }
+
 };
 
 void webServer::process() {
@@ -429,6 +453,14 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
     return ESP_OK;
 
 };
+
+static esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
+
+    //Becasue it's static function we get the context and execute webHandler to retrieve context
+    webServer* self = static_cast<webServer*>(req->user_ctx);
+    return self->wsHandler(req);    
+
+}
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 

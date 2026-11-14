@@ -125,6 +125,30 @@ esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
     return httpd_resp_send(req, json.c_str(), json.length());
 };
 
+bool webServer::getPostData(httpd_req_t* req, String& data) {
+
+    if (req->content_len <= 0 || req->content_len > pmgHub::config::webServerMaxBodySize) {
+        httpd_resp_send_err(req, HTTPD_413_REQUEST_ENTITY_TOO_LARGE, "Content length exceeds limit");
+        return false;
+    }
+
+    size_t len = httpd_req_get_chunk_len(req);
+    if (len == 0) return false;
+
+    char* buffer = new char[len + 1];
+    if (!buffer) return false;
+
+    if (httpd_req_get_chunk(req, buffer, len + 1) != ESP_OK) {
+        delete[] buffer;
+        return false;
+    }
+
+    data = String(buffer);
+    delete[] buffer;
+    return true;
+
+};
+
 void webServer::startHttpServer() {
 
     if (_server != nullptr) return;

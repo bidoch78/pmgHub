@@ -36,6 +36,7 @@ namespace pmgHub {
             bool returnFile(httpd_req_t* req, const String& uri);
             void startHttpServer();
 
+            bool getPostData(httpd_req_t* req, String& data);
             esp_err_t sendJson(httpd_req_t* req, const String& json);
             esp_err_t webHandler(httpd_req_t *req);
             esp_err_t wsHandler(httpd_req_t *req);

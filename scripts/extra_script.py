@@ -10,6 +10,7 @@ PARTITIONS_OPTION = env.GetProjectOption("board_build.partitions")
 PARTITIONS_FILE = os.path.abspath(
     os.path.join(PROJECT_DIR, PARTITIONS_OPTION or "partitions.csv")
 )
+DATA_DIR = env.subst("$PROJECT_DATA_DIR")
 
 PARTITION_NAME = "web"
 
@@ -76,11 +77,19 @@ def upload_web(source, target, env):
     partition = find_partition(PARTITION_NAME)
 
     image = os.path.join(BUILD_DIR, "littlefs.bin")
+    filesystem_tool = env.subst("$MKFSTOOL")
 
-    if not os.path.isfile(image):
-        raise RuntimeError(
-            f"LittleFS image not found: {image}"
-        )
+    if not filesystem_tool:
+        raise RuntimeError("PlatformIO filesystem tool not available")
+
+    subprocess.check_call([
+        filesystem_tool,
+        "-c", DATA_DIR,
+        "-s", str(partition["size"]),
+        "-p", "256",
+        "-b", "4096",
+        image
+    ], cwd=PROJECT_DIR)
 
     image_size = os.path.getsize(image)
 
@@ -131,7 +140,7 @@ def upload_web(source, target, env):
 
 env.AddCustomTarget(
     name="uploadweb",
-    dependencies=["buildfs"],
+    dependencies=[],
     actions=upload_web,
     title="Upload Web",
     description="Build and upload pmgHub WEB LittleFS partition"

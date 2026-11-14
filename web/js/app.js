@@ -576,6 +576,9 @@ function connectWebSocket(onStatus) {
 
     socket.addEventListener("open", () => {
         onStatus?.("Connected");
+
+        console.log("WebSocket connection established");
+
         socket.send(JSON.stringify({ 'type': 'webadmin.init', 'data': null }));
     });
 
@@ -638,8 +641,10 @@ function connectWebSocket(onStatus) {
 
     });
 
-    socket.addEventListener("close", () => {
+    socket.addEventListener("close", (event) => {
         onStatus?.("Disconnected");
+
+        console.log(`WebSocket closed: code=${event.code}, reason=${event.reason}, wasClean=${event.wasClean}`);
 
         //Wait an try to reconnect
         setTimeout(() => {
@@ -652,8 +657,9 @@ function connectWebSocket(onStatus) {
 
     });
 
-    socket.addEventListener("error", () => {
+    socket.addEventListener("error", (event) => {
         onStatus?.("Connection error");
+        console.error("WebSocket error:", event);
     });
 
     return socket;

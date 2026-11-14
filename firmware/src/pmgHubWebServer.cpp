@@ -209,28 +209,6 @@ void webServer::startHttpServer() {
     }
 
     //Routes
-    httpd_uri_t httpGetUri = {
-        .uri      = "/*",
-        .method   = HTTP_GET,
-        .handler  = httpUriHandler,
-        .user_ctx = this
-    };
-
-    if (httpd_register_uri_handler(_server, &httpGetUri) != ESP_OK) {
-        Serial.println("Unable to register HTTP handler");
-    }
-
-    httpd_uri_t httpPOSTUri = {
-        .uri      = "/*",
-        .method   = HTTP_POST,
-        .handler  = httpUriHandler,
-        .user_ctx = this
-    };
-
-    if (httpd_register_uri_handler(_server, &httpPOSTUri) != ESP_OK) {
-        Serial.println("Unable to register HTTP handler");
-    }
-
     httpd_uri_t wsAdmin = {
         .uri      = "/ws/admin",
         .method   = HTTP_GET,
@@ -240,7 +218,7 @@ void webServer::startHttpServer() {
     };
 
     if (httpd_register_uri_handler(_server, &wsAdmin ) != ESP_OK) {
-        Serial.println("Unable to register HTTP handler");
+        Serial.println("Unable to register WebSocket handler 1");
     }
 
     httpd_uri_t ws = {
@@ -252,7 +230,29 @@ void webServer::startHttpServer() {
     };
 
     if (httpd_register_uri_handler(_server, &ws ) != ESP_OK) {
-        Serial.println("Unable to register HTTP handler");
+        Serial.println("Unable to register WebSocket handler 2");
+    }
+
+    httpd_uri_t httpGetUri = {
+        .uri      = "/*",
+        .method   = HTTP_GET,
+        .handler  = httpUriHandler,
+        .user_ctx = this
+    };
+
+    if (httpd_register_uri_handler(_server, &httpGetUri) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler 1");
+    }
+
+    httpd_uri_t httpPOSTUri = {
+        .uri      = "/*",
+        .method   = HTTP_POST,
+        .handler  = httpUriHandler,
+        .user_ctx = this
+    };
+
+    if (httpd_register_uri_handler(_server, &httpPOSTUri) != ESP_OK) {
+        Serial.println("Unable to register HTTP handler 2");
     }
 
 };
@@ -454,7 +454,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
 };
 
-static esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
+esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
 
     //Becasue it's static function we get the context and execute webHandler to retrieve context
     webServer* self = static_cast<webServer*>(req->user_ctx);
@@ -463,6 +463,11 @@ static esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
 }
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
+
+    String path = req->uri;
+
+    Serial.println("WebSocket connection established");
+    Serial.println("Path: " + path);
 
     return ESP_OK;
 

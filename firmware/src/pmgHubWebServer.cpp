@@ -187,7 +187,7 @@ esp_err_t webServer::httpUriHandler(httpd_req_t* req) {
 
 esp_err_t webServer::webHandler(httpd_req_t *req) {
 
-    String path = _server.uri();
+    String path = req->uri;
 
     // -------------------------------
     // ---- WEB
@@ -200,7 +200,8 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
     const String& webFile = path;
 
     if (isWebFile(webFile)) {
-        if (returnFile(webFile)) return;
+        returnFile(req, webFile); 
+        return ESP_OK;
     }
 
     return ESP_OK;

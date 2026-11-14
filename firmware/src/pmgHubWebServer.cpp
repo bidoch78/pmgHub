@@ -130,7 +130,9 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
     size_t len = req->content_len;
 
     if (len == 0 || len > pmgHub::config::webServerMaxBodySize) {
-        httpd_resp_send_err(req, HTTPD_413_REQUEST_ENTITY_TOO_LARGE, "Content length exceeds limit");
+        httpd_resp_set_status(req, "413 Payload Too Large");
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_sendstr(req, "Content length exceeds limit");
         return false;
     }
 

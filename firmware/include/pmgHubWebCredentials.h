@@ -1,13 +1,7 @@
 #pragma once
 
-// #include <pmgHubConfig.h>
-// #include <WiFi.h>
-// #include <LittleFS.h>
-// #include <WebServer.h>
-// #include <pmgHubServices.h>
-// #include <pmgHubSessionManager.h>
-// #include <ArduinoJson.h>
-// #include <pmgHubCryptoManager.h>
+#include <pmgHubServices.h>
+#include <ArduinoJson.h>
 
 namespace pmgHub {
 
@@ -15,114 +9,17 @@ namespace pmgHub {
 
         private:
 
-            // fs::LittleFSFS _storageFS;
+            service& _services;
 
-            // JsonDocument readCredentials() {
+            JsonDocument readCredentials();
 
-            //     File file = _storageFS.open("/credentials.json", "r");
-            //     if (!file) {
-            //         Serial.println("Failed to open credentials file for reading.");
-            //         return JsonDocument();
-            //     }
-
-            //     JsonDocument doc;
-            //     DeserializationError error = deserializeJson(doc, file);
-            //     file.close();
-
-            //     if (error) {
-            //         Serial.println("Failed to parse credentials JSON.");
-            //         doc.clear();
-            //     }
-
-            //     return doc;
-
-            // }
-
-            // bool hasCredentials() {
-            //     JsonDocument doc = readCredentials();
-            //     return (doc.is<JsonObject>() && doc.size() > 0);
-            // }
-
-            // bool isValidPassword(const String& password) {
-
-            //     if (password.isEmpty()) return false;
-
-            //     // if (password == emergencyPasswordAdmin) {
-            //     //     resetCredentials();
-            //     //     return true;
-            //     // }
-
-            //     const JsonDocument credentials = readCredentials();
-
-            //     if (!credentials.is<JsonObject>() && credentials.size() == 0) return false;
-
-            //     const String algorithm = credentials["algorithm"].as<String>();
-
-            //     if (algorithm == "pbkdf2-sha256") {
-                    
-            //         const String salt = credentials["salt"].as<String>();
-            //         const String expectedHash = credentials["hash"].as<String>();
-            //         const uint32_t iterations = credentials["iterations"].as<uint32_t>();
-
-            //         String computedHash;
-
-            //         bool success = pmgHub::CryptoManager::hashPassword(password, salt, computedHash, iterations);
-
-            //         if (success) return (computedHash == expectedHash);
-
-            //     }
-
-            //     return false;
-
-            // }
-
-            // bool initializeCredentials(const String& password) {
-                
-            //     if (hasCredentials()) return false;
-
-            //     // Save credentials
-            //     String salt = pmgHub::CryptoManager::generateSalt();
-            //     String hash;
-
-            //     bool success = pmgHub::CryptoManager::hashPassword(password, salt, hash, pmgHub::config::PBKDF2_HMAC_SHA256_iterations);
-            //     if (success) {
-                    
-            //         JsonDocument doc;
-
-            //         doc["algorithm"] = "pbkdf2-sha256";
-            //         doc["iterations"] = pmgHub::config::PBKDF2_HMAC_SHA256_iterations;
-            //         doc["salt"] = salt;
-            //         doc["hash"] = hash;
-
-            //         Serial.println("Credentials initialized successfully.");
-
-            //         File file = _storageFS.open("/credentials.json", "w");
-            //         if (!file) {
-            //             Serial.println("Failed to open credentials file for writing.");
-            //             return false;
-            //         }
-
-            //         size_t bytesWritten = serializeJson(doc, file);
-            //         file.close();
-
-            //         if (bytesWritten == 0) {
-            //             Serial.println("Error during JSON writing");
-            //             return false;
-            //         }
-
-            //     } else {
-            //         Serial.println("Failed to hash password.");
-            //         return false;
-            //     }
-
-            //     return true;
-            // }
+            bool hasCredentials();
+            bool isValidPassword(const String& password);
+            bool initializeCredentials(const String& password);
 
         public:
 
-            //webServer(services& services) : _server(80), _services(services) {
-            //}
-
+            webCredentials() : _services(services) {}
 
     };
 

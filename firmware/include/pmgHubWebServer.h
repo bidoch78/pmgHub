@@ -6,6 +6,7 @@
 // #include <WebServer.h>
 // #include <pmgHubServices.h>
 #include <pmgHubSessionManager.h>
+#include <pmgHubWebAuth.h>
 #include <esp_http_server.h>
 
 // #include <ArduinoJson.h>
@@ -22,10 +23,9 @@ namespace pmgHub {
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
             
-            fs::LittleFSFS _webFS;
-
             services& _services;
             httpd_handle_t _server = nullptr;
+            webAuth _webAuth;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
             const char* getContentType(const String& path);
@@ -41,7 +41,7 @@ namespace pmgHub {
 
         public:
 
-            webServer(services& services) : _services(services) {}
+            webServer(services& services) : _services(services), _webAuth(services) {}
 
             void initialize();
             void process();

@@ -34,9 +34,13 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 bool webServer::returnFile(httpd_req_t* req, const String& uri) {
 
-    if (_webFS.exists(uri)) {
+    if (!services.getStorage().isWebReady()) return false;
 
-        File file = _webFS.open(uri, "r");
+    LittleFSFS& web = services.getStorage().getWebFS();
+
+    if (web.exists(uri)) {
+
+        File file = web.open(uri, "r");
 
         // define MIME
         httpd_resp_set_type(req, getContentType(uri));
@@ -55,7 +59,6 @@ bool webServer::returnFile(httpd_req_t* req, const String& uri) {
         // end of chunked
         httpd_resp_send_chunk(req, nullptr, 0);
 
-        file.close();
         return true;
     }
     
@@ -83,15 +86,18 @@ const char* webServer::getContentType(const String& path) {
 
 bool webServer::isWebFile(const String& uri) {
 
+    if (!service.getStorage().isWebReady()) return false;
+
     //Little tweak
     // API is not a file, so we don't want to serve it as a static file
     if (uri.startsWith("/api/")) return false;
     if (uri == "/login") return false;
 
     bool isFile = false;
+    LittleFSFS& webFS = services.getStorage().getWebFS();
 
-    if (_webFS.exists(uri)) {
-        File file = _webFS.open(uri, "r");
+    if (webFS.exists(uri)) {
+        File file = webFS.open(uri, "r");
         isFile = file && !file.isDirectory();
         file.close();
     }
@@ -100,10 +106,6 @@ bool webServer::isWebFile(const String& uri) {
 };
 
 void webServer::initialize() {
-
-    if (!_webFS.begin(false, "/web", 10, "web")) {
-        Serial.println("Failed to mount web filesystem");
-    }
 
     //WIFI
     WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) { this->onWiFiEvent(event, info); });
@@ -313,7 +315,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                 httpd_resp_send(req, nullptr, 0);
                 return ESP_OK;
             }
-            
+
         }
 
     }

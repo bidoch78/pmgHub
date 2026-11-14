@@ -7,6 +7,7 @@
 // #include <pmgHubServices.h>
 #include <pmgHubSessionManager.h>
 #include <pmgHubWebAuth.h>
+#include <pmgHubWebCredentials.h>
 #include <esp_http_server.h>
 
 // #include <ArduinoJson.h>

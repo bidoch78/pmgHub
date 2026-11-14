@@ -18,11 +18,11 @@ namespace pmgHub {
 
             storage();
 
-            fs::LittleFSFS& getWebFS() const;
-            fs::LittleFSFS& getDataFS() const;
+            fs::LittleFSFS& getWebFS();
+            fs::LittleFSFS& getDataFS();
 
-            bool storage::isWebReady() const;
-            bool storage::isDataReady() const;
+            bool isWebReady() const;
+            bool isDataReady() const;
 
     };
 

@@ -1,5 +1,3 @@
-#pragma once
-
 #include <pmgHubConfig.h>
 #include <pmgHubWebCredentials.h>
 #include <LittleFS.h>

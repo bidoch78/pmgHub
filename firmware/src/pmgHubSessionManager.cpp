@@ -1,12 +1,10 @@
-#pragma once
-
 #include <Arduino.h>
 #include <map>
 #include <pmgHubSessionManager.h>
 
 using namespace pmgHub;
 
-sessionManager::sessionManager(services& svc, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json")
+sessionManager::sessionManager(services& svc, uint32_t timeoutMs, const String& storePath)
                                 : _services(svc), _timeoutMs(timeoutMs), _storePath(storePath) {
 
     //Load last sessions stored    
@@ -21,7 +19,7 @@ void sessionManager::saveSessions() {
 
 };
 
-void sessionManager::cleanup(bool save = true) {
+void sessionManager::cleanup(bool save) {
     
     uint32_t now = millis();
     uint32_t removedCount = 0;
@@ -58,13 +56,13 @@ String sessionManager::create(sessionType session_type) {
 
 };
 
-bool sessionManager::isType(const String& token, sessionType session_type) {
+bool sessionManager::isType(const String& token, sessionManager::sessionType session_type) {
     return getType(token) == session_type;
 };
 
-sessionType sessionManager::getType(const String& token) {
+sessionManager::sessionType sessionManager::getType(const String& token) {
     auto it = _sessions.find(token);
-    return it != _sessions.end() ? it->second.type : sessionType::unknown;
+    return it != _sessions.end() ? it->second.type : sessionManager::sessionType::unknown;
 };
 
 bool sessionManager::validate(const String& token) {

@@ -34,9 +34,9 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 bool webServer::returnFile(httpd_req_t* req, const String& uri) {
 
-    if (!services.getStorage().isWebReady()) return false;
+    if (!_services.getStorage().isWebReady()) return false;
 
-    LittleFSFS& web = services.getStorage().getWebFS();
+    LittleFSFS& web = _services.getStorage().getWebFS();
 
     if (web.exists(uri)) {
 
@@ -94,7 +94,7 @@ bool webServer::isWebFile(const String& uri) {
     if (uri == "/login") return false;
 
     bool isFile = false;
-    LittleFSFS& webFS = services.getStorage().getWebFS();
+    LittleFSFS& webFS = _services.getStorage().getWebFS();
 
     if (webFS.exists(uri)) {
         File file = webFS.open(uri, "r");
@@ -120,7 +120,7 @@ void webServer::initialize() {
 
 };
 
-esp_err_t sendJson(httpd_req_t* req, const String& json) {
+esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
     httpd_resp_set_type(req, "application/json; charset=utf-8");
     return httpd_resp_send(req, json.c_str(), json.length());
 }
@@ -211,7 +211,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
         return ESP_OK;
     }
 
-    const bool isAuth = _webAuth.isAuthenticated();
+    const bool isAuth = _webAuth.isAuthenticated(req);
 
     // ----------  API PUBLIC ROUTES ----------
     if (path.startsWith("/api/")) {
@@ -228,7 +228,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
             const String token = _webAuth.getSessionToken(req);
             if (token.isEmpty()) _services.getSessions().remove(token);
             _webAuth.clearSessionCookie(req);
-            String = "{\"ok\":true}";
+            String json = "{\"ok\":true}";
             return sendJson(req, json);
         }                    
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pmhHubServices.h>
+#include <pmgHubServices.h>
 #include <esp_http_server.h>
 
 namespace pmgHub {

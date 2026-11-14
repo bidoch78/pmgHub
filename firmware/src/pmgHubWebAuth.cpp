@@ -2,14 +2,12 @@
 
 using namespace pmgHub;
 
-void webAuth::setSessionCookie(httpd_req_t* req, String& token, uint32_t maxAgeMs) {
-    String cookie = "session=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + String(maxAgeMs/1000);
-    httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
+String webAuth::setSessionCookie(String& token, uint32_t maxAgeMs) {
+    return "session=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + String(maxAgeMs/1000);
 };
 
-void webAuth::clearSessionCookie(httpd_req_t* req) {
-    String cookie = "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0";
-    httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
+String webAuth::clearSessionCookie() {
+    return "session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0";
 };
 
 String webAuth::getSessionToken(httpd_req_t* req) { 

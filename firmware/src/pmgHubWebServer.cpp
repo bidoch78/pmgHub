@@ -92,6 +92,8 @@ bool webServer::isWebFile(const String& uri) {
     // API is not a file, so we don't want to serve it as a static file
     if (uri.startsWith("/api/")) return false;
     if (uri == "/login") return false;
+    if (uri == "/logout") return false;
+    if (uri.startsWith("/ws/")) return false;
 
     bool isFile = false;
     fs::LittleFSFS& webFS = _services.getStorage().getWebFS();
@@ -127,90 +129,47 @@ esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
 
 bool webServer::getPostData(httpd_req_t* req, String& data)
 {
-    Serial.println("[POST] getPostData ENTER");
-
     data.clear();
 
-    if (req == nullptr) {
-        Serial.println("[POST] ERROR: req is nullptr");
-        return false;
-    }
+    if (req == nullptr) return false;
 
     const size_t contentLen = req->content_len;
 
-    Serial.printf(
-        "[POST] req=%p content_len=%u freeHeap=%u largestBlock=%u\n",
-        req,
-        static_cast<unsigned>(contentLen),
-        static_cast<unsigned>(ESP.getFreeHeap()),
-        static_cast<unsigned>(ESP.getMaxAllocHeap())
-    );
-
-    if (contentLen == 0) {
-        Serial.println("[POST] ERROR: empty body");
-
-        httpd_resp_set_status(req, "400 Bad Request");
-        httpd_resp_set_type(req, "application/json");
-        httpd_resp_sendstr(req, "{\"error\":\"EMPTY_BODY\"}");
-
-        return false;
-    }
+    if (contentLen == 0) return false;
 
     if (contentLen > pmgHub::config::webServerMaxBodySize) {
-        Serial.println("[POST] ERROR: body too large");
-
         httpd_resp_set_status(req, "413 Payload Too Large");
         httpd_resp_set_type(req, "application/json");
         httpd_resp_sendstr(req, "{\"error\":\"PAYLOAD_TOO_LARGE\"}");
-
         return false;
     }
 
     char* buffer = static_cast<char*>(malloc(contentLen + 1));
 
     if (buffer == nullptr) {
-        Serial.println("[POST] ERROR: malloc failed");
-
         httpd_resp_set_status(req, "500 Internal Server Error");
         httpd_resp_set_type(req, "application/json");
         httpd_resp_sendstr(req, "{\"error\":\"OUT_OF_MEMORY\"}");
-
         return false;
     }
 
-    Serial.printf("[POST] buffer allocated at %p\n", buffer);
-
     size_t totalReceived = 0;
-    unsigned int timeoutCount = 0;
+    uint32_t timeoutCount = 0;
 
     while (totalReceived < contentLen) {
+
         const size_t remaining = contentLen - totalReceived;
 
-        Serial.printf(
-            "[POST] receiving: total=%u remaining=%u\n",
-            static_cast<unsigned>(totalReceived),
-            static_cast<unsigned>(remaining)
-        );
-
-        const int received = httpd_req_recv(
-            req,
-            buffer + totalReceived,
-            remaining
-        );
-
-        Serial.printf("[POST] httpd_req_recv returned %d\n", received);
+        const int received = httpd_req_recv(req, buffer + totalReceived, remaining);
 
         if (received == HTTPD_SOCK_ERR_TIMEOUT) {
             timeoutCount++;
 
             if (timeoutCount >= 5) {
-                Serial.println("[POST] ERROR: too many timeouts");
                 free(buffer);
-
                 httpd_resp_set_status(req, "408 Request Timeout");
                 httpd_resp_set_type(req, "application/json");
                 httpd_resp_sendstr(req, "{\"error\":\"REQUEST_TIMEOUT\"}");
-
                 return false;
             }
 
@@ -218,7 +177,6 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
         }
 
         if (received <= 0) {
-            Serial.printf("[POST] ERROR: receive failed: %d\n", received);
             free(buffer);
             return false;
         }
@@ -229,22 +187,9 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
 
     buffer[totalReceived] = '\0';
 
-    Serial.printf(
-        "[POST] complete: received=%u\n",
-        static_cast<unsigned>(totalReceived)
-    );
-
     data = String(buffer, totalReceived);
 
     free(buffer);
-
-    Serial.printf(
-        "[POST] String created: length=%u freeHeap=%u\n",
-        static_cast<unsigned>(data.length()),
-        static_cast<unsigned>(ESP.getFreeHeap())
-    );
-
-    Serial.println("[POST] getPostData EXIT");
 
     return true;
 }
@@ -351,7 +296,8 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
         if (path == "/api/logout" && req->method == HTTP_GET) {
             const String token = _webAuth.getSessionToken(req);
             if (token.isEmpty()) _services.getSessions().remove(token);
-            _webAuth.clearSessionCookie(req);
+            String cookie = _webAuth.clearSessionCookie();
+            httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
             String json = "{\"ok\":true}";
             return sendJson(req, json);
         }                    
@@ -377,26 +323,26 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                     return ESP_OK;
                 }
 
-                    JsonVariantConst password = doc["password"];
-                    if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-                        httpd_resp_set_status(req, "400 Bad Request");
-                        httpd_resp_set_type(req, "application/json");
-                        httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
-                        return ESP_OK;
-                    }
+                JsonVariantConst password = doc["password"];
+                if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                    return ESP_OK;
+                }
 
-                    String passwordString = password.as<String>();
+                String passwordString = password.as<String>();
 
-                    // Save credentials
-                    if (!_webCredentials.initializeCredentials(passwordString)) {
-                        httpd_resp_set_status(req, "400 Bad Request");
-                        httpd_resp_set_type(req, "application/json");
-                        httpd_resp_sendstr(req, "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
-                        return ESP_OK;
-                    }
+                // Save credentials
+                if (!_webCredentials.initializeCredentials(passwordString)) {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
+                    return ESP_OK;
+                }
 
-                    String json = "{\"ok\":true}";
-                    return sendJson(req, json);
+                String json = "{\"ok\":true}";
+                return sendJson(req, json);
 
             }
 
@@ -406,32 +352,35 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                 String body;
                 if (!getPostData(req, body)) return ESP_FAIL;
 
-                // JsonDocument doc;
-                // DeserializationError error = deserializeJson(doc, body);
-                // if (error) {
-                //     httpd_resp_set_status(req, "400 Bad Request");
-                //     httpd_resp_set_type(req, "application/json");
-                //     httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
-                //     return ESP_OK;
-                // }  
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, body);
+                if (error) {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
+                    return ESP_OK;
+                }  
 
-                // JsonVariantConst password = doc["password"];
-                // if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-                //     httpd_resp_set_status(req, "400 Bad Request");
-                //     httpd_resp_set_type(req, "application/json");
-                //     httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
-                //     return ESP_OK;
-                // }
+                JsonVariantConst password = doc["password"];
+                if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                    return ESP_OK;
+                }
 
-                // if (!_webCredentials.isValidPassword(password.as<String>())) {
-                //     httpd_resp_set_status(req, "400 Bad Request");
-                //     httpd_resp_set_type(req, "application/json");
-                //     httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
-                //     return ESP_OK;
-                // }   
+                if (!_webCredentials.isValidPassword(password.as<String>())) {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                    return ESP_OK;
+                }
 
-                // String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
-                // _webAuth.setSessionCookie(req, token, pmgHub::config::sessionTimeoutMs);
+                Serial.println("Login successful");
+
+                String token = _services.getSessions().create(sessionManager::sessionType::webAdmin);
+                String cookie = _webAuth.setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
+                httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
 
                 String json = "{\"ok\":true}";
                 return sendJson(req, json);

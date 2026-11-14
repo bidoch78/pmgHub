@@ -19,8 +19,8 @@ namespace pmgHub {
             static String getCookieData(const String& cookieHeader, const String& cookieName);
             static String getCookieFromReq(httpd_req_t* req);
 
-            void setSessionCookie(httpd_req_t* req, String& token, uint32_t maxAgeMs = pmgHub::config::sessionTimeoutMs);
-            void clearSessionCookie(httpd_req_t* req);
+            String setSessionCookie(String& token, uint32_t maxAgeMs = pmgHub::config::sessionTimeoutMs);
+            String clearSessionCookie();
         
             String getSessionToken(httpd_req_t* req);
             bool isAuthenticated(httpd_req_t* req);

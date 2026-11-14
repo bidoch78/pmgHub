@@ -1,16 +1,16 @@
 #include <Arduino.h>
 #include <pmgHubConfig.h>
 #include <pmgHubServices.h>
-#include <pmgHubWebServer.h>
+//#include <pmgHubWebServer.h>
 
 pmgHub::services services;
-pmgHub::webServer webServer(services);
+//pmgHub::webServer webServer(services);
 
 void setup()
 {
 
     Serial.begin(115200);
-    webServer.initialize();
+   // webServer.initialize();
 
     // Serial.println("pmgHub started");
     // Serial.printf("PSRAM total: %u", ESP.getPsramSize());
@@ -20,5 +20,5 @@ void setup()
 
 void loop()
 {
-    webServer.process();
+   // webServer.process();
 }

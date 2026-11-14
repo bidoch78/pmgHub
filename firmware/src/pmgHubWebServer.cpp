@@ -136,13 +136,14 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
         return false;
     }
 
-    if (!data.setLen(len)) {
+    char* buffer = new (std::nothrow) char[len + 1];
+
+    if (!buffer) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not enough memory");
         return false;
     }
 
     size_t received = 0;
-    char* buffer = data.begin();
 
     while (received < len) {
 
@@ -151,18 +152,20 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
         if (ret == HTTPD_SOCK_ERR_TIMEOUT) continue;
 
         if (ret <= 0) {
-            data = "";
+            delete[] buffer;
             return false;
         }
 
         received += ret;
     }
 
-    buffer[received] = '\0';
+    buffer[len] = '\0';
+
     data = buffer;
     delete[] buffer;
 
     return true;
+
 }
 
 void webServer::startHttpServer() {
@@ -281,50 +284,63 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
             if (path == "/api/auth/initialize" && req->method == HTTP_POST) {
 
-//                             String body = _server.arg("plain");
-//                             JsonDocument doc;
-//                             DeserializationError error = deserializeJson(doc, body);
-//                             if (error) {
-//                                 _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-//                                 return;
-//                             }
+                String body;
+                if (!getPostData(req, body)) return ESP_FAIL;
 
-//                             JsonVariantConst password = doc["password"];
-//                             if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-//                                 _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-//                             }
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, body);
+                if (error) {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
+                    return ESP_OK;
+                }
 
-//                             String passwordString = password.as<String>();
+                    JsonVariantConst password = doc["password"];
+                    if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                        httpd_resp_set_status(req, "400 Bad Request");
+                        httpd_resp_set_type(req, "application/json");
+                        httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                        return ESP_OK;
+                    }
 
-//                             // Save credentials
-//                             if (!initializeCredentials(passwordString)) {
-//                                 _server.send(409, "application/json", "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
-//                                 return;
-//                             }
+                    String passwordString = password.as<String>();
 
-//                             _server.send(200, "application/json", "{\"ok\":true}");
-//                             return;
+                    // Save credentials
+                    if (!initializeCredentials(passwordString)) {
+                        httpd_resp_set_status(req, "400 Bad Request");
+                        httpd_resp_set_type(req, "application/json");
+                        httpd_resp_sendstr(req, "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
+                        return ESP_OK;
+                    }
+
+                    String json = "{\"ok\":true}";
+                    return sendJson(req, json);
 
             }
 
             // ---------- API AUTHENTICATION - LOGIN  ----------
             if (path == "/api/login" && req->method == HTTP_POST) {
 
-//                             String body = _server.arg("plain");
-//                             JsonDocument doc;
-//                             DeserializationError error = deserializeJson(doc, body);
-//                             if (error) {
-//                                 _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-//                                 return;
-//                             }  
+                String body;
+                if (!getPostData(req, body)) return ESP_FAIL;
 
-//                             JsonVariantConst password = doc["password"];
-//                             if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-//                                 _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-                            
-//                             }
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, body);
+                if (error) {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"Invalid JSON\"}");
+                    return ESP_OK;
+                }  
+
+                JsonVariantConst password = doc["password"];
+                if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
+                    httpd_resp_set_status(req, "400 Bad Request");
+                    httpd_resp_set_type(req, "application/json");
+                    httpd_resp_sendstr(req, "{\"error\":\"INVALID_CREDENTIALS\"}");
+                    return ESP_OK;
+                }
 
 //                             if (!isValidPassword(password.as<String>())) {
 //                                 _server.send(401, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
@@ -334,10 +350,9 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 //                             String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
 //                             setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
 
-//                             _server.send(200, "application/json", "{\"ok\":true}");
-
-//                             return;
-
+                String json = "{\"ok\":true}";
+                return sendJson(req, json);
+                
             }
 
             // ---------- ERROR ----------
@@ -388,141 +403,3 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
     return ESP_OK;
 
 };
-
-//             void handleHTTPRequest() {
-
-//                 const bool isAuth = isAuthenticated(_services.getSessions());
-
-//                 // ----------  API PUBLIC ROUTES ----------
-
-//                 if (path.startsWith("/api/")) {
-
-//                     // ---------- API CREDENTIALS IS CREATED ?----------
-//                     if (path == "/api/auth/status" && _server.method() == HTTP_GET) {
-
-//                         String credentialsStatus = hasCredentials() ? "true" : "false";
-//                         String json = "{\"initialized\":" + credentialsStatus + "}";
-//                         _server.send(200, "application/json", json);
-//                         return;
-
-//                     }
-
-//                     // ---------- API LOGOUT  ----------
-//                     if (path == "/api/logout" && _server.method() == HTTP_GET) {
-                        
-//                         const String token = getSessionToken();
-
-//                         if (token.isEmpty()) _services.getSessions().remove(token);
-
-//                         clearSessionCookie();
-//                         _server.send(200, "application/json", "{\"ok\":true}");
-//                         return;
-
-//                     }                    
-
-//                 }
-
-//                 // ----------  LOGIN REDIRECTION ----------                
-//                 if (!isAuth) {
-
-//                     if (path.startsWith("/api/")) {
-
-//                         if (path == "/api/auth/initialize" && _server.method() == HTTP_POST) {
-
-//                             String body = _server.arg("plain");
-//                             JsonDocument doc;
-//                             DeserializationError error = deserializeJson(doc, body);
-//                             if (error) {
-//                                 _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-//                                 return;
-//                             }  
-
-//                             JsonVariantConst password = doc["password"];
-//                             if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-//                                 _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-//                             }
-
-//                             String passwordString = password.as<String>();
-
-//                             // Save credentials
-//                             if (!initializeCredentials(passwordString)) {
-//                                 _server.send(409, "application/json", "{\"error\":\"FAILED_TO_SAVE_CREDENTIALS\"}");
-//                                 return;
-//                             }
-
-//                             _server.send(200, "application/json", "{\"ok\":true}");
-//                             return;
-
-//                         }
-
-//                         // ---------- API AUTHENTICATION - LOGIN  ----------
-//                         if (path == "/api/login" && _server.method() == HTTP_POST) {
-
-//                             String body = _server.arg("plain");
-//                             JsonDocument doc;
-//                             DeserializationError error = deserializeJson(doc, body);
-//                             if (error) {
-//                                 _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-//                                 return;
-//                             }  
-
-//                             JsonVariantConst password = doc["password"];
-//                             if (!password.is<const char*>() || password.as<const char*>()[0] == '\0') {
-//                                 _server.send(400, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-                            
-//                             }
-
-//                             if (!isValidPassword(password.as<String>())) {
-//                                 _server.send(401, "application/json", "{\"error\":\"INVALID_CREDENTIALS\"}");
-//                                 return;
-//                             }   
-
-//                             String token =  _services.getSessions().create(sessionManager::sessionType::webAdmin);
-//                             setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
-
-//                             _server.send(200, "application/json", "{\"ok\":true}");
-
-//                             return;
-
-//                         }
-
-//                         // ---------- ERROR ----------
-//                         _server.send(500, "text/plain", "Internal server error (2)");
-//                         return;                        
-
-//                     }
-//                     else {
-                        
-//                         if (path != "/login") {
-//                             _server.sendHeader("Location", "/login");
-//                             _server.send(302);
-//                             return;
-//                         }
-
-//                     }
-
-//                 }
-
-//                 // ---------- DEFAULT PAGE ----------
-//                 if (path == "/" && _server.method() == HTTP_GET) {
-//                     returnFile("/index.html");
-//                     return;
-//                 }
-
-//                 // ---------- LOGIN PAGE ----------
-//                 if (path == "/login" && _server.method() == HTTP_GET) {
-//                     if (isAuth) {
-//                         // redirect to /
-//                         _server.sendHeader("Location", "/");
-//                         _server.send(302);
-//                         return;
-//                     }
-//                     returnFile("/login.html");
-//                     return;
-//                 }
-           
-//                 _server.send(404, "text/plain", String("Not found: ") + path);
-
-//             }

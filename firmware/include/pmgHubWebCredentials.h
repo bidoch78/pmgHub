@@ -13,13 +13,14 @@ namespace pmgHub {
 
             JsonDocument readCredentials();
 
+        public:
+
+            webCredentials(services& svc) : _services(svc) {}
+
             bool hasCredentials();
             bool isValidPassword(const String& password);
             bool initializeCredentials(const String& password);
 
-        public:
-
-            webCredentials(services& svc) : _services(svc) {}
 
     };
 

@@ -1,6 +1,8 @@
-#include "pmgHubWebAuth.h"
+#include <pmgHubWebAuth.h>
 
-void webAuth::setSessionCookie(httpd_req_t* req, String& token, uint32_t maxAgeMs = pmgHub::config::sessionTimeoutMs) {
+using namespace pmgHub;
+
+void webAuth::setSessionCookie(httpd_req_t* req, String& token, uint32_t maxAgeMs) {
     String cookie = "session=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + String(maxAgeMs/1000);
     httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
 };
@@ -11,22 +13,22 @@ void webAuth::clearSessionCookie(httpd_req_t* req) {
 };
 
 String webAuth::getSessionToken(httpd_req_t* req) { 
-    return getCookieData(webServer::getCookieFromReq(req), "session"); 
+    return getCookieData(webAuth::getCookieFromReq(req), "session"); 
 }
 
 bool webAuth::isAuthenticated(httpd_req_t* req) {
     String token = getSessionToken(req);
-    return _sessions.validate(token);
+    return _services.getSessions().validate(token);
 };
 
-sessionManager::sessionType getSessionTypeAuthenticated(httpd_req_t* req) { 
+sessionManager::sessionType webAuth::getSessionTypeAuthenticated(httpd_req_t* req) { 
     String token = getSessionToken(req);
-    if (!_sessions.validate(token)) return sessionManager::sessionType::unknown;
-    return _sessions.getType(token);
+    if (!_services.getSessions().validate(token)) return sessionManager::sessionType::unknown;
+    return _services.getSessions().getType(token);
 };
 
-String webAuth::getCookieFromReq(httpd_req_t* req)
-{
+String webAuth::getCookieFromReq(httpd_req_t* req) {
+
     size_t len = httpd_req_get_hdr_value_len(req, "Cookie");
 
     if (len == 0) return "";

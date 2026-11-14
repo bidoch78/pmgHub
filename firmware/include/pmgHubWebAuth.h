@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pmgHubConfig.h>
 #include <pmgHubServices.h>
 #include <esp_http_server.h>
 
@@ -9,7 +10,6 @@ namespace pmgHub {
 
         private:
 
-            // sessionManager& _sessions;
             services& _services;
 
         public:

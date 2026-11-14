@@ -36,7 +36,7 @@ bool webServer::returnFile(httpd_req_t* req, const String& uri) {
 
     if (!_services.getStorage().isWebReady()) return false;
 
-    LittleFSFS& web = _services.getStorage().getWebFS();
+    fs::LittleFSFS& web = _services.getStorage().getWebFS();
 
     if (web.exists(uri)) {
 
@@ -82,11 +82,11 @@ const char* webServer::getContentType(const String& path) {
     if (extension == "ico") return "image/x-icon";
     return "application/octet-stream";
 
-}            
+};      
 
 bool webServer::isWebFile(const String& uri) {
 
-    if (!service.getStorage().isWebReady()) return false;
+    if (!_services.getStorage().isWebReady()) return false;
 
     //Little tweak
     // API is not a file, so we don't want to serve it as a static file
@@ -94,7 +94,7 @@ bool webServer::isWebFile(const String& uri) {
     if (uri == "/login") return false;
 
     bool isFile = false;
-    LittleFSFS& webFS = _services.getStorage().getWebFS();
+    fs::LittleFSFS& webFS = _services.getStorage().getWebFS();
 
     if (webFS.exists(uri)) {
         File file = webFS.open(uri, "r");
@@ -123,7 +123,7 @@ void webServer::initialize() {
 esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
     httpd_resp_set_type(req, "application/json; charset=utf-8");
     return httpd_resp_send(req, json.c_str(), json.length());
-}
+};
 
 void webServer::startHttpServer() {
 
@@ -162,7 +162,7 @@ void webServer::startHttpServer() {
         Serial.println("Unable to register HTTP handler");
     }
 
-}
+};
 
 void webServer::process() {
 
@@ -190,7 +190,7 @@ esp_err_t webServer::httpUriHandler(httpd_req_t* req) {
     webServer* self = static_cast<webServer*>(req->user_ctx);
     return self->webHandler(req);
 
-}
+};
 
 esp_err_t webServer::webHandler(httpd_req_t *req) {
 

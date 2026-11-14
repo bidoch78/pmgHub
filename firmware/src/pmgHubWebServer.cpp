@@ -125,29 +125,43 @@ esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
     return httpd_resp_send(req, json.c_str(), json.length());
 };
 
-bool webServer::getPostData(httpd_req_t* req, String& data) {
+bool webServer::getPostData(httpd_req_t* req, String& data)
+{
+    size_t len = req->content_len;
 
-    if (req->content_len <= 0 || req->content_len > pmgHub::config::webServerMaxBodySize) {
+    if (len == 0 || len > pmgHub::config::webServerMaxBodySize) {
         httpd_resp_send_err(req, HTTPD_413_REQUEST_ENTITY_TOO_LARGE, "Content length exceeds limit");
         return false;
     }
 
-    size_t len = httpd_req_get_chunk_len(req);
-    if (len == 0) return false;
-
-    char* buffer = new char[len + 1];
-    if (!buffer) return false;
-
-    if (httpd_req_get_chunk(req, buffer, len + 1) != ESP_OK) {
-        delete[] buffer;
+    if (!data.setLen(len)) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not enough memory");
         return false;
     }
 
-    data = String(buffer);
-    delete[] buffer;
-    return true;
+    size_t received = 0;
+    char* buffer = data.begin();
 
-};
+    while (received < len) {
+
+        int ret = httpd_req_recv(req, buffer + received, len - received);
+
+        if (ret == HTTPD_SOCK_ERR_TIMEOUT) continue;
+
+        if (ret <= 0) {
+            data = "";
+            return false;
+        }
+
+        received += ret;
+    }
+
+    buffer[received] = '\0';
+    data = buffer;
+    delete[] buffer;
+
+    return true;
+}
 
 void webServer::startHttpServer() {
 

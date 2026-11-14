@@ -464,10 +464,45 @@ esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
-    String path = req->uri;
+    int fd = httpd_req_to_sockfd(req);
 
-    Serial.println("WebSocket connection established");
-    Serial.println("Path: " + path);
+    // Handshake WebSocket
+    if (req->method == HTTP_GET) {
+
+        Serial.printf(
+            "WebSocket connected: path=%s fd=%d\n",
+            req->uri,
+            fd
+        );
+
+        return ESP_OK;
+    }
+
+    // Frame WebSocket
+    Serial.printf(
+        "WebSocket frame: path=%s fd=%d\n",
+        req->uri,
+        fd
+    );
+
+    httpd_ws_frame_t frame = {};
+    frame.type = HTTPD_WS_TYPE_TEXT;
+
+    esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);
+
+    if (ret != ESP_OK) {
+        Serial.printf(
+            "httpd_ws_recv_frame error: %s\n",
+            esp_err_to_name(ret)
+        );
+        return ret;
+    }
+
+    Serial.printf(
+        "WS frame type=%d len=%d\n",
+        frame.type,
+        frame.len
+    );
 
     return ESP_OK;
 

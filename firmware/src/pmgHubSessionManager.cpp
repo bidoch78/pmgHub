@@ -1,3 +1,5 @@
+#include <pmgHubSessionManager.h>
+
 
 // #include "pmgHubCryptoManager.h"
 

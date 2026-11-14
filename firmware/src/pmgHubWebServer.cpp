@@ -1,23 +1,10 @@
-
 #include <pmgHubWebServer.h>
+#include <pmgHubServices.h>
+
 #include <esp_http_server.h>
 #include <LittleFS.h>
 
 using namespace pmgHub;
-
-bool webServer::returnFile(const String& uri) {
-
-//                 if (_webFS.exists(uri)) {;
-//                     File file = _webFS.open(uri, "r");
-//                     _server.streamFile(file, getContentType(uri));
-//                     file.close();
-//                     return true;
-//                 }
-                
-//                 return false;
-
-}
-
 
 void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
@@ -41,47 +28,62 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
             break;
     }
 
-}
+};
+
+bool webServer::returnFile(const String& uri) {
+
+    if (_webFS.exists(uri)) {;
+        File file = _webFS.open(uri, "r");
+        //_server.streamFile(file, getContentType(uri));
+        file.close();
+        return true;
+    }
+    
+    return false;
+
+};
 
 const char* webServer::getContentType(const String& path) {
-//                 const int extensionStart = path.lastIndexOf('.') + 1;
-//                 String extension = path.substring(extensionStart);
-//                 extension.toLowerCase();
 
-//                 if (extension == "html") return "text/html";
-//                 if (extension == "css") return "text/css";
-//                 if (extension == "js") return "application/javascript";
-//                 if (extension == "json") return "application/json";
-//                 if (extension == "svg") return "image/svg+xml";
-//                 if (extension == "png") return "image/png";
-//                 if (extension == "jpg" || extension == "jpeg") return "image/jpeg";
-//                 if (extension == "ico") return "image/x-icon";
-//                 return "application/octet-stream";
-//             }            
+    const int extensionStart = path.lastIndexOf('.') + 1;
+    String extension = path.substring(extensionStart);
+    extension.toLowerCase();
 
-//             bool isWebFile(const String& uri) {
+    if (extension == "html") return "text/html";
+    if (extension == "css") return "text/css";
+    if (extension == "js") return "application/javascript";
+    if (extension == "json") return "application/json";
+    if (extension == "svg") return "image/svg+xml";
+    if (extension == "png") return "image/png";
+    if (extension == "jpg" || extension == "jpeg") return "image/jpeg";
+    if (extension == "ico") return "image/x-icon";
+    return "application/octet-stream";
 
-//                 //Little tweak
-//                 // API is not a file, so we don't want to serve it as a static file
-//                 if (uri.startsWith("/api/")) return false;
-//                 if (uri == "/login") return false;
+}            
 
-//                 bool isFile = false;
+bool webServer::isWebFile(const String& uri) {
 
-//                 if (_webFS.exists(uri)) {
-//                     File file = _webFS.open(uri, "r");
-//                     isFile = file && !file.isDirectory();
-//                     file.close();
-//                 }
-//                 return isFile;
+    //Little tweak
+    // API is not a file, so we don't want to serve it as a static file
+    if (uri.startsWith("/api/")) return false;
+    if (uri == "/login") return false;
 
-//             }
+    bool isFile = false;
+
+    if (_webFS.exists(uri)) {
+        File file = _webFS.open(uri, "r");
+        isFile = file && !file.isDirectory();
+        file.close();
+    }
+    return isFile;
+
+};
 
 void webServer::initialize() {
 
-//                 if (!_webFS.begin(false, "/web", 10, "web")) {
-//                     Serial.println("Failed to mount web filesystem");
-//                 }
+    if (!_webFS.begin(false, "/web", 10, "web")) {
+        Serial.println("Failed to mount web filesystem");
+    }
 
 //                 if (!_storageFS.begin(true, "/storage", 10, "storage")) {
 //                     Serial.println("Failed to mount storage filesystem");
@@ -108,7 +110,7 @@ void webServer::initialize() {
 //                 // Start the http server
 //                 _server.begin();
 
-}
+};
 
 void webServer::process() {
 
@@ -131,17 +133,17 @@ void webServer::process() {
 //                 //ServerWeb
 //                 _server.handleClient();
 
-}
+};
 
 esp_err_t webServer::webHandler(httpd_req_t *req) {
 
 
-}
+};
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
 
-}
+};
 
 //             void handleHTTPRequest() {
 

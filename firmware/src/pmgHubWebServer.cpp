@@ -239,7 +239,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
         if (path.startsWith("/api/")) {
 
-            if (path == "/api/auth/initialize" && _server.method() == HTTP_POST) {
+            if (path == "/api/auth/initialize" && req->method == HTTP_POST) {
 
 //                             String body = _server.arg("plain");
 //                             JsonDocument doc;
@@ -269,7 +269,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
             }
 
             // ---------- API AUTHENTICATION - LOGIN  ----------
-            if (path == "/api/login" && _server.method() == HTTP_POST) {
+            if (path == "/api/login" && req->method == HTTP_POST) {
 
 //                             String body = _server.arg("plain");
 //                             JsonDocument doc;
@@ -320,7 +320,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
     // ---------- DEFAULT PAGE ----------
     if (path == "/" && req->method == HTTP_GET) {
-        returnFile("/index.html");
+        returnFile(req, "/index.html");
         return ESP_OK;
     }
 
@@ -333,11 +333,11 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
             httpd_resp_send(req, nullptr, 0);
             return ESP_OK;
         }
-        returnFile("/login.html");
+        returnFile(req, "/login.html");
         return ESP_OK;
     }
 
-    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, String("Not found: ") + path);
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, (String("Not found: ") + path).c_str());
 
     return ESP_OK;
 

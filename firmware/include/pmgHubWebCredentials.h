@@ -9,7 +9,7 @@ namespace pmgHub {
 
         private:
 
-            service& _services;
+            services& _services;
 
             JsonDocument readCredentials();
 
@@ -19,7 +19,7 @@ namespace pmgHub {
 
         public:
 
-            webCredentials() : _services(services) {}
+            webCredentials(services& svc) : _services(svc) {}
 
     };
 

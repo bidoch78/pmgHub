@@ -120,6 +120,11 @@ void webServer::initialize() {
 
 };
 
+esp_err_t sendJson(httpd_req_t* req, const String& json) {
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    return httpd_resp_send(req, json.c_str(), json.length());
+}
+
 void webServer::startHttpServer() {
 
     if (_server != nullptr) return;
@@ -206,32 +211,25 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
         return ESP_OK;
     }
 
-    //const bool isAuth = isAuthenticated(_services.getSessions());
-    const bool isAuth = false;
+    const bool isAuth = _webAuth.isAuthenticated();
 
     // ----------  API PUBLIC ROUTES ----------
     if (path.startsWith("/api/")) {
 
         // ---------- API CREDENTIALS IS CREATED ?----------
         if (path == "/api/auth/status" && req->method == HTTP_GET) {
-
-//                         String credentialsStatus = hasCredentials() ? "true" : "false";
-//                         String json = "{\"initialized\":" + credentialsStatus + "}";
-//                         _server.send(200, "application/json", json);
-            return ESP_OK;
+            String credentialsStatus = _webCredentials.hasCredentials() ? "true" : "false";
+            String json = "{\"initialized\":" + credentialsStatus + "}";
+            return sendJson(req, json);
         }
 
         // ---------- API LOGOUT  ----------
         if (path == "/api/logout" && req->method == HTTP_GET) {
-                        
-//                         const String token = getSessionToken();
-
-//                         if (token.isEmpty()) _services.getSessions().remove(token);
-
-//                         clearSessionCookie();
-//                         _server.send(200, "application/json", "{\"ok\":true}");
-            return ESP_OK;
-
+            const String token = _webAuth.getSessionToken(req);
+            if (token.isEmpty()) _services.getSessions().remove(token);
+            _webAuth.clearSessionCookie(req);
+            String = "{\"ok\":true}";
+            return sendJson(req, json);
         }                    
 
     }

@@ -26,6 +26,7 @@ namespace pmgHub {
             services& _services;
             httpd_handle_t _server = nullptr;
             webAuth _webAuth;
+            webCredentials _webCredentials;
 
             void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info);
             const char* getContentType(const String& path);
@@ -34,6 +35,7 @@ namespace pmgHub {
             bool returnFile(httpd_req_t* req, const String& uri);
             void startHttpServer();
 
+            esp_err_t sendJson(httpd_req_t* req, const String& json);
             esp_err_t webHandler(httpd_req_t *req);
             esp_err_t wsHandler(httpd_req_t *req);
 
@@ -41,7 +43,7 @@ namespace pmgHub {
 
         public:
 
-            webServer(services& services) : _services(services), _webAuth(services) {}
+            webServer(services& svc) : _services(svc), _webAuth(svc), _webCredentials(svc) {}
 
             void initialize();
             void process();

@@ -6,8 +6,8 @@
 
 using namespace pmgHub;
 
-sessionManager::sessionManager(services& services, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json")
-                                : _services(services), _timeoutMs(timeoutMs), _storePath(storePath) {
+sessionManager::sessionManager(services& svc, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json")
+                                : _services(svc), _timeoutMs(timeoutMs), _storePath(storePath) {
 
     //Load last sessions stored    
     loadSession();

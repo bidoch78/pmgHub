@@ -37,7 +37,7 @@ namespace pmgHub {
 
         public:
 
-            sessionManager(services& services, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json");
+            sessionManager(services& svc, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json");
        
             String create(sessionType session_type);
 
@@ -47,7 +47,7 @@ namespace pmgHub {
             bool validate(const String& token);
 
             bool remove(const String& token);
-            
+
             uint32_t countActiveSessions();
 
     };

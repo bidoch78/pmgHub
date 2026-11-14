@@ -14,7 +14,7 @@ namespace pmgHub {
 
         public:
 
-            webAuth(services& services): _services(services) {}
+            webAuth(services& svc): _services(svc) {}
 
             static String getCookieData(const String& cookieHeader, const String& cookieName);
             static String getCookieFromReq(httpd_req_t* req);

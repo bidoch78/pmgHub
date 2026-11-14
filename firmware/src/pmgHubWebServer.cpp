@@ -127,45 +127,126 @@ esp_err_t webServer::sendJson(httpd_req_t* req, const String& json) {
 
 bool webServer::getPostData(httpd_req_t* req, String& data)
 {
-    size_t len = req->content_len;
+    Serial.println("[POST] getPostData ENTER");
 
-    if (len == 0 || len > pmgHub::config::webServerMaxBodySize) {
+    data.clear();
+
+    if (req == nullptr) {
+        Serial.println("[POST] ERROR: req is nullptr");
+        return false;
+    }
+
+    const size_t contentLen = req->content_len;
+
+    Serial.printf(
+        "[POST] req=%p content_len=%u freeHeap=%u largestBlock=%u\n",
+        req,
+        static_cast<unsigned>(contentLen),
+        static_cast<unsigned>(ESP.getFreeHeap()),
+        static_cast<unsigned>(ESP.getMaxAllocHeap())
+    );
+
+    if (contentLen == 0) {
+        Serial.println("[POST] ERROR: empty body");
+
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, "{\"error\":\"EMPTY_BODY\"}");
+
+        return false;
+    }
+
+    if (contentLen > pmgHub::config::webServerMaxBodySize) {
+        Serial.println("[POST] ERROR: body too large");
+
         httpd_resp_set_status(req, "413 Payload Too Large");
-        httpd_resp_set_type(req, "text/plain");
-        httpd_resp_sendstr(req, "Content length exceeds limit");
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, "{\"error\":\"PAYLOAD_TOO_LARGE\"}");
+
         return false;
     }
 
-    char* buffer = new (std::nothrow) char[len + 1];
+    char* buffer = static_cast<char*>(malloc(contentLen + 1));
 
-    if (!buffer) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not enough memory");
+    if (buffer == nullptr) {
+        Serial.println("[POST] ERROR: malloc failed");
+
+        httpd_resp_set_status(req, "500 Internal Server Error");
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, "{\"error\":\"OUT_OF_MEMORY\"}");
+
         return false;
     }
 
-    size_t received = 0;
+    Serial.printf("[POST] buffer allocated at %p\n", buffer);
 
-    while (received < len) {
+    size_t totalReceived = 0;
+    unsigned int timeoutCount = 0;
 
-        int ret = httpd_req_recv(req, buffer + received, len - received);
+    while (totalReceived < contentLen) {
+        const size_t remaining = contentLen - totalReceived;
 
-        if (ret == HTTPD_SOCK_ERR_TIMEOUT) continue;
+        Serial.printf(
+            "[POST] receiving: total=%u remaining=%u\n",
+            static_cast<unsigned>(totalReceived),
+            static_cast<unsigned>(remaining)
+        );
 
-        if (ret <= 0) {
-            delete[] buffer;
+        const int received = httpd_req_recv(
+            req,
+            buffer + totalReceived,
+            remaining
+        );
+
+        Serial.printf("[POST] httpd_req_recv returned %d\n", received);
+
+        if (received == HTTPD_SOCK_ERR_TIMEOUT) {
+            timeoutCount++;
+
+            if (timeoutCount >= 5) {
+                Serial.println("[POST] ERROR: too many timeouts");
+                free(buffer);
+
+                httpd_resp_set_status(req, "408 Request Timeout");
+                httpd_resp_set_type(req, "application/json");
+                httpd_resp_sendstr(req, "{\"error\":\"REQUEST_TIMEOUT\"}");
+
+                return false;
+            }
+
+            continue;
+        }
+
+        if (received <= 0) {
+            Serial.printf("[POST] ERROR: receive failed: %d\n", received);
+            free(buffer);
             return false;
         }
 
-        received += ret;
+        timeoutCount = 0;
+        totalReceived += static_cast<size_t>(received);
     }
 
-    buffer[len] = '\0';
+    buffer[totalReceived] = '\0';
 
-    data = buffer;
-    delete[] buffer;
+    Serial.printf(
+        "[POST] complete: received=%u\n",
+        static_cast<unsigned>(totalReceived)
+    );
+
+    data = String(buffer, totalReceived);
+
+    free(buffer);
+
+    Serial.printf(
+        "[POST] String created: length=%u freeHeap=%u\n",
+        static_cast<unsigned>(data.length()),
+        static_cast<unsigned>(ESP.getFreeHeap())
+    );
+
+    Serial.println("[POST] getPostData EXIT");
 
     return true;
-
 }
 
 void webServer::startHttpServer() {

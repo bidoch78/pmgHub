@@ -536,6 +536,9 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
         if (ret != ESP_OK) {
             Serial.printf("httpd_ws_send_frame error: %s\n", esp_err_to_name(ret));
         }
+
+        Serial.printf("[webSocket] Sent response: ret=%s fd=%d len=%u", esp_err_to_name(ret), httpd_req_to_sockfd(req), static_cast<unsigned int>(responseFrame.len));
+
         return ret;
     }
 

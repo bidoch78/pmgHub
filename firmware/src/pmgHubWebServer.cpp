@@ -549,12 +549,13 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
 };
 
-static void closeCallback(httpd_handle_t hd, int sockfd) {
+void webServer::closeCallback(httpd_handle_t hd, int sockfd) {
 
-    Serial.printf("close socket");
+    Serial.printf("close socket callback: sockfd=%d\n", sockfd);
 
     //ESP_LOGI(TAG, "Socket %d closed", sockfd);
     // ...
 
-    close(sockfd);
+    close(sockfd); // Close the socket to free resources
+
 };

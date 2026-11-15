@@ -3,6 +3,7 @@
 
 #include <esp_http_server.h>
 #include <LittleFS.h>
+#include <ArduinoJson.h>
 
 using namespace pmgHub;
 
@@ -199,6 +200,7 @@ void webServer::startHttpServer() {
     if (_server != nullptr) return;
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = 8192;
     config.server_port = 80;
     config.uri_match_fn = httpd_uri_match_wildcard;
 
@@ -208,7 +210,6 @@ void webServer::startHttpServer() {
         return;
     }
 
-    //Routes
     httpd_uri_t wsAdmin = {
         .uri      = "/ws/admin",
         .method   = HTTP_GET,
@@ -217,20 +218,8 @@ void webServer::startHttpServer() {
         .is_websocket = true
     };
 
-    if (httpd_register_uri_handler(_server, &wsAdmin ) != ESP_OK) {
-        Serial.println("Unable to register WebSocket handler 1");
-    }
-
-    httpd_uri_t ws = {
-        .uri      = "/ws",
-        .method   = HTTP_GET,
-        .handler  = webSocketHandler,
-        .user_ctx = this,
-        .is_websocket = true
-    };
-
-    if (httpd_register_uri_handler(_server, &ws ) != ESP_OK) {
-        Serial.println("Unable to register WebSocket handler 2");
+    if (httpd_register_uri_handler(_server, &wsAdmin) != ESP_OK) {
+        Serial.println("Unable to register WebSocket admin handler");
     }
 
     httpd_uri_t httpGetUri = {
@@ -295,7 +284,7 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
     // ---------- STATIC ASSETS ----------
 
-    Serial.println(path);
+    Serial.println("[HTTP] Request: " + path);
 
     const String& webFile = path;
 
@@ -317,9 +306,9 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
         }
 
         // ---------- API LOGOUT  ----------
-        if (path == "/api/logout" && req->method == HTTP_GET) {
+        if (path == "/api/logout" && req->method == HTTP_POST) {
             const String token = _webAuth.getSessionToken(req);
-            if (token.isEmpty()) _services.getSessions().remove(token);
+            if (!token.isEmpty()) _services.getSessions().remove(token);
             String cookie = _webAuth.clearSessionCookie();
             httpd_resp_set_hdr(req, "Set-Cookie", cookie.c_str());
             String json = "{\"ok\":true}";
@@ -464,6 +453,12 @@ esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
+    if (req->method == HTTP_GET && !_webAuth.isAuthenticated(req)) {
+        return ESP_FAIL;
+    }
+
+    Serial.printf("[WebSocket] Request: %s\n", req->uri);
+
     int fd = httpd_req_to_sockfd(req);
 
     // Handshake WebSocket
@@ -478,16 +473,7 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
         return ESP_OK;
     }
 
-    // Frame WebSocket
-    Serial.printf(
-        "WebSocket frame: path=%s fd=%d\n",
-        req->uri,
-        fd
-    );
-
     httpd_ws_frame_t frame = {};
-    frame.type = HTTPD_WS_TYPE_TEXT;
-
     esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);
 
     if (ret != ESP_OK) {
@@ -498,11 +484,62 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
         return ret;
     }
 
-    Serial.printf(
-        "WS frame type=%d len=%d\n",
-        frame.type,
+    if (frame.type != HTTPD_WS_TYPE_TEXT) {
+        Serial.printf("Ignoring non-text WebSocket frame (type=%d)\n", frame.type);
+        return ESP_OK;
+    }
+
+    if (frame.len == 0) return ESP_OK;
+
+    if (frame.len > pmgHub::config::webServerMaxBodySize) {
+        Serial.printf("WebSocket frame too large: %u bytes\n", static_cast<unsigned int>(frame.len));
+        return ESP_FAIL;
+    }
+
+    uint8_t* payload = static_cast<uint8_t*>(malloc(frame.len + 1));
+    if (payload == nullptr) return ESP_ERR_NO_MEM;
+
+    frame.payload = payload;
+    ret = httpd_ws_recv_frame(req, &frame, frame.len);
+    if (ret != ESP_OK) {
+        free(payload);
+        Serial.printf("httpd_ws_recv_frame payload error: %s\n", esp_err_to_name(ret));
+        return ret;
+    }
+
+    payload[frame.len] = '\0';
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(
+        doc,
+        reinterpret_cast<const char*>(payload),
         frame.len
     );
+    free(payload);
+
+    if (error || !doc.is<JsonObject>() || !doc["type"].is<const char*>()) {
+        Serial.println("Invalid WebSocket JSON command");
+        return ESP_OK;
+    }
+
+    const char* type = doc["type"].as<const char*>();
+    if (strcmp(type, "webadmin.init") == 0) {
+        Serial.println("WebSocket command received: webadmin.init");
+
+        uint8_t response[] = "{\"type\":\"hello\",\"data\":[]}";
+        httpd_ws_frame_t responseFrame = {};
+        responseFrame.type = HTTPD_WS_TYPE_TEXT;
+        responseFrame.payload = response;
+        responseFrame.len = sizeof(response) - 1;
+
+        ret = httpd_ws_send_frame(req, &responseFrame);
+        if (ret != ESP_OK) {
+            Serial.printf("httpd_ws_send_frame error: %s\n", esp_err_to_name(ret));
+        }
+        return ret;
+    }
+
+    Serial.printf("Unknown WebSocket command: %s\n", type);
 
     return ESP_OK;
 

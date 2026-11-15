@@ -10,9 +10,9 @@ webSocket::webSocket(httpd_handle_t server, int32_t socketfd) :
 
 int32_t webSocket::getSocketFd() const { return _socketfd; }
 
-bool webSocket::isConnected() { return _state == state::OPEN; };
+bool webSocket::isConnected() const { return _state == state::OPEN; };
 
-webSocket::state webSocket::getReadyState() { return _state; };
+webSocket::state webSocket::getReadyState() const { return _state; };
 
 void webSocket::attach(httpd_handle_t server, int socketfd) {
     _server = server;
@@ -22,7 +22,7 @@ void webSocket::attach(httpd_handle_t server, int socketfd) {
 
 esp_err_t webSocket::send(const String& message) {
 
-    if (_state != readyState::OPEN || _server == nullptr || _socketfd < 0) return ESP_ERR_INVALID_STATE;
+    if (_state != state::OPEN || _server == nullptr || _socketfd < 0) return ESP_ERR_INVALID_STATE;
 
     httpd_ws_frame_t frame = {};
 
@@ -88,22 +88,22 @@ esp_err_t webSocket::close(uint16_t code, const String& reason) {
 };
 
 void webSocket::onMessage(MessageCallback callback) {
-    _onMessage = callback;
+    _messageCallback = callback;
 };
 
 void webSocket::onClose(CloseCallback callback) {
-    _onClose = callback;
+    _closeCallback = callback;
 };
 
-void dispatchMessage(const String& message) {
+void webSocket::dispatchMessage(const String& message) {
     if (_messageCallback) _messageCallback(message);  
 };
 
-void dispatchClose(int32_t code, const String& reason) {
+void webSocket::dispatchClose(int32_t code, const String& reason) {
 
     _socketfd = -1;
     _server = nullptr;
-    _readyState = readyState::CLOSED;
+    _state = state::CLOSED;
 
      if (_closeCallback) _closeCallback(code, reason);
 

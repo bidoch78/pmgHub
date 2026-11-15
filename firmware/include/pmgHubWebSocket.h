@@ -1,15 +1,8 @@
 #pragma once
 
-// #include <pmgHubConfig.h>
-#include <WiFi.h>
-#include <LittleFS.h>
-// #include <WebServer.h>
-// #include <pmgHubServices.h>
-#include <pmgHubSessionManager.h>
-#include <pmgHubWebAuth.h>
-#include <pmgHubWebCredentials.h>
+#include <functional>
+#include <Arduino.h>
 #include <esp_http_server.h>
-
 // #include <ArduinoJson.h>
 // #include <pmgHubCryptoManager.h>
 

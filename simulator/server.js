@@ -306,7 +306,7 @@ server.on("upgrade", (req, socket, head) => {
     }
 
     // For web admin, connection is accepted if authentification is done
-    if (!getSessionTypeAuthenticated(req, services.getSessions()) === SessionManager.SESSION_WEBADMIN) {
+    if (getSessionTypeAuthenticated(req, services.getSessions()) !== SessionManager.SESSION_WEBADMIN) {
         console.log("WSS Upgrade: Unknown client");
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();

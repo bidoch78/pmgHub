@@ -195,6 +195,26 @@ bool webServer::getPostData(httpd_req_t* req, String& data)
     return true;
 }
 
+void webServer::process() {
+
+    uint32_t now = millis();
+
+    //Check wifi connection
+    if (now - _lastWifiCheckStatus >= CHECK_WIFI_EVERY) {
+
+        _lastWifiCheckStatus = now;
+        if (!_firstConnection) {
+
+            if (WiFi.status() != WL_CONNECTED) {
+                WiFi.reconnect();
+            }
+
+        }
+
+    }
+
+};
+
 void webServer::startHttpServer() {
 
     if (_server != nullptr) return;
@@ -203,6 +223,7 @@ void webServer::startHttpServer() {
     config.stack_size = 8192;
     config.server_port = 80;
     config.uri_match_fn = httpd_uri_match_wildcard;
+    config.close_fn = closeCallback;
 
     if (httpd_start(&_server, &config) != ESP_OK) {
         _server = nullptr;
@@ -242,26 +263,6 @@ void webServer::startHttpServer() {
 
     if (httpd_register_uri_handler(_server, &httpPOSTUri) != ESP_OK) {
         Serial.println("Unable to register HTTP handler 2");
-    }
-
-};
-
-void webServer::process() {
-
-    uint32_t now = millis();
-
-    //Check wifi connection
-    if (now - _lastWifiCheckStatus >= CHECK_WIFI_EVERY) {
-
-        _lastWifiCheckStatus = now;
-        if (!_firstConnection) {
-
-            if (WiFi.status() != WL_CONNECTED) {
-                WiFi.reconnect();
-            }
-
-        }
-
     }
 
 };
@@ -546,4 +547,14 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
     return ESP_OK;
 
+};
+
+static void closeCallback(httpd_handle_t hd, int sockfd) {
+
+    Serial.printf("close socket");
+
+    //ESP_LOGI(TAG, "Socket %d closed", sockfd);
+    // ...
+
+    close(sockfd);
 };

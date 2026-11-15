@@ -43,6 +43,7 @@ namespace pmgHub {
 
             static esp_err_t httpUriHandler(httpd_req_t* req);
             static esp_err_t webSocketHandler(httpd_req_t* req);
+            static void closeCallback(httpd_handle_t hd, int sockfd);
 
         public:
 

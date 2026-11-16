@@ -24,11 +24,14 @@ namespace pmgHub {
 
         private:
 
+            uint32_t _listenerId = 0;
+
             int32_t _socketfd = -1;
             httpd_handle_t _server = nullptr;
             state _state = state::CLOSED;
-            MessageCallback _messageCallback = nullptr;
-            CloseCallback _closeCallback = nullptr;
+
+            std::map<uint32_t, MessageCallback> _messageCallbacks;
+            std::map<uint32_t, CloseListener> _closeCallbacks;
             
         public:
 
@@ -45,6 +48,9 @@ namespace pmgHub {
 
             void onMessage(MessageCallback callback);
             void onClose(CloseCallback callback);
+
+            void removeMessageListener(id);
+            void removeCloseListener(id);
 
             void dispatchMessage(const String& message);
             void dispatchClose(int32_t code, const String& reason);

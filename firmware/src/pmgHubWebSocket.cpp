@@ -88,15 +88,33 @@ esp_err_t webSocket::close(uint16_t code, const String& reason) {
 };
 
 void webSocket::onMessage(MessageCallback callback) {
-    _messageCallback = callback;
+    uint32_t id = _listenerId++;
+    _messageCallbacks.emplace(id, std::move(callback));
+    return id;
 };
 
 void webSocket::onClose(CloseCallback callback) {
-    _closeCallback = callback;
+    uint32_t id = _listenerId++;
+    _closeCallbacks.emplace(id, std::move(callback));
+    return id;
 };
 
+void webSocket::removeMessageListener(id) {
+    _messageCallbacks.erase(id);
+}
+
+void webSocket::removeCloseListener(id) {
+    _closeCallbacks.erase(id);
+}
+
+/* what happen when a delete is called during dispatch??? */
+
 void webSocket::dispatchMessage(const String& message) {
-    if (_messageCallback) _messageCallback(message);  
+    auto it = _messageCallbacks.begin();
+    while (it != _messageCallbacks.end()) {
+        auto current = it++;
+        current->second(message);
+    }
 };
 
 void webSocket::dispatchClose(int32_t code, const String& reason) {
@@ -105,6 +123,10 @@ void webSocket::dispatchClose(int32_t code, const String& reason) {
     _server = nullptr;
     _state = state::CLOSED;
 
-     if (_closeCallback) _closeCallback(code, reason);
+    auto it = _closeCallbacks.begin();
+    while (it != _closeCallbacks.end()) {
+        auto current = it++;
+        current->second(code, reason);
+    }
 
 };

@@ -48,6 +48,7 @@ namespace pmgHub {
         public:
 
             webServer(services& svc) : _services(svc), _webAuth(svc), _webCredentials(svc) {}
+            ~webServer() = default;
 
             void initialize();
             void process();

@@ -16,6 +16,7 @@ namespace pmgHub {
         public:
 
             webCredentials(services& svc) : _services(svc) {}
+            ~webCredentials() = default;
 
             bool hasCredentials();
             bool isValidPassword(const String& password);

@@ -17,6 +17,7 @@ namespace pmgHub {
         public:
 
             storage();
+            ~storage() = default;
 
             fs::LittleFSFS& getWebFS();
             fs::LittleFSFS& getDataFS();

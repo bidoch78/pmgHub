@@ -16,7 +16,8 @@ namespace pmgHub {
         public:
 
             services() : _sessions(*this, pmgHub::config::sessionTimeoutMs), _storage() {}
-         
+            ~services() = default;
+
             sessionManager& getSessions() { return _sessions; }
             storage& getStorage() { return _storage; }
         

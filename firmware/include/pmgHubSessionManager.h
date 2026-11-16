@@ -38,7 +38,8 @@ namespace pmgHub {
         public:
 
             sessionManager(services& svc, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json");
-       
+            ~sessionManager() = default;
+
             String create(sessionType session_type);
 
             bool isType(const String& token, sessionType session_type);

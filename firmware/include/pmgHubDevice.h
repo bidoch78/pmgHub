@@ -11,8 +11,8 @@ namespace pmgHub {
             String _uid;
             String _token;
             String _name;
-            string _mac;
-            string _nonce;
+            String _mac;
+            String _nonce;
 
             bool _isWebAdmin = false;
             bool _listenSensors = false;
@@ -20,7 +20,7 @@ namespace pmgHub {
             bool _pairing = false;
             bool _persistent = false;
 
-            services _service;
+            services _services;
 
             // std::map<> _sensors
             // std::map<> _typeUnits

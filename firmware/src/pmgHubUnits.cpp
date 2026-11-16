@@ -7,24 +7,34 @@ using namespace pmgHub;
 
 units::units() {
 
-    _units.emplace(defaultUnitId::UNKNOWN, units::unitData(defaultUnitId::UNKNOWN, "-", defaulUnitType::UNKNOWN, "-", 0));
-    _units.emplace(defaultUnitId::ON, units::unitData(defaultUnitId::ON, "SW", defaulUnitType::BOOL, "bool", 0));
-    _units.emplace(defaultUnitId::BAR, units::unitData(defaultUnitId::BAR, "Bar", defaulUnitType::PRESSURE, "pressure", 2));
-    _units.emplace(defaultUnitId::PSI, units::unitData(defaultUnitId::PSI, "PSI", defaulUnitType::PRESSURE, "pressure", 2));
-    _units.emplace(defaultUnitId::CELSIUS, units::unitData(defaultUnitId::CELSIUS, "°C", defaulUnitType::TEMPERATURE, "temperature", 0));
-    _units.emplace(defaultUnitId::FAHRENHEIT, units::unitData(defaultUnitId::FAHRENHEIT, "°F", defaulUnitType::TEMPERATURE, "temperature", 0));
-    _units.emplace(defaultUnitId::PCT, units::unitData(defaultUnitId::PCT, "%", defaulUnitType::PERCENTAGE, "percentage", 0));
-    _units.emplace(defaultUnitId::LAMBDA, units::unitData(defaultUnitId::LAMBDA, "λ", defaulUnitType::FUELMIXTURE, "fuelmixture", 2));
-    _units.emplace(defaultUnitId::AFR, units::unitData(defaultUnitId::AFR, "AFR", defaulUnitType::FUELMIXTURE, "fuelmixture", 2));
-    _units.emplace(defaultUnitId::VIRTUAL, units::unitData(defaultUnitId::VIRTUAL, "Virtual", defaulUnitType::VIRTUAL, "virtual", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::UNKNOWN), 
+                    unitData(static_cast<unitId>(units::defaultUnitId::UNKNOWN), "-", static_cast<typeId>(units::defaulUnitType::UNKNOWN) , "-", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::ON), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::ON), "SW", static_cast<typeId>(units::defaulUnitType::BOOL), "bool", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::BAR), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::BAR), "Bar", static_cast<typeId>(units::defaulUnitType::PRESSURE), "pressure", 2));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::PSI), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::PSI), "PSI", static_cast<typeId>(units::defaulUnitType::PRESSURE), "pressure", 2));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::CELSIUS), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::CELSIUS), "°C", static_cast<typeId>(units::defaulUnitType::TEMPERATURE), "temperature", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::FAHRENHEIT), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::FAHRENHEIT), "°F", static_cast<typeId>(units::defaulUnitType::TEMPERATURE), "temperature", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::PCT), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::PCT), "%", static_cast<typeId>(units::defaulUnitType::PERCENTAGE), "percentage", 0));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::LAMBDA), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::LAMBDA), "λ", static_cast<typeId>(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::AFR), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::AFR), "AFR", static_cast<typeId>(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
+    _units.emplace(static_cast<unitId>(units::defaultUnitId::VIRTUAL), 
+                    units::unitData(static_cast<unitId>(units::defaultUnitId::VIRTUAL), "Virtual", static_cast<typeId>(units::defaulUnitType::VIRTUAL), "virtual", 0));
 
 };
            
-void units::addUnit(const unitData& unit) {
+void units::addUnit(const units::unitData& unit) {
     _units.emplace(unit.id, unit);
 };
 
-std::vector<unitData> units::getUnits(typeId utype) const {
+std::vector<units::unitData> units::getUnits(units::typeId utype) const {
 
     std::vector<unitData> retUnit;
 
@@ -36,7 +46,7 @@ std::vector<unitData> units::getUnits(typeId utype) const {
 
 };
 
-std::map<typeId, std::vector<unitData>> units::getAllUnits() const {
+std::map<units::typeId, std::vector<units::unitData>> units::units::getAllUnits() const {
 
     std::map<typeId, std::vector<unitData>> retUnits;
 
@@ -48,7 +58,7 @@ std::map<typeId, std::vector<unitData>> units::getAllUnits() const {
 
 };
 
-const unitData* units::getUnit(unitId uid) const {
+const units::unitData* units::getUnit(units::unitId uid) const {
 
     auto it = _units.find(uid);
     if (it == _units.end()) return nullptr;
@@ -56,7 +66,7 @@ const unitData* units::getUnit(unitId uid) const {
 
 }
 
-const unitData* units::getUnit(typeId utype, unitId uid) const {
+const units::unitData* units::getUnit(units::typeId utype, units::unitId uid) const {
 
     auto it = _units.find(uid);
 
@@ -67,18 +77,18 @@ const unitData* units::getUnit(typeId utype, unitId uid) const {
 
 };
 
-sensorValue units::convertValue(const sensorValue& value, unitId fromUnit, unitId toUnit) const {
+units::sensorValue units::convertValue(const sensorValue& value, units::unitId fromUnit, units::unitId toUnit) const {
     return transformUnit(value, fromUnit, toUnit);
 };
 
-sensorValue units::transformUnit(const sensorValue& value, unitId fromUnit, unitId toUnit) const {
+units::sensorValue units::transformUnit(const sensorValue& value, units::unitId fromUnit, units::unitId toUnit) const {
 
     if (std::holds_alternative<std::monostate>(value)) return value;
 
     if (fromUnit == toUnit) return value;
 
     const unitData* fUnit = getUnit(fromUnit);
-    const unitData* tUnit = getUnit(toUnit);
+    const units::unitData* tUnit = getUnit(toUnit);
 
     if (fUnit == nullptr || tUnit == nullptr) return value;
     if (fUnit->type != tUnit->type) return value;
@@ -90,34 +100,34 @@ sensorValue units::transformUnit(const sensorValue& value, unitId fromUnit, unit
 
     switch(fUnit->type) {
 
-        case typeId::TEMPERATURE:
+        case static_cast<typeId>(defaulUnitType::TEMPERATURE):
 
-            if (fromUnit == unitId::CELSIUS && toUnit == unitId::FAHRENHEIT) {
+            if (fromUnit == static_cast<unitId>(defaultUnitId::CELSIUS) && toUnit == static_cast<unitId>(defaultUnitId::FAHRENHEIT)) {
                 return (floatValue * 9.0f / 5.0f) + 32.0f;
             }
-            else if (fromUnit == unitId::FAHRENHEIT && toUnit == unitId::CELSIUS) {
+            else if (fromUnit == static_cast<unitId>(defaultUnitId::FAHRENHEIT) && toUnit == static_cast<unitId>(defaultUnitId::CELSIUS)) {
                 return (floatValue - 32.0f) * 5.0f / 9.0f;
             }
 
             break;
         
-        case typeId::FUELMIXTURE:
+        case static_cast<typeId>(defaulUnitType::FUELMIXTURE):
 
-            if (fromUnit == unitId::LAMBDA && toUnit == unitId::AFR) {
+            if (fromUnit == static_cast<unitId>(defaultUnitId::LAMBDA) && toUnit == static_cast<unitId>(defaultUnitId::AFR)) {
                 return floatValue * 14.7f;
             }
-            else if (fromUnit == unitId::AFR && toUnit == unitId::LAMBDA) {
+            else if (fromUnit == static_cast<unitId>(defaultUnitId::AFR) && toUnit == static_cast<unitId>(defaultUnitId::LAMBDA)) {
                 return floatValue / 14.7f;
             }
 
             break;
 
-        case typeId::PRESSURE:
+        case static_cast<typeId>(defaulUnitType::PRESSURE):
     
-            if (fromUnit == unitId::BAR && toUnit == unitId::PSI) {
+            if (fromUnit == static_cast<unitId>(defaultUnitId::BAR) && toUnit == static_cast<unitId>(defaultUnitId::PSI)) {
                 return floatValue * 14.5038f;
             }
-            else if (fromUnit == unitId::PSI && toUnit == unitId::BAR) {
+            else if (fromUnit == static_cast<unitId>(defaultUnitId::PSI) && toUnit == static_cast<unitId>(defaultUnitId::BAR)) {
                 return floatValue * 0.0689476f;
             }
 

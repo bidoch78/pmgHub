@@ -1,6 +1,7 @@
 #include <pmgHubWebSocket.h>
 #include <algorithm>
 #include <cstring>
+#include <map>
 
 using namespace pmgHub;
 
@@ -87,23 +88,23 @@ esp_err_t webSocket::close(uint16_t code, const String& reason) {
 
 };
 
-void webSocket::onMessage(MessageCallback callback) {
+uint32_t webSocket::onMessage(MessageCallback callback) {
     uint32_t id = _listenerId++;
     _messageCallbacks.emplace(id, std::move(callback));
     return id;
 };
 
-void webSocket::onClose(CloseCallback callback) {
+uint32_t webSocket::onClose(CloseCallback callback) {
     uint32_t id = _listenerId++;
     _closeCallbacks.emplace(id, std::move(callback));
     return id;
 };
 
-void webSocket::removeMessageListener(id) {
+void webSocket::removeMessageListener(uint32_t id) {
     _messageCallbacks.erase(id);
 }
 
-void webSocket::removeCloseListener(id) {
+void webSocket::removeCloseListener(uint32_t id) {
     _closeCallbacks.erase(id);
 }
 

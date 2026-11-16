@@ -3,6 +3,6 @@
 
 using namespace pmgHub;
 
-device::device(services& svc) : _services(srv) {
+device::device(services& srv) : _services(srv) {
 
 }

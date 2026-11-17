@@ -1,32 +1,26 @@
-// #pragma once
+#pragma once
 
-// #include <pmgHubServices.h>
-// #include <pmgHubSensor.h>
+#include <pmgHubServices.h>
+#include <pmgHubSensor.h>
+#include <pmgHubUnits.h>
 
-// namespace pmgHub {
+namespace pmgHub {
 
-//     class sensors {
+    class sensors {
 
-//         public:
+        private:
 
-//             enum class rate : uint32_t {
-//                 LOW = 1000,
-//                 MEDIUM = 300,
-//                 HIGH = 100
-//             };
-
-//         private:
-
-//             services _service;
+            services _service;
 
 //             uint32_t _lastUpdate = 0;
 
-//             std::map<sensor::sensorID, sensor> _sensors;
+            units _units;
+            std::map<sensor::sensorId, sensor> _sensors;
             
-//         public:
+        public:
 
-//             sensors(services& svc);
-//             ~sensors() = default;
+            sensors(services& svc);
+            ~sensors() = default;
 
 //             sensor find(sensor::sensorID) const;
             
@@ -36,4 +30,4 @@
 
 //     };
 
-// };
+};

@@ -7,26 +7,26 @@ using namespace pmgHub;
 
 units::units() {
 
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::UNKNOWN), 
-                    unitData(static_cast<unitId>(units::defaultUnitId::UNKNOWN), "-", static_cast<typeId>(units::defaulUnitType::UNKNOWN) , "-", 0));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::ON), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::ON), "SW", static_cast<typeId>(units::defaulUnitType::BOOL), "bool", 0));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::BAR), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::BAR), "Bar", static_cast<typeId>(units::defaulUnitType::PRESSURE), "pressure", 2));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::PSI), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::PSI), "PSI", static_cast<typeId>(units::defaulUnitType::PRESSURE), "pressure", 2));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::CELSIUS), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::CELSIUS), "°C", static_cast<typeId>(units::defaulUnitType::TEMPERATURE), "temperature", 0));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::FAHRENHEIT), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::FAHRENHEIT), "°F", static_cast<typeId>(units::defaulUnitType::TEMPERATURE), "temperature", 0));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::PCT), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::PCT), "%", static_cast<typeId>(units::defaulUnitType::PERCENTAGE), "percentage", 0));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::LAMBDA), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::LAMBDA), "λ", static_cast<typeId>(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::AFR), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::AFR), "AFR", static_cast<typeId>(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
-    _units.emplace(static_cast<unitId>(units::defaultUnitId::VIRTUAL), 
-                    units::unitData(static_cast<unitId>(units::defaultUnitId::VIRTUAL), "Virtual", static_cast<typeId>(units::defaulUnitType::VIRTUAL), "virtual", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::UNKNOWN), 
+                    unitData(toUnitId(units::defaultUnitId::UNKNOWN), "-", toTypeId(units::defaulUnitType::UNKNOWN) , "-", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::ON), 
+                    units::unitData(toUnitId(units::defaultUnitId::ON), "SW", toTypeId(units::defaulUnitType::BOOL), "bool", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::BAR), 
+                    units::unitData(toUnitId(units::defaultUnitId::BAR), "Bar", toTypeId(units::defaulUnitType::PRESSURE), "pressure", 2));
+    _units.emplace(toUnitId(units::defaultUnitId::PSI), 
+                    units::unitData(toUnitId(units::defaultUnitId::PSI), "PSI", toTypeId(units::defaulUnitType::PRESSURE), "pressure", 2));
+    _units.emplace(toUnitId(units::defaultUnitId::CELSIUS), 
+                    units::unitData(toUnitId(units::defaultUnitId::CELSIUS), "°C", toTypeId(units::defaulUnitType::TEMPERATURE), "temperature", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::FAHRENHEIT), 
+                    units::unitData(toUnitId(units::defaultUnitId::FAHRENHEIT), "°F", toTypeId(units::defaulUnitType::TEMPERATURE), "temperature", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::PCT), 
+                    units::unitData(toUnitId(units::defaultUnitId::PCT), "%", toTypeId(units::defaulUnitType::PERCENTAGE), "percentage", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::LAMBDA), 
+                    units::unitData(toUnitId(units::defaultUnitId::LAMBDA), "λ", toTypeId(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
+    _units.emplace(toUnitId(units::defaultUnitId::AFR), 
+                    units::unitData(toUnitId(units::defaultUnitId::AFR), "AFR", toTypeId(units::defaulUnitType::FUELMIXTURE), "fuelmixture", 2));
+    _units.emplace(toUnitId(units::defaultUnitId::VIRTUAL), 
+                    units::unitData(toUnitId(units::defaultUnitId::VIRTUAL), "Virtual", toTypeId(units::defaulUnitType::VIRTUAL), "virtual", 0));
 
 };
            
@@ -100,34 +100,34 @@ units::sensorValue units::transformUnit(const sensorValue& value, units::unitId 
 
     switch(fUnit->type) {
 
-        case static_cast<typeId>(defaulUnitType::TEMPERATURE):
+        case toTypeId(defaulUnitType::TEMPERATURE):
 
-            if (fromUnit == static_cast<unitId>(defaultUnitId::CELSIUS) && toUnit == static_cast<unitId>(defaultUnitId::FAHRENHEIT)) {
+            if (fromUnit == toUnitId(defaultUnitId::CELSIUS) && toUnit == toUnitId(defaultUnitId::FAHRENHEIT)) {
                 return (floatValue * 9.0f / 5.0f) + 32.0f;
             }
-            else if (fromUnit == static_cast<unitId>(defaultUnitId::FAHRENHEIT) && toUnit == static_cast<unitId>(defaultUnitId::CELSIUS)) {
+            else if (fromUnit == toUnitId(defaultUnitId::FAHRENHEIT) && toUnit == toUnitId(defaultUnitId::CELSIUS)) {
                 return (floatValue - 32.0f) * 5.0f / 9.0f;
             }
 
             break;
         
-        case static_cast<typeId>(defaulUnitType::FUELMIXTURE):
+        case toTypeId(defaulUnitType::FUELMIXTURE):
 
-            if (fromUnit == static_cast<unitId>(defaultUnitId::LAMBDA) && toUnit == static_cast<unitId>(defaultUnitId::AFR)) {
+            if (fromUnit == toUnitId(defaultUnitId::LAMBDA) && toUnit == toUnitId(defaultUnitId::AFR)) {
                 return floatValue * 14.7f;
             }
-            else if (fromUnit == static_cast<unitId>(defaultUnitId::AFR) && toUnit == static_cast<unitId>(defaultUnitId::LAMBDA)) {
+            else if (fromUnit == toUnitId(defaultUnitId::AFR) && toUnit == toUnitId(defaultUnitId::LAMBDA)) {
                 return floatValue / 14.7f;
             }
 
             break;
 
-        case static_cast<typeId>(defaulUnitType::PRESSURE):
+        case toTypeId(defaulUnitType::PRESSURE):
     
-            if (fromUnit == static_cast<unitId>(defaultUnitId::BAR) && toUnit == static_cast<unitId>(defaultUnitId::PSI)) {
+            if (fromUnit == toUnitId(defaultUnitId::BAR) && toUnit == toUnitId(defaultUnitId::PSI)) {
                 return floatValue * 14.5038f;
             }
-            else if (fromUnit == static_cast<unitId>(defaultUnitId::PSI) && toUnit == static_cast<unitId>(defaultUnitId::BAR)) {
+            else if (fromUnit == toUnitId(defaultUnitId::PSI) && toUnit == toUnitId(defaultUnitId::BAR)) {
                 return floatValue * 0.0689476f;
             }
 

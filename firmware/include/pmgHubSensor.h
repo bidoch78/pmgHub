@@ -1,103 +1,71 @@
-// #pragma once
+#pragma once
 
-// #include <pmgHubServices.h>
-// #include <variant>
+#include <pmgHubServices.h>
+#include <pmgHubUnits.h>
 
-// namespace pmgHub {
+namespace pmgHub {
 
-//     class sensor {
+    class sensor {
 
-//         public:
+        public:
 
-//             enum class sensorRate : uint32_t {
-//                 LOW = 1000,
-//                 MEDIUM = 300,
-//                 HIGH = 100
-//             };
+            using sensorId = uint32_t;
 
-//             enum class sensorID : uint32_t {
-//                 ENGINE_AIRPRESSURE,
-//                 ENGINE_COOLANTTEMP,
-//                 ENGINE_WB_LEFT,
-//                 ENGINE_WB_RIGHT,
-//                 ENGINE_OIL_PRESSURE,
-//                 FUEL_PRESSURE,
-//                 FUEL_LEVEL,
-//                 TRANS_OIL_TEMP,
-//                 TRANS_SOL_A,
-//                 TRANS_SOL_B,
-//                 TRANS_SOL_LC,
-//                 TRANS_GEARSEL_NA,
-//                 TRANS_GEARSEL_1,
-//                 TRANS_GEARSEL_2,
-//                 TRANS_GEARSEL_D,
-//                 TRANS_GEARSEL_R,
-//                 ENV_DAYNIGHT,
-//                 FUEL_LEVEL_LOW,
-//                 TRANS_GEARSEL,
-//                 TRANS_SELECTOR
-//             };
+            template<typename T>
+            static constexpr sensorId toSensorId(T id) {
+                return static_cast<sensorId>(id);
+            }
 
-//             enum class sensorCategory: uint32_t {
-//                 ENGINE,
-//                 FUEL,
-//                 TRANSMISSION,
-//                 ENV
-//             };
+            enum class sensorRate : uint32_t {
+                LOW = 1000,
+                MEDIUM = 300,
+                HIGH = 100
+            };
 
-//             enum class sensorType: uint32_t {
-//                 PRESSURE,
-//                 TEMPERATURE,
-//                 FUELMIXTURE,
-//                 PERCENTAGE,
-//                 BOOL,
-//                 VIRTUAL
-//             };
+            enum class defaultSensorID : sensorId {
+                ENGINE_AIRPRESSURE = 1,
+                ENGINE_COOLANTTEMP = 2,
+                ENGINE_WB_LEFT = 3,
+                ENGINE_WB_RIGHT = 4,
+                ENGINE_OIL_PRESSURE = 5,
+                FUEL_PRESSURE = 6,
+                FUEL_LEVEL = 7,
+                TRANS_OIL_TEMP = 8,
+                TRANS_SOL_A = 9,
+                TRANS_SOL_B = 10,
+                TRANS_SOL_LC = 11,
+                TRANS_GEARSEL_NA = 12,
+                TRANS_GEARSEL_1 = 13,
+                TRANS_GEARSEL_2 = 14,
+                TRANS_GEARSEL_D = 15,
+                TRANS_GEARSEL_R = 16,
+                ENV_DAYNIGHT = 17,
+                FUEL_LEVEL_LOW = 18,
+                TRANS_GEARSEL = 19,
+                TRANS_SELECTOR = 20
+            };
 
-//             enum class sensorUnitID: uint32_t {
-//                 UNKNOWN
-//                 ON,
-//                 BAR,
-//                 PSI,
-//                 CELSIUS,
-//                 FAHRENHEIT,
-//                 PCT,
-//                 LAMBDA,
-//                 AFR, 
-//             };
+        private:
 
-//             struct sensorUnit {
-//                 sensorUnitID id;
-//                 sessionType type;
-//                 bool default;
-//                 uint8_t decimals;
-//                 sensorUnit(sensorUnitID sid, sessionType stype, uint8_t sdecimal, bool sdefault): 
-//                     type(stype), id(sid), default(sdefault), decimals(sdecimal) {};
-//             };
+            services _service;
 
-//             using SensorValue = std::variant<std::nullptr_t, bool, uint32_t, float, String>;
+            uint32_t _dataLastRead = 0;
+            uint32_t _dataCountRead = 0;
 
-//         private:
+            sensorID _id;
+            String _name;
+            String _category;
+            units::unitData _unit;
+            
+            uint32_t _rate;
 
-//             services _service;
+            float _readVoltage;
+            unit::sensorValue _readValue;
 
-//             uint32_t _dataLastRead = 0;
-//             uint32_t _dataCountRead = 0;
+        public:
 
-//             sensorID _id;
-//             String _name;
-//             sensorCategory _category;
-//             sensorType _type;
-//             sensorRate _rate;
-//             sensorUnit _unit;
-
-//             float _readVoltage;
-//             SensorValue _readValue;
-
-//         public:
-
-//             sensor(sensorID sId, String sName, sensorCategory sCat, sensorType sType, sensorUnit sUnit);
-//             ~device() = default;
+            sensor(sensorID sId, String sName, String sCat, unit::sensorValue sUnit, uint32_t sRate);
+            ~device() = default;
 
 //             sensorID getId() const;
 //             sensorCategory getCategory() const;
@@ -113,6 +81,6 @@
 //             void setValue(const float volt, const SensorValue& val);
 //             void setValue(const float volt, const SensorValue& sv, uint32_t lread);
 
-//     };
+    };
 
-// };
+};

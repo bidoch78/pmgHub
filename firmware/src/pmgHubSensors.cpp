@@ -24,8 +24,8 @@ sensors::sensors() {
         sensor(sensor::toSensorId(sensor::defaultSensorId::ENGINE_WB_RIGHT), "WB Left", "ENGINE", 
         _units.getUnit(units::toUnitId(units::defaultUnitId::LAMBDA)), static_cast<uint32_t>(sensor::sensorRate::HIGH_RATE)));
 
-    _sensors.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_WB_RIGHT),
-        sensor(sensor::toSensorId(sensor::defaultSensorId::ENGINE_WB_RIGHT), "Oil Pressure", "ENGINE", 
+    _sensors.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_OIL_PRESSURE),
+        sensor(sensor::toSensorId(sensor::defaultSensorId::ENGINE_OIL_PRESSURE), "Oil Pressure", "ENGINE", 
         _units.getUnit(units::toUnitId(units::defaultUnitId::BAR)), static_cast<uint32_t>(sensor::sensorRate::MEDIUM_RATE)));
 
 };

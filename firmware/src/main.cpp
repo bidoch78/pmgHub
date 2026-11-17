@@ -25,5 +25,11 @@ void setup()
 
 void loop()
 {
+
+    //server routines
     webServer.process();
+
+    //read sensors
+    sensors.update();
+
 }

@@ -16,9 +16,9 @@ namespace pmgHub {
             };
 
             enum class sensorRate : uint32_t {
-                LOW_RATE = 1000,
-                MEDIUM_RATE = 300,
-                HIGH_RATE = 100
+                LOW_RATE = 5000,
+                MEDIUM_RATE = 3000,
+                HIGH_RATE = 1000
             };
 
             enum class defaultSensorId : sensorId {
@@ -69,7 +69,7 @@ namespace pmgHub {
 //             sensorCategory getCategory() const;
 //             sensorType getType() const;
             uint32_t getRate() const;
-//             String& getName() const;
+            const String& getName() const;
 
             bool isVirtual() const;
             uint32_t getLastRead() const;

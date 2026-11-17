@@ -15,9 +15,7 @@ sensor::sensor(sensorId sId, String sName, String sCat, const units::unitData& s
 uint32_t sensor::getRate() const { return _rate; };
 // String& sensor::getName() const { return _name; };
 
-bool sensor::isVirtual() const {
-    return false;
-};
+bool sensor::isVirtual() const { return _unit.type == defaultUnitId::VIRTUAL; };
 
 uint32_t sensor::getLastRead() const { return _dataLastRead; };
 uint32_t sensor::getCountRead() const { return _dataCountRead; };

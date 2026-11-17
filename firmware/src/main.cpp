@@ -2,12 +2,12 @@
 #include <pmgHubConfig.h>
 #include <pmgHubServices.h>
 #include <pmgHubWebServer.h>
-#include <pmgHubSensors.h>
+#include <pmgHubSensorsSimulator.h>
 #include <pmgHubSessionManager.h>
 
 pmgHub::sessionManager sessions(pmgHub::config::sessionTimeoutMs); 
 pmgHub::storage storage;
-pmgHub::sensors sensors;
+pmgHub::sensorsSimulator sensors;
 pmgHub::services services(sessions, storage, sensors);
 pmgHub::webServer webServer(services);
 

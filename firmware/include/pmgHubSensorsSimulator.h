@@ -1,24 +1,18 @@
-// #pragma once
+#pragma once
 
-// #include <pmgHubServices.h>
-// #include <pmgHubSensor.h>
-// #include <pmgHubSensors.h>
+#include <pmgHubSensors.h>
 
-// namespace pmgHub {
+namespace pmgHub {
 
-//     class SensorsSimulator : public Sensor {
+    class sensorsSimulator : public sensors {
 
-//         public:
+        public:
 
-//             SensorsSimulator(services& svc);
-//             ~SensorsSimulator() = default;
-
-//             sensor find(sensor::sensorID) const;
+            sensorsSimulator();
+            ~sensorsSimulator() = default;
             
-//             void update();
+            void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) override;
 
-//             void retrieveSensors(std::map<sensor::sensorID, sensor> sensors) = 0;
+        };
 
-//     };
-
-// };
+};

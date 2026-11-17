@@ -1,13 +1,17 @@
-// #include <pmgHubServices.h>
+#include <pmgHubSensorsSimulator.h>
+#include <pmgHubSensors.h>
 
-// using namespace pmgHub;
+using namespace pmgHub;
 
-// SensorsSimulator::SensorsSimulator(services& svc) : sensors(srv) {
-// };
+sensorsSimulator::sensorsSimulator() {
 
-// void SensorsSimulator::retrieveSensors(std::map<sensor::sensorID, sensor> sensors) {
+
+
+};
+
+void sensorsSimulator::retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) {
 
     
 
 
-// };
+};

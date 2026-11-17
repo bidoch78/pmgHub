@@ -17,12 +17,13 @@ namespace pmgHub {
         public:
 
             sensors();
-            ~sensors() = default;
+            virtual ~sensors() = default;
 
+            sensor* find(sensor::sensorId sid);
             const sensor* find(sensor::sensorId sid) const;
             
             void update();
-            void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) = 0;
+            virtual void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) = 0;
 
     };
 

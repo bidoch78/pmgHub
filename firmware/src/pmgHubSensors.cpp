@@ -40,7 +40,7 @@ const sensor* sensors::find(sensor::sensorId sid) const {
     return &it->second;
 }
 
-void sensors::update(std::map<sensor::sensorId, sensor>& sensors) {
+void sensors::update() {
 
     
 

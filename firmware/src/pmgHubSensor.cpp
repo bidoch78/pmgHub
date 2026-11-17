@@ -5,7 +5,7 @@
 
 using namespace pmgHub;
 
-sensor::sensor(sensorId sId, String sName, String sCat, units::unitData sUnit, uint32_t sRate)
+sensor::sensor(sensorId sId, String sName, String sCat, const units::unitData& sUnit, uint32_t sRate)
          : _id(sId), _name(sName), _category(sCat), _unit(sUnit), _rate(sRate) {
 
 };

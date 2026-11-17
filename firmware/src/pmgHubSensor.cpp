@@ -12,25 +12,21 @@ sensor::sensor(sensorId sId, String sName, String sCat, const units::unitData& s
 // sensor::sensorID sensor::getId() const { return _id; };
 // sensor::sensorCategory sensor::getCategory() const { return _category; };
 // sensor::sensorType sensor::getType() const { return _type; };
-// sensor::sensorRate sensor::getRate() const { return _rate; };
+uint32_t sensor::getRate() const { return _rate; };
 // String& sensor::getName() const { return _name; };
 
-// bool sensor::isVirtual() const {
-//     return false;
-// };
+bool sensor::isVirtual() const {
+    return false;
+};
 
-// uint32_t sensor::getLastRead() const { return _dataLastRead; };
-// uint32_t sensor::getCountRead() const { return _dataCountRead; };
-
-// void sensor::resetCountRead() { _dataCountRead = 0; };
+uint32_t sensor::getLastRead() const { return _dataLastRead; };
+uint32_t sensor::getCountRead() const { return _dataCountRead; };
+void sensor::resetCountRead() { _dataCountRead = 0; };
+void sensor::setSampleRate(uint32_t sRate) { _srate = sRate; };
+void sensor::read(uint32_t w) { _srate = _dataLastRead; _dataCountRead++; };
 
 // void sensor::setValue(const float volt, const SensorValue& val) {
-//     setValue(sv, millis());
-// };
 
-// void sensor::setValue(const float volt, const SensorValue& val, uint32_t lread) {
-
-//     _dataLastRead = lread;
 //     _dataCountRead++;
 //     _readValue = val;
 //     _readVoltage = volt;

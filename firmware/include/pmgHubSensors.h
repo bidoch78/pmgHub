@@ -23,7 +23,7 @@ namespace pmgHub {
             const sensor* find(sensor::sensorId sid) const;
             
             void update();
-            virtual void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) = 0;
+            virtual void retrieveSensors(const std::vector<sensor*>& sensors) = 0;
 
     };
 

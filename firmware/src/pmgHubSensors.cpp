@@ -1,5 +1,7 @@
+#include <Arduino.h>
 #include <pmgHubSensors.h>
 #include <pmgHubSensor.h>
+#include <vector.h>
 
 using namespace pmgHub;
 
@@ -42,6 +44,45 @@ const sensor* sensors::find(sensor::sensorId sid) const {
 
 void sensors::update() {
 
+    const uint32_t now = millis();
+
+    if (!this._lastUpdate) this._lastUpdate = now;
+
+    const uint32_t elapsed = now - this._lastUpdate;
+    const uint32_t updateSrate = elapsed >= 1000;    
+
+    std::vector<sensor*> virtuals;
+    std::vector<sensor*> updateSensors;
     
+    for (auto& [id, sensor] : _sensors) {
+        
+        if (updateSrate) {
+            sensor.setSampleRate(item.getCountRead() * 1000 / elapsed);
+            sensor.resetCountRead();
+        }
+
+        const lRead = sensor.getLastRead();
+        if (lRead && (now - lRead) < sensor.getRate()) continue;
+
+        sensor.read(now);
+    
+        if (sensor.isVirtual()) {
+            virtuals.push_back(&sensor);
+            continue;
+        }
+
+        ///////
+        updateSensors.push_back(&sensor);
+
+    }
+
+    if (!updateSensors.empty()) retrieveSensors(&updateSensors);
+
+    // Virtual sensors
+    for (sensor* const sensor : virtuals) {
+        //sensor->read(now);
+    }
+
+    if (updateSrate) this._lastUpdate = now;
 
 };

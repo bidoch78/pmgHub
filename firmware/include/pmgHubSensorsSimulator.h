@@ -11,7 +11,7 @@ namespace pmgHub {
             sensorsSimulator();
             ~sensorsSimulator() = default;
             
-            void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) override;
+            void retrieveSensors(const std::vector<sensor*>& sensors) override;
 
         };
 

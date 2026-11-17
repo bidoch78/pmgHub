@@ -9,7 +9,7 @@ sensorsSimulator::sensorsSimulator() {
 
 };
 
-void sensorsSimulator::retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) {
+void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
 
     
 

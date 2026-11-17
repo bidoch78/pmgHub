@@ -58,6 +58,7 @@ namespace pmgHub {
 
             float _readVoltage;
             units::sensorValue _readValue;
+            uint32_t _srate;
 
         public:
 
@@ -67,16 +68,18 @@ namespace pmgHub {
 //             sensorID getId() const;
 //             sensorCategory getCategory() const;
 //             sensorType getType() const;
-//             sensorRate getRate() const;
+            uint32_t getRate() const;
 //             String& getName() const;
 
-//             bool isVirtual() const;
-//             uint32_t getLastRead() const;
-//             uint32_t getCountRead() const;
-//             void resetCountRead(); 
+            bool isVirtual() const;
+            uint32_t getLastRead() const;
+            uint32_t getCountRead() const;
+            void resetCountRead();
+            void setSampleRate(uint32_t sRate);
+            
+            void read(uint32_t w);
 
 //             void setValue(const float volt, const SensorValue& val);
-//             void setValue(const float volt, const SensorValue& sv, uint32_t lread);
 
     };
 

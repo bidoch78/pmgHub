@@ -17,12 +17,12 @@ namespace pmgHub {
             template<typename T>
             static constexpr unitId toUnitId(T id) {
                 return static_cast<unitId>(id);
-            }
+            };
 
             template<typename T>
             static constexpr typeId toTypeId(T id) {
                 return static_cast<typeId>(id);
-            }
+            };
 
             enum class defaulUnitType: typeId {
                 UNKNOWN = 0,

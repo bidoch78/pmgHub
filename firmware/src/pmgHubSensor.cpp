@@ -1,11 +1,12 @@
 #include <pmgHubSensor.h>
+#include <pmgHubUnits.h>
 #include <pmgHubServices.h>
 #include <Arduino.h>
 
 using namespace pmgHub;
 
-sensor::sensor(sensorID sId, String sName, String sCat, unit::sensorValue sUnit, sensorRate sRate);
-         : _id(sId), _name(sName), _category(sCat), _type(sType), _unit(sUnit), _rate(static_cast<uint32_t>(sRate)), {
+sensor::sensor(sensorId sId, String sName, String sCat, units::unitData sUnit, uint32_t sRate)
+         : _id(sId), _name(sName), _category(sCat), _unit(sUnit), _rate(sRate) {
 
 };
 

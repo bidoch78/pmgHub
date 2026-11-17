@@ -14,15 +14,15 @@ namespace pmgHub {
             template<typename T>
             static constexpr sensorId toSensorId(T id) {
                 return static_cast<sensorId>(id);
-            }
-
-            enum class sensorRate : uint32_t {
-                LOW = 1000,
-                MEDIUM = 300,
-                HIGH = 100
             };
 
-            enum class defaultSensorID : sensorId {
+            enum class sensorRate : uint32_t {
+                LOW_RATE = 1000,
+                MEDIUM_RATE = 300,
+                HIGH_RATE = 100
+            };
+
+            enum class defaultSensorId : sensorId {
                 ENGINE_AIRPRESSURE = 1,
                 ENGINE_COOLANTTEMP = 2,
                 ENGINE_WB_LEFT = 3,
@@ -52,7 +52,7 @@ namespace pmgHub {
             uint32_t _dataLastRead = 0;
             uint32_t _dataCountRead = 0;
 
-            sensorID _id;
+            sensorId _id;
             String _name;
             String _category;
             units::unitData _unit;
@@ -60,12 +60,12 @@ namespace pmgHub {
             uint32_t _rate;
 
             float _readVoltage;
-            unit::sensorValue _readValue;
+            units::sensorValue _readValue;
 
         public:
 
-            sensor(sensorID sId, String sName, String sCat, unit::sensorValue sUnit, uint32_t sRate);
-            ~device() = default;
+            sensor(sensorId sId, String sName, String sCat, units::unitData sUnit, uint32_t sRate);
+            ~sensor() = default;
 
 //             sensorID getId() const;
 //             sensorCategory getCategory() const;

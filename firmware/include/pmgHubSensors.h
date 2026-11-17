@@ -10,7 +10,7 @@ namespace pmgHub {
 
         private:
 
-            services _service;
+            services _services;
 
 //             uint32_t _lastUpdate = 0;
 
@@ -19,7 +19,7 @@ namespace pmgHub {
             
         public:
 
-            sensors(services& svc);
+            sensors(services& srv);
             ~sensors() = default;
 
 //             sensor find(sensor::sensorID) const;
@@ -28,6 +28,6 @@ namespace pmgHub {
 
 //             void retrieveSensors(std::map<sensor::sensorID, sensor> sensors) = 0;
 
-//     };
+    };
 
 };

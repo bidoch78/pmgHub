@@ -4,11 +4,11 @@
 
 using namespace pmgHub;
 
-sensors::sensors(services& svc) : _services(srv) {
+sensors::sensors(services& srv) : _services(srv) {
 
     //Add default sensors
-    _sensors.emplace(toSensorId(sensor::defaultSensorID::ENGINE_AIRPRESSURE),
-                        new sensor(toSensorId(sensor::defaultSensorID::ENGINE_AIRPRESSURE), "Air Pressure", "ENGINE", _unit.getUnit(units::toUnitId(units::defaultUnitId::BAR)), static_cast<uint32_t>(sensor::sensorRate::HIGH));
+    // _sensors.emplace(toSensorId(sensor::defaultSensorID::ENGINE_AIRPRESSURE),
+    //                     new sensor(toSensorId(sensor::defaultSensorID::ENGINE_AIRPRESSURE), "Air Pressure", "ENGINE", _unit.getUnit(units::toUnitId(units::defaultUnitId::BAR)), static_cast<uint32_t>(sensor::sensorRate::RATE_HIGH));
 
 };
 

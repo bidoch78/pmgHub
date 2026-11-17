@@ -1,9 +1,9 @@
 #pragma once
 
-#include <pmgHubServices.h>
-
 namespace pmgHub {
 
+    class services;
+    
     class servicesBase {
 
         friend class services;

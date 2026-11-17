@@ -5,14 +5,11 @@
 #include <pmgHubSensors.h>
 #include <pmgHubSessionManager.h>
 
-pmgHub::sessions sessions(pmgHub::config::sessionTimeoutMs); 
-pmhHub::storage storage;
-pmhHub::sensors sensors;
-
+pmgHub::sessionManager sessions(pmgHub::config::sessionTimeoutMs); 
+pmgHub::storage storage;
+pmgHub::sensors sensors;
 pmgHub::services services(sessions, storage, sensors);
 pmgHub::webServer webServer(services);
-
-//services(sessionManager& ssessions, storage& sstorage, sensors& ssensor) : _sessions(*this, pmgHub::config::sessionTimeoutMs), _storage() {}
 
 void setup()
 {

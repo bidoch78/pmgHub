@@ -9,7 +9,7 @@ namespace pmgHub {
 
         private:
 
-//             uint32_t _lastUpdate = 0;
+            uint32_t _lastUpdate = 0;
 
             units _units;
             std::map<sensor::sensorId, sensor> _sensors;
@@ -19,11 +19,10 @@ namespace pmgHub {
             sensors();
             ~sensors() = default;
 
-//             sensor find(sensor::sensorID) const;
+            const sensor* find(sensor::sensorId sid) const;
             
-//             void update();
-
-//             void retrieveSensors(std::map<sensor::sensorID, sensor> sensors) = 0;
+            void update();
+            void retrieveSensors(const std::map<sensor::sensorId, sensor>& sensors) = 0;
 
     };
 

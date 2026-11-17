@@ -35,16 +35,17 @@ namespace pmgHub {
             };
 
             enum class defaultUnitId: unitId {
-                UNKNOWN = 0,
-                ON = 1,
-                BAR = 2,
-                PSI = 3,
-                CELSIUS = 4,
-                FAHRENHEIT = 5,
-                PCT = 6,
-                LAMBDA = 7,
-                AFR = 8,
-                VIRTUAL = 9
+                NO_UNIT = 0,
+                UNKNOWN = 1,
+                ON = 2,
+                BAR = 3,
+                PSI = 4,
+                CELSIUS = 5,
+                FAHRENHEIT = 6,
+                PCT = 7,
+                LAMBDA = 8,
+                AFR = 9,
+                VIRTUAL = 10
             };
 
             using sensorValue = std::variant<std::monostate, bool, uint32_t, float, String>;
@@ -60,7 +61,8 @@ namespace pmgHub {
 
         private:          
 
-           std::map<unitId, unitData> _units; 
+            unitData _noUnit;
+            std::map<unitId, unitData> _units; 
  
         public:
 
@@ -72,9 +74,11 @@ namespace pmgHub {
             std::vector<unitData> getUnits(typeId utype) const;
             std::map<typeId, std::vector<unitData>> getAllUnits() const;
 
-            const unitData* getUnit(unitId uid) const;
-            const unitData* getUnit(typeId utype, unitId uid) const;
+            const unitData& getUnit(unitId uid) const;
+            const unitData& getUnit(typeId utype, unitId uid) const;
             
+            bool noUnit(const unitData& unit) const;
+
             sensorValue convertValue(const sensorValue& value, unitId fromUnit, unitId toUnit) const;
             sensorValue transformUnit(const sensorValue& value, unitId fromUnit, unitId toUnit) const;
 

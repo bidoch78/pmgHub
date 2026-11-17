@@ -7,6 +7,8 @@ using namespace pmgHub;
 
 units::units() {
 
+    _noUnit = unitData(toUnitId(units::defaultUnitId::NO_UNIT), "", toTypeId(units::defaulUnitType::UNKNOWN) , "", 0);
+
     _units.emplace(toUnitId(units::defaultUnitId::UNKNOWN), 
                     unitData(toUnitId(units::defaultUnitId::UNKNOWN), "-", toTypeId(units::defaulUnitType::UNKNOWN) , "-", 0));
     _units.emplace(toUnitId(units::defaultUnitId::ON), 
@@ -58,24 +60,26 @@ std::map<units::typeId, std::vector<units::unitData>> units::units::getAllUnits(
 
 };
 
-const units::unitData* units::getUnit(units::unitId uid) const {
+const units::unitData& units::getUnit(units::unitId uid) const {
 
     auto it = _units.find(uid);
-    if (it == _units.end()) return nullptr;
+    if (it == _units.end()) return _noUnit;
     return &it->second;
 
 }
 
-const units::unitData* units::getUnit(units::typeId utype, units::unitId uid) const {
+const units::unitData& units::getUnit(units::typeId utype, units::unitId uid) const {
 
     auto it = _units.find(uid);
 
-    if (it == _units.end()) return nullptr;
-    if (it->second.type != utype) return nullptr;
+    if (it == _units.end()) return _noUnit;
+    if (it->second.type != utype) return _noUnit;
 
     return &it->second;
 
 };
+
+bool noUnit(const unitData& unit) const { return unit.id == _noUnit.id; };
 
 units::sensorValue units::convertValue(const sensorValue& value, units::unitId fromUnit, units::unitId toUnit) const {
     return transformUnit(value, fromUnit, toUnit);
@@ -90,7 +94,7 @@ units::sensorValue units::transformUnit(const sensorValue& value, units::unitId 
     const unitData* fUnit = getUnit(fromUnit);
     const units::unitData* tUnit = getUnit(toUnit);
 
-    if (fUnit == nullptr || tUnit == nullptr) return value;
+    if (noUnit(fUnit) || noUnit(tUnit)) return value;
     if (fUnit->type != tUnit->type) return value;
 
     //For all type we need a float value

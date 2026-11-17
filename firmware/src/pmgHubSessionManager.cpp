@@ -4,8 +4,8 @@
 
 using namespace pmgHub;
 
-sessionManager::sessionManager(services& svc, uint32_t timeoutMs, const String& storePath)
-                                : _services(svc), _timeoutMs(timeoutMs), _storePath(storePath) {
+sessionManager::sessionManager(uint32_t timeoutMs, const String& storePath)
+                                : _timeoutMs(timeoutMs), _storePath(storePath) {
 
     //Load last sessions stored    
     loadSession();
@@ -18,6 +18,8 @@ void sessionManager::loadSession() {
 void sessionManager::saveSessions() {
 
 };
+
+void sessionManager::setServices(services& srv) { _services = &srv; }
 
 void sessionManager::cleanup(bool save) {
     

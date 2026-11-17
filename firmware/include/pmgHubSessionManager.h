@@ -10,6 +10,8 @@ namespace pmgHub {
 
     class sessionManager {
 
+        friend class services;
+
         public:
 
             enum class sessionType : uint32_t {
@@ -26,7 +28,7 @@ namespace pmgHub {
                 sessionData(uint32_t lActivity, sessionType sType): lastActivity(lActivity), type(sType) {};
             };
 
-            services& _services;
+            services* _services = nullptr;
             uint32_t _timeoutMs;
             String _storePath;
             std::map<String, sessionData> _sessions;
@@ -35,9 +37,11 @@ namespace pmgHub {
             void saveSessions();
             void cleanup(bool save = true);
 
+            void setServices(services& srv);
+
         public:
 
-            sessionManager(services& svc, uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json");
+            sessionManager(uint32_t timeoutMs = 60*60*1000, const String& storePath = "/sessions.json");
             ~sessionManager() = default;
 
             String create(sessionType session_type);

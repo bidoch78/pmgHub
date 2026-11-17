@@ -1,6 +1,5 @@
 #pragma once
 
-#include <pmgHubServices.h>
 #include <pmgHubSensor.h>
 #include <pmgHubUnits.h>
 
@@ -10,8 +9,6 @@ namespace pmgHub {
 
         private:
 
-            services _services;
-
 //             uint32_t _lastUpdate = 0;
 
             units _units;
@@ -19,7 +16,7 @@ namespace pmgHub {
             
         public:
 
-            sensors(services& srv);
+            sensors();
             ~sensors() = default;
 
 //             sensor find(sensor::sensorID) const;

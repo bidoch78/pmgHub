@@ -1,6 +1,5 @@
 #include <pmgHubSensor.h>
 #include <pmgHubUnits.h>
-#include <pmgHubServices.h>
 #include <Arduino.h>
 
 using namespace pmgHub;

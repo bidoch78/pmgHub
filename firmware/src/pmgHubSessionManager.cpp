@@ -19,8 +19,6 @@ void sessionManager::saveSessions() {
 
 };
 
-void sessionManager::setServices(services& srv) { _services = &srv; }
-
 void sessionManager::cleanup(bool save) {
     
     uint32_t now = millis();

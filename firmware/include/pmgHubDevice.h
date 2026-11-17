@@ -1,10 +1,10 @@
 #pragma once
 
-#include <pmgHubServices.h>
+#include <pmgHubServicesBase.h>
 
 namespace pmgHub {
 
-    class device {
+    class device : public servicesBase {
 
         private:
 
@@ -20,14 +20,12 @@ namespace pmgHub {
             bool _pairing = false;
             bool _persistent = false;
 
-            services _services;
-
             // std::map<> _sensors
             // std::map<> _typeUnits
             
         public:
 
-            device(services& svc);
+            device();
             ~device() = default;
 
     };

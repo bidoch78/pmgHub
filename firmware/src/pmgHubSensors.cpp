@@ -1,10 +1,9 @@
-#include <pmgHubServices.h>
 #include <pmgHubSensors.h>
 #include <pmgHubSensor.h>
 
 using namespace pmgHub;
 
-sensors::sensors(services& srv) : _services(srv) {
+sensors::sensors() {
 
     //Add default sensors
     _sensors.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE),

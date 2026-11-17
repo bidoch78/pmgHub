@@ -2,15 +2,14 @@
 
 #include <Arduino.h>
 #include <map>
+#include <pmgHubServicesBase.h>
 #include <pmgHubCryptoManager.h>
 
 namespace pmgHub {
 
     class services;
 
-    class sessionManager {
-
-        friend class services;
+    class sessionManager : public servicesBase {
 
         public:
 
@@ -28,7 +27,6 @@ namespace pmgHub {
                 sessionData(uint32_t lActivity, sessionType sType): lastActivity(lActivity), type(sType) {};
             };
 
-            services* _services = nullptr;
             uint32_t _timeoutMs;
             String _storePath;
             std::map<String, sessionData> _sessions;
@@ -36,8 +34,6 @@ namespace pmgHub {
             void loadSession();
             void saveSessions();
             void cleanup(bool save = true);
-
-            void setServices(services& srv);
 
         public:
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <pmgHubServices.h>
 #include <pmgHubUnits.h>
 
 namespace pmgHub {
@@ -46,8 +45,6 @@ namespace pmgHub {
             };
 
         private:
-
-            services _service;
 
             uint32_t _dataLastRead = 0;
             uint32_t _dataCountRead = 0;

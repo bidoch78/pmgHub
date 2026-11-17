@@ -1,6 +1,5 @@
 #pragma once
 
-#include <pmgHubConfig.h>
 #include <pmgHubSessionManager.h>
 #include <pmgHubStorage.h>
 #include <pmgHubSensors.h>
@@ -23,13 +22,13 @@ namespace pmgHub {
             ~services() = default;
 
             sessionManager& getSessions() { return _sessions; }
-            const sessionManager& getSessions() const { return _sessions; }
+            //const sessionManager& getSessions() const { return _sessions; }
 
             storage& getStorage() { return _storage; }
-            const storage& getStorage() const { return _storage; }
+            //const storage& getStorage() const { return _storage; }
 
             sensors& getSensors() { return _sensors; }
-            const sensors& getSensors() const { return _sensors; }
+            //const sensors& getSensors() const { return _sensors; }
         
     };
 

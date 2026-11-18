@@ -16,8 +16,8 @@ bool randomBool() {
 
 sensorsSimulator::sensorsSimulator() {
 
-    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { -0.5f, 2f }));
-    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_COOLANTTEMP), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { 0.0f, 100f }));
+    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { -0.5f, 2.0f }));
+    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_COOLANTTEMP), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { 0.0f, 100.0f }));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_WB_LEFT), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { 0.68f, 1.36f }));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_WB_RIGHT), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { 0.68f, 1.36f }));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_OIL_PRESSURE), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { 0.0f, 7.0f }));
@@ -34,9 +34,9 @@ sensorsSimulator::sensorsSimulator() {
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_D), sensorSimData(simDataType::SIM_PULL, {0.0f, 12.0f}, { 0.0f, 1.0f }));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_R), sensorSimData(simDataType::SIM_PULL, {0.0f, 12.0f}, { 0.0f, 1.0f }));
 
-    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENV_DAYNIGHT), sensorSimData(simDataType::SIM_PULL, {0.0f, 5.0f}, { 0.0f, 1f }));
+    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENV_DAYNIGHT), sensorSimData(simDataType::SIM_PULL, {0.0f, 5.0f}, { 0.0f, 1.0f }));
 
-    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL), sensorSimData(simDataType::SIM_VIRTUAL, {}, {}));
+    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL_LOW), sensorSimData(simDataType::SIM_VIRTUAL, {}, {}));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL), sensorSimData(simDataType::SIM_VIRTUAL, {}, {}));
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::TRANS_SELECTOR), sensorSimData(simDataType::SIM_VIRTUAL, {}, {}));
 

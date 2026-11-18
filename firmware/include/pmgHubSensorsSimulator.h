@@ -11,9 +11,10 @@ namespace pmgHub {
 
             enum class simDataType: uint32_t {
                 SIM_RANGE = 0,
-                SIM_PULL = 1
+                SIM_PULL = 1,
+                SIM_VIRTUAL = 2
             };
-                    
+
             struct sensorSimData {
                 simDataType type;
                 const std::vector<float> in;

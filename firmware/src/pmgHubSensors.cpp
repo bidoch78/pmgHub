@@ -86,3 +86,8 @@ void sensors::update() {
     if (updateSrate) _lastUpdate = now;
 
 };
+
+float sensors::roundValue(float value, uint8_t decimals) {
+    float factor = std::pow(10.0f, decimals);
+    return std::round(value * factor) / factor;
+}

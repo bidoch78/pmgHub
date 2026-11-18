@@ -4,16 +4,6 @@
 
 using namespace pmgHub;
 
-/*
-float randomFloat(float min, float max) {
-    return min + (esp_random() / (float)UINT32_MAX) * (max - min);
-}
-
-bool randomBool() {
-    return esp_random() & 1;
-}
-*/
-
 sensorsSimulator::sensorsSimulator() {
 
     _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { -0.5f, 2.0f }));
@@ -42,11 +32,48 @@ sensorsSimulator::sensorsSimulator() {
 
 };
 
+sensorSimData* sensorsSimulator::getSimData(sensor::sensorId id) const {
+    
+    auto it = _simData.find(id);
+    if (it == _simData.end()) return nullptr;
+    return &it->second;
+
+};
+
 void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
 
-    Serial.printf("Read ");
+    Serial.printf("Read\n");
     for (sensor* sensor : sensors) {
-        Serial.printf(" %s", sensor->getName().c_str());
+
+        Serial.printf("%s", sensor->getName().c_str());
+
+        const sensorSimData* data = getSimData(sensor.id);
+        if (data == nullptr) continue;
+
+        float voltage = 0;
+
+        switch(data->type) {
+
+            case simDataType::SIM_RANGE:
+                if (data->in.size() > 2) voltage = randomFloat(data->in[0], data->in[1]);
+                break;
+
+            case simDataType::SIM_PULL:
+                if (data->in.size() > 2) voltage = randomBool(data->in[0], data->in[1]);
+                break;
+
+        }
+
+        Serial.printf(" -voltage: %f", voltage);
+        
     }
     Serial.printf("\n");
 };
+
+float sensorsSimulator::randomFloat(float min, float max) {
+    return min + (esp_random() / (float)UINT32_MAX) * (max - min);
+}
+
+float sensorsSimulator::randomBool(float min, float max) {
+    return (esp_random() & 1) ? max: min;
+}

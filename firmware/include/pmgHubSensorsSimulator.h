@@ -31,6 +31,9 @@ namespace pmgHub {
             
             void retrieveSensors(const std::vector<sensor*>& sensors) override;
 
+            static float sensorsSimulator::randomFloat(float min, float max);
+            static bool sensorsSimulator::randomBool();
+
         };
 
 };

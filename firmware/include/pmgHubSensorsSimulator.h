@@ -7,7 +7,7 @@ namespace pmgHub {
 
     class sensorsSimulator : public sensors {
 
-        private:
+        public:
 
             enum class simDataType: uint32_t {
                 SIM_RANGE = 0,
@@ -22,6 +22,8 @@ namespace pmgHub {
                 sensorSimData(simDataType stype, std::vector<float> sin, std::vector<float> sout): type(stype), in(std::move(sin)), out(std::move(sout)) {  }
             };
 
+        private:
+
             std::map<sensor::sensorId, sensorSimData> _simData;
 
         public:
@@ -31,8 +33,9 @@ namespace pmgHub {
             
             void retrieveSensors(const std::vector<sensor*>& sensors) override;
 
-            static float sensorsSimulator::randomFloat(float min, float max);
-            static bool sensorsSimulator::randomBool();
+            const sensorSimData* getSimData(sensor::sensorId id) const;
+            static float randomFloat(float min, float max);
+            static float randomBool(float min, float max);
 
         };
 

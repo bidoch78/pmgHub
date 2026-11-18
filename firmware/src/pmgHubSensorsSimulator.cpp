@@ -32,7 +32,7 @@ sensorsSimulator::sensorsSimulator() {
 
 };
 
-sensorSimData* sensorsSimulator::getSimData(sensor::sensorId id) const {
+const sensorsSimulator::sensorSimData* sensorsSimulator::getSimData(sensor::sensorId id) const {
     
     auto it = _simData.find(id);
     if (it == _simData.end()) return nullptr;
@@ -45,9 +45,9 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
     Serial.printf("Read\n");
     for (sensor* sensor : sensors) {
 
-        Serial.printf("%s", sensor->getName().c_str());
+        Serial.printf(" %s", sensor->getName().c_str());
 
-        const sensorSimData* data = getSimData(sensor.id);
+        const sensorSimData* data = getSimData(sensor->getId());
         if (data == nullptr) continue;
 
         float voltage = 0;
@@ -55,16 +55,16 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
         switch(data->type) {
 
             case simDataType::SIM_RANGE:
-                if (data->in.size() > 2) voltage = randomFloat(data->in[0], data->in[1]);
+                if (data->in.size() > 1) voltage = randomFloat(data->in[0], data->in[1]);
                 break;
 
             case simDataType::SIM_PULL:
-                if (data->in.size() > 2) voltage = randomBool(data->in[0], data->in[1]);
+                if (data->in.size() > 1) voltage = randomBool(data->in[0], data->in[1]);
                 break;
 
         }
 
-        Serial.printf(" -voltage: %f", voltage);
+        Serial.printf(" - voltage: %f", voltage);
         
     }
     Serial.printf("\n");

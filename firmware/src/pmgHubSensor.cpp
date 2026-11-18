@@ -9,7 +9,7 @@ sensor::sensor(sensorId sId, String sName, String sCat, const units::unitData& s
 
 };
 
-// sensor::sensorID sensor::getId() const { return _id; };
+sensor::sensorId sensor::getId() const { return _id; };
 // sensor::sensorCategory sensor::getCategory() const { return _category; };
 // sensor::sensorType sensor::getType() const { return _type; };
 uint32_t sensor::getRate() const { return _rate; };

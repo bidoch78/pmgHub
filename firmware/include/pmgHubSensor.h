@@ -65,7 +65,7 @@ namespace pmgHub {
             sensor(sensorId sId, String sName, String sCat, const units::unitData& sUnit, uint32_t sRate);
             ~sensor() = default;
 
-//             sensorID getId() const;
+            sensorId getId() const;
 //             sensorCategory getCategory() const;
 //             sensorType getType() const;
             uint32_t getRate() const;

@@ -16,8 +16,7 @@ bool randomBool() {
 
 sensorsSimulator::sensorsSimulator() {
 
-    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE), 
-                        simDataType(simDataType::SIM_RANGE, {0.0f, 5.0f}, { -0.5f, 2 }));
+    _simData.emplace(sensor::toSensorId(sensor::defaultSensorId::ENGINE_AIRPRESSURE), sensorSimData(simDataType::SIM_RANGE, {0.0f, 5.0f}, { -0.5f, 2 }));
 
 };
 

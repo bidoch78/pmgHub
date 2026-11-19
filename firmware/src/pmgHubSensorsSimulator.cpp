@@ -70,7 +70,7 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
         //Update sensor values
         sensor->setValue(voltage, sensors::convertFloatToSensorValue(value, sensor->getUnit()));
 
-        Serial.printf(" - voltage: %f, value: %f, format: %s", voltage, value, sensor->getStringValue());
+        Serial.printf(" - voltage: %f, value: %f, format: %s\n", voltage, value, sensor->getStringValue());
     
     }
     Serial.printf("\n");

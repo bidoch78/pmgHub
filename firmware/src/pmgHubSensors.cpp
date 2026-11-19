@@ -92,7 +92,7 @@ float sensors::roundValue(float value, uint32_t decimals) {
     return std::round(value * factor) / factor;
 };
 
-units::sensorValue sensors::convertFloatToSensorValue(float value, units::unitData& unit) {
+units::sensorValue sensors::convertFloatToSensorValue(float value, const units::unitData& unit) {
 
     if (isnan(value)) return std::monostate{};
 

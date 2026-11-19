@@ -32,7 +32,7 @@ void sensor::setValue(const float volt, const units::sensorValue& val) {
 
 };
 
-const units::senorValue& sensor::getValue() const { return _readValue; }
+const units::sensorValue& sensor::getValue() const { return _readValue; }
 
 String sensor::getStringValue() {
 

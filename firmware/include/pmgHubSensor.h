@@ -81,7 +81,7 @@ namespace pmgHub {
             void read(uint32_t w);
 
             void setValue(const float volt, const units::sensorValue& val);
-            const units::senorValue& getValue() const;
+            const units::sensorValue& getValue() const;
             String getStringValue();
 
     };

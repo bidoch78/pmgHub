@@ -14,6 +14,8 @@ namespace pmgHub {
             units _units;
             std::map<sensor::sensorId, sensor> _sensors;
             
+            void generateTransGearSel(sensor* const sensor);
+
         public:
 
             sensors();
@@ -24,7 +26,7 @@ namespace pmgHub {
             
             void update();
             virtual void retrieveSensors(const std::vector<sensor*>& sensors) = 0;
-
+            
             static float roundValue(float value, uint32_t decimals);
             static units::sensorValue convertFloatToSensorValue(float value, const units::unitData& unit);
         

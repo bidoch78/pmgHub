@@ -150,12 +150,12 @@ void sensors::update() {
     for (sensor* const s : virtuals) {
         
         switch(s->getId()) {
-            case sensor::toSensorId(sebsor::defaultSensorId::TRANS_GEARSEL):
+            case sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL):
                 generateTransGearSel(s);
                 break;
-            case sensor::toSensorId(sebsor::defaultSensorId::FUEL_LEVEL_LOW):
+            case sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL_LOW):
                 break;
-            case sensor::toSensorId(sebsor::defaultSensorId::TRANS_SELECTOR):
+            case sensor::toSensorId(sensor::defaultSensorId::TRANS_SELECTOR):
                 break;
         }
 

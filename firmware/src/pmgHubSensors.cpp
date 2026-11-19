@@ -153,9 +153,11 @@ void sensors::update() {
             case sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL):
                 generateTransGearSel(s);
                 break;
-            case sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL_LOW):
-                break;
             case sensor::toSensorId(sensor::defaultSensorId::TRANS_SELECTOR):
+                generateTransSelector(s);
+                break;
+            case sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL_LOW):
+                generateFuelLowLevel(s);
                 break;
         }
 
@@ -168,6 +170,30 @@ void sensors::update() {
 void sensors::generateTransGearSel(sensor* const sensor) {
 
 
+
+};
+
+void sensors::generateTransSelector(sensor* const sensor) {
+
+    
+
+};
+
+void sensors::generateFuelLowLevel(sensor* const sensor) {
+
+    const sensor* fuelLevel = find(sensor::toSensorId(defaultSensorId::FUEL_LEVEL));
+
+    if (fuelLevel != nullptr) {
+
+        const units::sensorValue& fuelLevelValue = fuelLevel->getValue();
+        if (units::hasValue(fuelLevelValue)) {
+            sensor->setValue(0, units::getValue<int32_t>(fuelLevelValue, 100) <= 10);
+            return;
+        }
+
+    }
+
+    sensor->setValue(0, std::monostate()); 
 
 };
 

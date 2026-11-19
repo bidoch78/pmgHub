@@ -171,19 +171,19 @@ void sensors::generateTransGearSel(sensor* const s) {
 
     int32_t gear = -1;
 
-    const bool na = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_NA, false));
-    const bool rv = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_R, false));
+    const bool na = getSensorValue<bool>(sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_NA), false);
+    const bool rv = getSensorValue<bool>(sensor::toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_R), false);
 
     if (na) {
         gear = 0;
     }
-    elseif (rv) {
+    else if (rv) {
         gear = 1;
     }
     else {
 
-        const bool solA = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_A, false));
-        const bool solB = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_B, false));
+        const bool solA = getSensorValue<bool>(sensor::toSensorId(sensor::defaultSensorId::TRANS_SOL_A), false);
+        const bool solB = getSensorValue<bool>(sensor::toSensorId(sensor::defaultSensorId::TRANS_SOL_B), false);
 
         if (solA && solB) {
             gear = 1;
@@ -196,7 +196,7 @@ void sensors::generateTransGearSel(sensor* const s) {
         }
         else if (solA && !solB) {
             
-            const bool solLC = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_LC, false));
+            const bool solLC = getSensorValue<bool>(sensor::toSensorId(sensor::defaultSensorId::TRANS_SOL_LC), false);
             gear = solLC ? 5 : 4;
         
         }

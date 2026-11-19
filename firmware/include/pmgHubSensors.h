@@ -15,6 +15,8 @@ namespace pmgHub {
             std::map<sensor::sensorId, sensor> _sensors;
             
             void generateTransGearSel(sensor* const sensor);
+            void generateTransSelector(sensor* const sensor);
+            void generateFuelLowLevel(sensor* const sensor);
 
         public:
 

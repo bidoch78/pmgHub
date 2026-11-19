@@ -167,33 +167,33 @@ void sensors::update() {
 
 };
 
-void sensors::generateTransGearSel(sensor* const sensor) {
+void sensors::generateTransGearSel(sensor* const s) {
 
 
 
 };
 
-void sensors::generateTransSelector(sensor* const sensor) {
+void sensors::generateTransSelector(sensor* const s) {
 
     
 
 };
 
-void sensors::generateFuelLowLevel(sensor* const sensor) {
+void sensors::generateFuelLowLevel(sensor* const s) {
 
-    const sensor* fuelLevel = find(sensor::toSensorId(defaultSensorId::FUEL_LEVEL));
+    const sensor* fuelLevel = find(sensor::toSensorId(sensor::defaultSensorId::FUEL_LEVEL));
 
     if (fuelLevel != nullptr) {
 
         const units::sensorValue& fuelLevelValue = fuelLevel->getValue();
         if (units::hasValue(fuelLevelValue)) {
-            sensor->setValue(0, units::getValue<int32_t>(fuelLevelValue, 100) <= 10);
+            s->setValue(0, units::getValue<int32_t>(fuelLevelValue, 100) <= 10);
             return;
         }
 
     }
 
-    sensor->setValue(0, std::monostate()); 
+    s->setValue(0, std::monostate()); 
 
 };
 

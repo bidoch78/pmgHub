@@ -48,16 +48,6 @@ namespace pmgHub {
                 VIRTUAL = 10
             };
 
-
-            template<typename T>
-            static const T* getValue(const sensorValue& value) { return std::get_if<T>(&value); }
-
-            template<typename T>
-            static T getValue(const sensorValue& value, T defaultValue) {
-                if (const T* v = std::get_if<T>(&value)) return *v;
-                return defaultValue;
-            }
-
             using sensorValue = std::variant<std::monostate, bool, int32_t, float, String>;
 
             struct unitData {
@@ -93,6 +83,15 @@ namespace pmgHub {
             sensorValue transformUnit(const sensorValue& value, unitId fromUnit, unitId toUnit) const;
 
             static bool hasValue(const sensorValue& value) { return !std::holds_alternative<std::monostate>(value); }
+
+            template<typename T>
+            static const T* getValue(const sensorValue& value) { return std::get_if<T>(&value); }
+
+            template<typename T>
+            static T getValue(const sensorValue& value, T defaultValue) {
+                if (const T* v = std::get_if<T>(&value)) return *v;
+                return defaultValue;
+            }
 
     };
 

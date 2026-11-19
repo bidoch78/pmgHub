@@ -175,7 +175,38 @@ void sensors::generateTransGearSel(sensor* const s) {
 
 void sensors::generateTransSelector(sensor* const s) {
 
-    
+    String selectorPos = "-";
+
+    static constexpr sensor::defaultSensorId sensorsToRead[] = {
+        sensor::defaultSensorId::TRANS_GEARSEL_NA,
+        sensor::defaultSensorId::TRANS_GEARSEL_D,
+        sensor::defaultSensorId::TRANS_GEARSEL_R,
+        sensor::defaultSensorId::TRANS_GEARSEL_1,
+        sensor::defaultSensorId::TRANS_GEARSEL_2
+    };
+        
+    for (const auto& sensorName : sensorsToRead) {
+
+        const sensor* gearSensor = find(sensor::toSensorId(sensorName));
+        if (gearSensor == nullptr) continue;
+
+        const units::sensorValue& sValue = gearSensor->getValue();
+        if (!units::hasValue(sValue)) continue;
+
+        if (units::getValue<bool>(sValue, false) == true) {
+            switch(sensorName) {
+                case sensor::defaultSensorId::TRANS_GEARSEL_NA: selectorPos = "NA"; break;
+                case sensor::defaultSensorId::TRANS_GEARSEL_D: selectorPos = "D"; break;
+                case sensor::defaultSensorId::TRANS_GEARSEL_R: selectorPos = "R"; break;
+                case sensor::defaultSensorId::TRANS_GEARSEL_1: selectorPos = "1"; break;
+                case sensor::defaultSensorId::TRANS_GEARSEL_2: selectorPos = "2"; break;
+            }
+            break;
+        }
+
+    }
+
+    s->setValue(0, selectorPos);
 
 };
 

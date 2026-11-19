@@ -84,6 +84,8 @@ namespace pmgHub {
             const units::sensorValue& getValue() const;
             String getStringValue();
 
+            
+
     };
 
 };

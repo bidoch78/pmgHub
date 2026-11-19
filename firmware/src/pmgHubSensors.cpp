@@ -169,7 +169,41 @@ void sensors::update() {
 
 void sensors::generateTransGearSel(sensor* const s) {
 
+    int32_t gear = -1;
 
+    const bool na = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_NA, false));
+    const bool rv = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_GEARSEL_R, false));
+
+    if (na) {
+        gear = 0;
+    }
+    elseif (rv) {
+        gear = 1;
+    }
+    else {
+
+        const bool solA = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_A, false));
+        const bool solB = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_B, false));
+
+        if (solA && solB) {
+            gear = 1;
+        }
+        else if (!solA && solB) {
+            gear = 2;
+        }
+        else if (!solA && !solB) {
+            gear = 3;
+        }
+        else if (solA && !solB) {
+            
+            const bool solLC = getSensorValue<bool>(toSensorId(sensor::defaultSensorId::TRANS_SOL_LC, false));
+            gear = solLC ? 5 : 4;
+        
+        }
+
+    }
+
+    s->setValue(0, gear);
 
 };
 

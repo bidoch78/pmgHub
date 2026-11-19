@@ -32,6 +32,13 @@ namespace pmgHub {
             static float roundValue(float value, uint32_t decimals);
             static units::sensorValue convertFloatToSensorValue(float value, const units::unitData& unit);
         
+            template<typename T>
+            T getSensorValue(sensor::sensorId sId, T defaultValue) const {
+                const sensor* s = find(sId);
+                if (s == nullptr) return defaultValue;
+                return units::getValue<T>(s->getValue(), defaultValue);
+            }
+
     };
 
 };

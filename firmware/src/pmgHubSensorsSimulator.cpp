@@ -43,10 +43,10 @@ const sensorsSimulator::sensorSimData* sensorsSimulator::getSimData(sensor::sens
 
 void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
 
-    Serial.printf("Read\n");
+    //Serial.printf("Read\n");
     for (sensor* sensor : sensors) {
 
-        Serial.printf(" %s", sensor->getName().c_str());
+        //Serial.printf(" %s", sensor->getName().c_str());
 
         const sensorSimData* data = getSimData(sensor->getId());
         if (data == nullptr) continue;
@@ -70,10 +70,10 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
         //Update sensor values
         sensor->setValue(voltage, sensors::convertFloatToSensorValue(value, sensor->getUnit()));
 
-        Serial.printf(" - voltage: %f, value: %f, format: %s\n", voltage, value, sensor->getStringValue());
+    //    Serial.printf(" - voltage: %f, value: %f, format: %s\n", voltage, value, sensor->getStringValue());
     
     }
-    Serial.printf("\n");
+    //Serial.printf("\n");
 
 };
 

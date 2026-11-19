@@ -70,6 +70,7 @@ namespace pmgHub {
 //             sensorType getType() const;
             uint32_t getRate() const;
             const String& getName() const;
+            const units::unitData getUnit() const;
 
             bool isVirtual() const;
             uint32_t getLastRead() const;
@@ -79,7 +80,7 @@ namespace pmgHub {
             
             void read(uint32_t w);
 
-//             void setValue(const float volt, const SensorValue& val);
+            void setValue(const float volt, const units::sensorValue& val);
 
     };
 

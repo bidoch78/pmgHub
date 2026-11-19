@@ -1,6 +1,7 @@
 #include <pmgHubSensorsSimulator.h>
 #include <pmgHubSensors.h>
 #include <esp_random.h>
+#include <algorithm>
 
 using namespace pmgHub;
 
@@ -64,16 +65,40 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
 
         }
 
-        Serial.printf(" - voltage: %f", voltage);
-        
+        float value = (data->in.size() > 1 && data->out.size() > 1) ? convertLinar(voltage, data->in[0], data->in[1], data->out[0], data->out[1]) : NAN;
+
+        //Update sensor values
+        if (isnan(value)) {
+            //reading error
+            sensor.setValue(voltage, std::monostate{}):
+        }
+        else {
+            //Rounding (check format)
+            value = sensors::roundValue(value, )
+        }
+
+        Serial.printf(" - voltage: %f, value: %f", voltage, value);
+    
     }
     Serial.printf("\n");
 };
 
 float sensorsSimulator::randomFloat(float min, float max) {
     return min + (esp_random() / (float)UINT32_MAX) * (max - min);
-}
+};
 
 float sensorsSimulator::randomBool(float min, float max) {
     return (esp_random() & 1) ? max: min;
-}
+};
+
+float sensorsSimulator::convertLinar(float value, float inMin, float inMax, float outMin, float outMax) {
+      
+    if ((inMax - inMin) == 0) return NAN;
+
+    const float ratio = (value - inMin) / (inMax - inMin);
+    const float result = outMin + ratio * (outMax - outMin);
+    
+    //never before min and after max
+    return std::min(std::max(result, std::min(outMin, outMax)), std::max(outMin, outMax));
+
+};

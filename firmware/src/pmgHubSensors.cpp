@@ -87,7 +87,7 @@ void sensors::update() {
 
 };
 
-float sensors::roundValue(float value, uint8_t decimals) {
+float sensors::roundValue(float value, uint32_t decimals) {
     float factor = std::pow(10.0f, decimals);
     return std::round(value * factor) / factor;
 }

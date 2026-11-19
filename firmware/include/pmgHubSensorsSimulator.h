@@ -36,6 +36,7 @@ namespace pmgHub {
             const sensorSimData* getSimData(sensor::sensorId id) const;
             static float randomFloat(float min, float max);
             static float randomBool(float min, float max);
+            static float convertLinar(float value, float inMin, float inMax, flat outMin, flat outMax);
 
         };
 

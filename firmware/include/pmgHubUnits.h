@@ -37,7 +37,7 @@ namespace pmgHub {
             enum class defaultUnitId: unitId {
                 NO_UNIT = 0,
                 UNKNOWN = 1,
-                ON = 2,
+                SWITCH = 2,
                 BAR = 3,
                 PSI = 4,
                 CELSIUS = 5,

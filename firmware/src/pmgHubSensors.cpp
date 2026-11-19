@@ -28,6 +28,12 @@ sensors::sensors() {
         sensor(sensor::toSensorId(sensor::defaultSensorId::ENGINE_OIL_PRESSURE), "Oil Pressure", "ENGINE", 
         _units.getUnit(units::toUnitId(units::defaultUnitId::BAR)), static_cast<uint32_t>(sensor::sensorRate::MEDIUM_RATE)));
 
+
+    /**** TRANSMISSION *****/    
+    _sensors.emplace(sensor::toSensorId(sensor::defaultSensorId::TRANS_SOL_A),
+        sensor(sensor::toSensorId(sensor::defaultSensorId::TRANS_SOL_A), "Oil Pressure", "ENGINE", 
+        _units.getUnit(units::toUnitId(units::defaultUnitId::SWITCH)), static_cast<uint32_t>(sensor::sensorRate::MEDIUM_RATE)));
+
 };
 
 sensor* sensors::find(sensor::sensorId sid) {

@@ -10,8 +10,8 @@ units::units() :
 
     _units.emplace(toUnitId(units::defaultUnitId::UNKNOWN), 
                     unitData(toUnitId(units::defaultUnitId::UNKNOWN), "-", toTypeId(units::defaulUnitType::UNKNOWN) , "-", 0));
-    _units.emplace(toUnitId(units::defaultUnitId::ON), 
-                    units::unitData(toUnitId(units::defaultUnitId::ON), "SW", toTypeId(units::defaulUnitType::BOOL), "bool", 0));
+    _units.emplace(toUnitId(units::defaultUnitId::SWITCH), 
+                    units::unitData(toUnitId(units::defaultUnitId::SWITCH), "SW", toTypeId(units::defaulUnitType::BOOL), "bool", 0));
     _units.emplace(toUnitId(units::defaultUnitId::BAR), 
                     units::unitData(toUnitId(units::defaultUnitId::BAR), "Bar", toTypeId(units::defaulUnitType::PRESSURE), "pressure", 2));
     _units.emplace(toUnitId(units::defaultUnitId::PSI), 

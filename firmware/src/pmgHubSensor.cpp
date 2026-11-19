@@ -24,7 +24,7 @@ void sensor::resetCountRead() { _dataCountRead = 0; };
 void sensor::setSampleRate(uint32_t sRate) { _srate = sRate; };
 void sensor::read(uint32_t w) { _dataLastRead = w; _dataCountRead++; };
 
-void sensor::setValue(const float volt, const SensorValue& val) {
+void sensor::setValue(const float volt, const units::sensorValue& val) {
 
     _dataCountRead++;
     _readVoltage = volt;

@@ -70,11 +70,11 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
         //Update sensor values
         if (isnan(value)) {
             //reading error
-            sensor.setValue(voltage, std::monostate{}):
+            sensor->setValue(voltage, std::monostate{});
         }
         else {
             //Rounding (check format)
-            value = sensors::roundValue(value, )
+            //value = sensors::roundValue(value, )
         }
 
         Serial.printf(" - voltage: %f, value: %f", voltage, value);

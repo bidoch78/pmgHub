@@ -26,6 +26,7 @@ namespace pmgHub {
             virtual void retrieveSensors(const std::vector<sensor*>& sensors) = 0;
 
             static float roundValue(float value, uint32_t decimals);
+            static units::sensorValue convertFloatToSensorValue(float value, units::unitData& unit);
 
     };
 

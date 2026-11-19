@@ -68,19 +68,13 @@ void sensorsSimulator::retrieveSensors(const std::vector<sensor*>& sensors) {
         float value = (data->in.size() > 1 && data->out.size() > 1) ? convertLinar(voltage, data->in[0], data->in[1], data->out[0], data->out[1]) : NAN;
 
         //Update sensor values
-        if (isnan(value)) {
-            //reading error
-            sensor->setValue(voltage, std::monostate{});
-        }
-        else {
-            //Rounding (check format)
-            //value = sensors::roundValue(value, )
-        }
+        sensor->setValue(voltage, sensors::convertFloatToSensorValue(value, sensor->getUnit()));
 
-        Serial.printf(" - voltage: %f, value: %f", voltage, value);
+        Serial.printf(" - voltage: %f, value: %f, format: %s", voltage, value, sensor->getStringValue());
     
     }
     Serial.printf("\n");
+
 };
 
 float sensorsSimulator::randomFloat(float min, float max) {

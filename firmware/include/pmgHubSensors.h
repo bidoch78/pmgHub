@@ -27,7 +27,7 @@ namespace pmgHub {
 
             static float roundValue(float value, uint32_t decimals);
             static units::sensorValue convertFloatToSensorValue(float value, units::unitData& unit);
-
+        
     };
 
 };

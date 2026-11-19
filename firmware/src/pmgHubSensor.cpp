@@ -31,3 +31,19 @@ void sensor::setValue(const float volt, const units::sensorValue& val) {
     _readValue = val;
 
 };
+
+const units::senorValue& sensor::getValue() const { return _readValue; }
+
+String sensor::getStringValue() {
+
+    return std::visit([](const auto& v) -> String {
+        
+        using T = std::decay_t<decltype(v)>;
+
+        if constexpr (std::is_same_v<T, std::monostate>) return "";
+        else if constexpr (std::is_same_v<T, bool>) return v ? "true" : "false";
+        else return String(v);
+
+    }, _readValue);
+
+}

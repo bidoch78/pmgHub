@@ -140,4 +140,4 @@ units::sensorValue units::transformUnit(const sensorValue& value, units::unitId 
 
     return value;
 
-}
+};

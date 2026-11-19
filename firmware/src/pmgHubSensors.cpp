@@ -90,7 +90,7 @@ void sensors::update() {
 float sensors::roundValue(float value, uint32_t decimals) {
     float factor = std::pow(10.0f, decimals);
     return std::round(value * factor) / factor;
-}
+};
 
 units::sensorValue sensors::convertFloatToSensorValue(float value, units::unitData& unit) {
 
@@ -99,6 +99,25 @@ units::sensorValue sensors::convertFloatToSensorValue(float value, units::unitDa
     if (unit.type == units::toTypeId(units::defaulUnitType::BOOL)) return value ? true : false;
     if (unit.decimals == 0) return static_cast<int32_t>(std::round(value));
 
-    return value;
+    return roundValue(value, unit.decimals);
 
-}
+};
+
+String sensorValueToString(const units::sensorValue& value) {
+
+    return std::visit([](const auto& v) -> String {
+        
+        using T = std::decay_t<decltype(v)>;
+
+        if constexpr (std::is_same_v<T, std::monostate>)
+            return "";
+
+        else if constexpr (std::is_same_v<T, bool>)
+            return v ? "true" : "false";
+
+        else
+            return String(v);
+
+    }, value);
+
+};

@@ -91,3 +91,14 @@ float sensors::roundValue(float value, uint32_t decimals) {
     float factor = std::pow(10.0f, decimals);
     return std::round(value * factor) / factor;
 }
+
+unit::sensorValue sensors::convertFloatToSensorValue(float value, units::unitData& unit) {
+
+    if (isnan(value)) return std::monostate{};
+
+    if (unitData.type == units::defaulUnitType::BOOL) return value ? true : false;
+    if (unitData.decimals == 0) return static_cast<int32_t>(std::round(value));
+
+    return value;
+
+}

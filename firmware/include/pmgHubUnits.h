@@ -48,7 +48,7 @@ namespace pmgHub {
                 VIRTUAL = 10
             };
 
-            using sensorValue = std::variant<std::monostate, bool, uint32_t, float, String>;
+            using sensorValue = std::variant<std::monostate, bool, int32_t, float, String>;
 
             struct unitData {
                 unitId id;

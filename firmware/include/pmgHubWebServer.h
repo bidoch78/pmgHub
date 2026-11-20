@@ -19,7 +19,7 @@ namespace pmgHub {
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
             
-            static webServer* _instance = nullptr;
+            static webServer* _instance;
 
             services& _services;
             httpd_handle_t _server = nullptr;

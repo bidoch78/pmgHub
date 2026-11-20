@@ -8,6 +8,8 @@
 
 using namespace pmgHub;
 
+webServer* webServer::_instance = nullptr;
+
 void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
     switch (event) {

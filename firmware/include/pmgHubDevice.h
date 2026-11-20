@@ -32,7 +32,10 @@ namespace pmgHub {
             ~device() = default;
 
             const String& getUID() const;
+            const String& getMAC() const; 
 
-    };
+            void setMAC(const String mac);
 
 };
+
+}

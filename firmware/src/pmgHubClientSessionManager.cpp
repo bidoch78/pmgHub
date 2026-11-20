@@ -2,9 +2,8 @@
 
 using namespace pmgHub;
 
-wsClientSessionManager::add(const webSocket& ws, const device& dv) {
-    
+wsClientSession& wsClientSessionManager::add(const webSocket& ws, const device& dv) {
     wsClientSession wsCS(ws, dv);
-    _cSockets.emplace(dv.getUID(), std::move(wsCS));
-
+    auto [it, inserted] = _cSockets.emplace(dv.getUID(), std::move(wsCS));
+    return it->second;
 };

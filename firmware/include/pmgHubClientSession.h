@@ -1,17 +1,20 @@
 #pragma once
 
+#include <pmgHubDevice.h>
+#include <pmgHubWebSocket.h>
+
 namespace pmgHub {
 
     class wsClientSession {
 
         private:
 
-            device& _device;
-            webSocket& _ws;
+            const device& _device;
+            const webSocket& _ws;
 
         public:
 
-            wsClientSession(const webSocket& ws, const device& dv): _ws(ws), _device(device) {}
+            wsClientSession(const webSocket& ws, const device& dv): _ws(ws), _device(dv) {}
             ~wsClientSession() = default;
 
     };

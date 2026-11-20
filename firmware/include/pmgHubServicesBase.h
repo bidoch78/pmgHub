@@ -6,12 +6,6 @@ namespace pmgHub {
     
     class servicesBase {
 
-        friend class services;
-
-        private:
-
-            void setServices(services& srv) { _services = &srv; };
-
         protected:
 
             services* _services = nullptr;
@@ -20,6 +14,8 @@ namespace pmgHub {
 
             servicesBase() = default;
             ~servicesBase() = default;
+
+            void setServices(services& srv) { _services = &srv; };
 
     };
 

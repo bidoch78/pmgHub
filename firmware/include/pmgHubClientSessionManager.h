@@ -3,6 +3,9 @@
 #include <pmgHubServicesBase.h>
 #include <pmgHubClientSession.h>
 #include <map>
+#include <Arduino.h>
+#include <pmgHubDevice.h>
+#include <pmgHubWebSocket.h>
 
 namespace pmgHub {
 
@@ -25,7 +28,7 @@ namespace pmgHub {
             
             ~wsClientSessionManager() = default;
 
-            void add(const webSocket& ws, const device& dv);
+            wsClientSession& add(const webSocket& ws, const device& dv);
 
     };
 

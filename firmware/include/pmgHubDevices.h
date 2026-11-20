@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 #include <pmgHubServicesBase.h>
+#include <pmgHubDevice.h>
+#include <map>
 
 namespace pmgHub {
 

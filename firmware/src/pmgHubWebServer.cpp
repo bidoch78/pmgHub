@@ -609,7 +609,7 @@ esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
 
     if (path.startsWith("/ws/admin")) {
       
-        if (!(isAuthenticated(req) && _webAuth.getSessionTypeAuthenticated(req) == sessionManager::sessionType::webAdmin)) {
+        if (!(_webAuth.isAuthenticated(req) && _webAuth.getSessionTypeAuthenticated(req) == sessionManager::sessionType::webAdmin)) {
             httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
             return ESP_FAIL;
         }
@@ -625,6 +625,7 @@ esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
     if (isAdmin) {
         String token = _webAuth.getSessionToken(req);
         device& device = _services.getDevices().registerWebAdmin(token);
+        device.setMAC(WiFi.macAddress());
         _services.getCSManager().add(newSocket, device);
     }
     else {

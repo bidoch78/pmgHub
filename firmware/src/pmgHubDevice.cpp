@@ -13,6 +13,7 @@ device::device(String token) {
     _uid = CryptoManager::generateUID();
 };
 
-const String& device::getUID() const {
-    return _device;
-}
+const String& device::getUID() const { return _uid; };
+
+void device::setMAC(const String mac) { _mac = mac; };
+const String& device::getMAC() const { return _mac; };

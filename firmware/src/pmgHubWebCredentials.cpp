@@ -88,7 +88,9 @@ bool webCredentials::initializeCredentials(const String& password) {
         doc["salt"] = salt;
         doc["hash"] = hash;
 
+#if PMGHUB_DEBUG_LOGS
         Serial.println("Credentials initialized successfully.");
+#endif
 
         File file = _services.getStorage().getDataFS().open("/credentials.json", "w");
         if (!file) {

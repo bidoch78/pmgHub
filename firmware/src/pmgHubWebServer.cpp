@@ -14,20 +14,26 @@ void webServer::onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
     switch (event) {
         case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+#if PMGHUB_DEBUG_LOGS
             Serial.println("[WiFi] Connected");
+#endif
             break;
 
         case ARDUINO_EVENT_WIFI_STA_GOT_IP:
             _firstConnection = false;
+#if PMGHUB_DEBUG_LOGS
             Serial.print("[WiFi] IP: ");
             Serial.println(WiFi.localIP());
             Serial.println(WiFi.macAddress());
+#endif
             //Start the http server
             startHttpServer();
             break;
 
         case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+#if PMGHUB_DEBUG_LOGS
             Serial.println("[WiFi] Disconnected");
+#endif
             break;
 
         default:
@@ -288,7 +294,9 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
 
     // ---------- STATIC ASSETS ----------
 
+#if PMGHUB_DEBUG_LOGS
     Serial.println("[HTTP] Request: " + path);
+#endif
 
     const String& webFile = path;
 
@@ -393,7 +401,9 @@ esp_err_t webServer::webHandler(httpd_req_t *req) {
                     return ESP_OK;
                 }
 
+#if PMGHUB_DEBUG_LOGS
                 Serial.println("Login successful");
+#endif
 
                 String token = _services.getSessions().create(sessionManager::sessionType::webAdmin);
                 String cookie = _webAuth.setSessionCookie(token, pmgHub::config::sessionTimeoutMs);
@@ -472,13 +482,17 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
     webSocket* ws = getWebSocket(fd);
     if (ws == nullptr) return ESP_OK;
 
+#if PMGHUB_DEBUG_LOGS
     Serial.printf("[WebSocket Msg]");
+#endif
 
     httpd_ws_frame_t frame = {};
     esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);    
 
     if (frame.type != HTTPD_WS_TYPE_TEXT) {
+#if PMGHUB_DEBUG_LOGS
         Serial.printf("Ignoring non-text WebSocket frame (type=%d)\n", frame.type);
+#endif
         return ESP_OK;
     }
 
@@ -596,11 +610,15 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
 esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
 
+#if PMGHUB_DEBUG_LOGS
     Serial.printf("wsConnection %i (Size %i, Max %i)\n", fd, _webSockets.size(), pmgHub::config::maxWebSocket);
+#endif
  
     if (_webSockets.size() >= pmgHub::config::maxWebSocket) return ESP_FAIL;
     
+#if PMGHUB_DEBUG_LOGS
     Serial.printf("[WebSocket] Request: %s\n", req->uri);
+#endif
 
     //because we use the same handler for /ws/admin & /ws/device
     String path = req->uri;
@@ -638,7 +656,9 @@ esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
 
 void webServer::closeCallback(httpd_handle_t hd, int sockfd) {
 
+#if PMGHUB_DEBUG_LOGS
     Serial.printf("close socket callback: sockfd=%d\n", sockfd);
+#endif
 
     close(sockfd); // Close the socket to free resources
 

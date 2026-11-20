@@ -9,12 +9,12 @@ namespace pmgHub {
 
         private:
 
-            const device& _device;
-            const webSocket& _ws;
+            device& _device;
+            webSocket& _ws;
 
         public:
 
-            wsClientSession(const webSocket& ws, const device& dv): _ws(ws), _device(dv) {}
+            wsClientSession(webSocket& ws, device& dv): _ws(ws), _device(dv) {}
             ~wsClientSession() = default;
 
             device& getDevice();

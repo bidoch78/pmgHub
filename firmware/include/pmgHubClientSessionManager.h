@@ -51,7 +51,7 @@ namespace pmgHub {
 
             wsClientSession& add(webSocket& ws, device& dv);
 
-            bool close(const String& clientUID, uint32_t error = 0, const String& message);
+            bool close(const String& clientUID, uint32_t error = 0, const String& message = "");
             bool remove(const String& clientUID);
             
             void checkHeartbeat();

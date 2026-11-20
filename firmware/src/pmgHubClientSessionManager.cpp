@@ -1,4 +1,5 @@
 #include <pmgHubClientSessionManager.h>
+#include <ArduinoJson.h>
 
 using namespace pmgHub;
 
@@ -29,7 +30,7 @@ wsClientSession& wsClientSessionManager::add(webSocket& ws, device& dv) {
 
         }
         
-        socketData->createAt = 0;
+        socketData->createdAt = 0;
 
     });
 
@@ -48,13 +49,13 @@ wsClientSession& wsClientSessionManager::add(webSocket& ws, device& dv) {
     return it->second.clientSession;
 };
 
-bool wsClientSessionManager::close(const String& clientUID, uint32_t error = 0, const String& message) {
+bool wsClientSessionManager::close(const String& clientUID, uint32_t error, const String& message) {
 
-    wsClientSession* clientSession = getBySocketFD(socketfd);
+    wsClientSession* clientSession = getById(clientUID);
     if (clientSession == nullptr) return false;
 
     device& dv = clientSession->getDevice();
-    if (dv.isConnected()) clientSession->getWebSocket.close(error ? error : 4200, message != "" ? message : "device.reject");
+    if (dv.isConnected()) clientSession->getWebSocket().close(error ? error : 4200, message != "" ? message : "device.reject");
 
     return true;
     
@@ -62,6 +63,8 @@ bool wsClientSessionManager::close(const String& clientUID, uint32_t error = 0, 
 
 bool wsClientSessionManager::remove(const String& clientUID) {
 
+    return true;
+    
 }
 
 void wsClientSessionManager::checkHeartbeat() {
@@ -78,7 +81,7 @@ wsClientSession* wsClientSessionManager::getById(const String& clientUID) {
 
 }
 
-cSocketData* wsClientSessionManager::getBySocketFD(int socketfd) {
+wsClientSessionManager::cSocketData* wsClientSessionManager::getBySocketFD(int socketfd) {
 
     for (auto& [uid, data] : _cSockets) {
         if (data.clientSession.getWebSocket().getSocketFd() == socketfd) return &data;

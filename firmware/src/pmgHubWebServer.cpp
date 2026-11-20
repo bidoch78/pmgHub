@@ -623,16 +623,16 @@ void webServer::closeCallback(httpd_handle_t hd, int sockfd) {
 
     Serial.printf("close socket callback: sockfd=%d\n", sockfd);
 
-webServer* self = static_cast<webServer*>(req->user_ctx);
+    close(sockfd); // Close the socket to free resources
 
-    // webSocket* ws = getWebSocket(sockfd);
-    // if (ws == nullptr);
+    if (webServer::_instance == nullptr) return;
 
-    // ws->dispatchClose(1000, "socket is closed");
+    webSocket* ws = webServer::_instance->getWebSocket(sockfd);
+    if (ws == nullptr) return;
+
+    ws->dispatchClose(1000, "socket is closed");
 
     // //ESP_LOGI(TAG, "Socket %d closed", sockfd);
     // // ...
-
-    close(sockfd); // Close the socket to free resources
 
 };

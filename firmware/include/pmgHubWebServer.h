@@ -19,6 +19,8 @@ namespace pmgHub {
             uint32_t _lastWifiCheckStatus = 0;
             bool _firstConnection = true;
             
+            static webServer* _instance = nullptr;
+
             services& _services;
             httpd_handle_t _server = nullptr;
             webAuth _webAuth;
@@ -42,12 +44,14 @@ namespace pmgHub {
             static void closeCallback(httpd_handle_t hd, int sockfd);
 
             webSocket* getWebSocket(int fd);
-                
             std::map<int, webSocket> _webSockets; 
 
         public:
 
-            webServer(services& svc) : _services(svc), _webAuth(svc), _webCredentials(svc) {}
+            webServer(services& svc) : _services(svc), _webAuth(svc), _webCredentials(svc) {
+                _instance = this;
+            };
+            
             ~webServer() = default;
 
             void initialize();

@@ -20,8 +20,8 @@ namespace pmgHub {
                 CLOSED
             };
         
-            using MessageCallback = std::function<void(const String&)>;
-            using CloseCallback   = std::function<void(int32_t, const String&)>;
+            using MessageCallback = std::function<void(int, const String&)>;
+            using CloseCallback   = std::function<void(int, int32_t, const String&)>;
 
         private:
 

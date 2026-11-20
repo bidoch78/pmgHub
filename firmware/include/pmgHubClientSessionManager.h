@@ -19,7 +19,28 @@ namespace pmgHub {
             uint32_t _authenticationTimeout = 0;
             uint32_t _lastHeartBeatCall = 0;
 
-            std::map<String, wsClientSession> _cSockets;
+            struct cSocketData {
+                wsClientSession clientSession;
+                uint32_t lastPing;
+                uint32_t lastPong;
+                bool awaitingPong;
+                uint32_t pongDeadline;
+                uint32_t nextPing;
+                uint32_t createdAt;
+                cSocketData(webSocket& ws, device& dv, uint32_t pingInterval): clientSession(ws, dv) {
+                    uint32_t now = millis();
+                    lastPing = 0;
+                    lastPong = now;
+                    pongDeadline = 0;
+                    nextPing = now + pingInterval;
+                    createdAt = now;
+                    awaitingPong = false;
+                }
+            };
+
+            std::map<String, cSocketData> _cSockets;
+
+            cSocketData* getBySocketFD(int socketfd);
 
         public:
 
@@ -28,7 +49,20 @@ namespace pmgHub {
             
             ~wsClientSessionManager() = default;
 
-            wsClientSession& add(const webSocket& ws, const device& dv);
+            wsClientSession& add(webSocket& ws, device& dv);
+
+            bool close(const String& clientUID, uint32_t error = 0, const String& message);
+            bool remove(const String& clientUID);
+            
+            void checkHeartbeat();
+
+            wsClientSession* getById(const String& clientUID);
+
+            void broadcastToWebAdmin(const String& message);
+            void sendToDevice(const String& clientUID, const String& message);
+
+            uint32_t countSessions();
+
 
     };
 

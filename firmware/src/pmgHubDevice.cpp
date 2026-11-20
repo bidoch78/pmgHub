@@ -17,3 +17,9 @@ const String& device::getUID() const { return _uid; };
 
 void device::setMAC(const String mac) { _mac = mac; _mac.toLowerCase(); };
 const String& device::getMAC() const { return _mac; };
+
+bool device::isWebAdmin() { return _isWebAdmin; };
+void device::setWebAdmin(bool admin) { _isWebAdmin = admin; };
+
+bool device::isConnected() { return _connected; };
+void device::setConnected(bool conn) { _connected = conn; }

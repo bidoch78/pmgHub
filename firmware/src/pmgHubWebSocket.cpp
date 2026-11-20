@@ -114,20 +114,20 @@ void webSocket::dispatchMessage(const String& message) {
     auto it = _messageCallbacks.begin();
     while (it != _messageCallbacks.end()) {
         auto current = it++;
-        current->second(message);
+        current->second(_socketfd, message);
     }
 };
 
 void webSocket::dispatchClose(int32_t code, const String& reason) {
 
-    _socketfd = -1;
-    _server = nullptr;
-    _state = state::CLOSED;
-
     auto it = _closeCallbacks.begin();
     while (it != _closeCallbacks.end()) {
         auto current = it++;
-        current->second(code, reason);
+        current->second(_socketfd, code, reason);
     }
+
+    _socketfd = -1;
+    _server = nullptr;
+    _state = state::CLOSED;
 
 };

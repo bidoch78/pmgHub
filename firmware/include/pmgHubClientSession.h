@@ -17,6 +17,9 @@ namespace pmgHub {
             wsClientSession(const webSocket& ws, const device& dv): _ws(ws), _device(dv) {}
             ~wsClientSession() = default;
 
+            device& getDevice();
+            webSocket& getWebSocket();
+
     };
 
 };

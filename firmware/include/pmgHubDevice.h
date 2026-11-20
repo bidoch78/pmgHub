@@ -31,8 +31,12 @@ namespace pmgHub {
 
             const String& getUID() const;
             const String& getMAC() const; 
+            bool isWebAdmin();
+            bool isConnected();
 
             void setMAC(const String mac);
+            void setWebAdmin(bool admin);
+            void setConnected(bool conn);
 
 };
 

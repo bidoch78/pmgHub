@@ -11,6 +11,8 @@ device& devices::registerWebAdmin(const String token) {
     auto [it, inserted] = _devices.emplace(nDev.getUID(), std::move(nDev));
     device& mapDevice = it->second; 
     mapDevice.setServices(*_services);
+    mapDevice.setWebAdmin(true);
+    mapDevice.setConnected(true);
     return mapDevice;
 };
 

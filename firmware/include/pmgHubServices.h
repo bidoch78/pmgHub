@@ -34,6 +34,9 @@ namespace pmgHub {
             wsClientSessionManager& getCSManager() { return _csManager;  }
             devices& getDevices() { return _devices; }
 
+            void deviceCloseConnection(uint32_t uID);
+            void removeAllPairingDevices();
+
     };
 
 };

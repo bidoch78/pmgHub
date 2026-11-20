@@ -602,6 +602,10 @@ function connectWebSocket(onStatus) {
                 createSensorsUnit(message.data.units);
                 break;
 
+            case "ping":
+                socket.send(JSON.stringify({ 'type': "pong", 'data': null }))
+                break;
+
             case "sensors.list":
                 displaySensors(message.data, true);
                 break;

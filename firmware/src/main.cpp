@@ -5,20 +5,23 @@
 #include <pmgHubSensorsSimulator.h>
 #include <pmgHubSessionManager.h>
 #include <pmgHubClientSessionManager.h>
+#include <pmgHubDevices.h>
 
-pmgHub::sessionManager sessions(pmgHub::config::sessionTimeoutMs); 
-pmgHub::storage storage;
-pmgHub::sensorsSimulator sensors;
-pmgHub::wsClientSessionManager csManager(pmgHub::config::csManager_pingInterval, pmgHub::config::csManager_pongTimeout, 
+pmgHub::devices myDevices;
+pmgHub::sessionManager mySessions(pmgHub::config::sessionTimeoutMs); 
+pmgHub::storage myStorage;
+pmgHub::sensorsSimulator mySensors;
+pmgHub::wsClientSessionManager myCSManager(pmgHub::config::csManager_pingInterval, pmgHub::config::csManager_pongTimeout, 
                                             pmgHub::config::csManager_checkInterval, pmgHub::config::csManager_authenticationTimeout);
-pmgHub::services services(sessions, storage, sensors, csManager);
-pmgHub::webServer webServer(services);
+pmgHub::services myServices(mySessions, myStorage, mySensors, myCSManager, myDevices);
+pmgHub::webServer myWebServer(myServices);
 
 void setup()
 {
 
     Serial.begin(115200);
-    webServer.initialize();
+
+    myWebServer.initialize();
 
     // Serial.println("pmgHub started");
     // Serial.printf("PSRAM total: %u", ESP.getPsramSize());
@@ -30,9 +33,9 @@ void loop()
 {
 
     //server routines
-    webServer.process();
+    myWebServer.process();
 
     //read sensors
-    sensors.update();
+    mySensors.update();
 
 }

@@ -504,7 +504,7 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
     String message(reinterpret_cast<char*>(payload));
     free(payload);
 
-    Serial.printf("Message: %s\n", message.c_str());
+    //Serial.printf("Message: %s\n", message.c_str());
 
     ws->dispatchMessage(message);
     return ESP_OK;
@@ -604,18 +604,32 @@ esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
 
     //because we use the same handler for /ws/admin & /ws/device
     String path = req->uri;
+    
+    bool isAdmin = false;
 
     if (path.startsWith("/ws/admin")) {
       
-        if (_webAuth.getSessionTypeAuthenticated(req) != sessionManager::sessionType::webAdmin) {
+        if (!(isAuthenticated(req) && _webAuth.getSessionTypeAuthenticated(req) == sessionManager::sessionType::webAdmin)) {
             httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
             return ESP_FAIL;
         }
-        
+
+        isAdmin = true;
+
     }
 
-    //instanciate and add directly on the map
-    _webSockets.try_emplace(fd, _server, fd);
+    //instanciate and add directly object on the map
+    auto [it, inserted] = _webSockets.try_emplace(fd, _server, fd);
+    webSocket& newSocket = it->second;
+
+    if (isAdmin) {
+        String token = _webAuth.getSessionToken(req);
+        device& device = _services.getDevices().registerWebAdmin(token);
+        _services.getCSManager().add(newSocket, device);
+    }
+    else {
+
+    }
 
     return ESP_OK;
 

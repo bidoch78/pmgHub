@@ -4,6 +4,7 @@
 #include <pmgHubSessionManager.h>
 #include <pmgHubStorage.h>
 #include <pmgHubSensors.h>
+#include <pmgHubDevices.h>
 
 namespace pmgHub {
 
@@ -15,25 +16,24 @@ namespace pmgHub {
             storage& _storage;
             sensors& _sensors;
             wsClientSessionManager& _csManager;
+            devices& _devices;
 
         public:
 
-            services(sessionManager& ssessions, storage& sstorage, sensors& ssensors, wsClientSessionManager& wsclientsm) : _sessions(ssessions), _storage(sstorage), _sensors(ssensors), _csManager(wsclientsm) {
+            services(sessionManager& ssessions, storage& sstorage, sensors& ssensors, wsClientSessionManager& wsclientsm, devices& sdevices)
+                : _sessions(ssessions), _storage(sstorage), _sensors(ssensors), _csManager(wsclientsm), _devices(sdevices) {
                 ssessions.setServices(*this);
+                wsclientsm.setServices(*this);
+                sdevices.setServices(*this);
             }
             ~services() = default;
 
             sessionManager& getSessions() { return _sessions; }
-            //const sessionManager& getSessions() const { return _sessions; }
-
             storage& getStorage() { return _storage; }
-            //const storage& getStorage() const { return _storage; }
-
             sensors& getSensors() { return _sensors; }
-            //const sensors& getSensors() const { return _sensors; }
-
             wsClientSessionManager& getCSManager() { return _csManager;  }
-        
+            devices& getDevices() { return _devices; }
+
     };
 
 };

@@ -12,6 +12,7 @@ namespace pmgHub {
         
         public:
 
+            static constexpr size_t UID_SIZE   = 8;
             static constexpr size_t SALT_SIZE  = 16;
             static constexpr size_t HASH_SIZE  = 32;
             static constexpr size_t TOKEN_SIZE = 32;
@@ -20,6 +21,7 @@ namespace pmgHub {
             static String generateSalt();
             static String generateToken();
             static String generateNonce();
+            static String generateUID();
 
             // PBKDF2-HMAC-SHA256
             static bool hashPassword(const String& password, const String& saltHex, String& hashHex, uint32_t iterations = pmgHub::config::PBKDF2_HMAC_SHA256_iterations);

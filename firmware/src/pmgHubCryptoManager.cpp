@@ -111,6 +111,8 @@ String CryptoManager::generateToken() { return randomHex(TOKEN_SIZE); }
 
 String CryptoManager::generateNonce() { return randomHex(NONCE_SIZE); }
 
+String CryptoManager::generateUID() { return randomHex(UID_SIZE); }
+
 // =====================================================
 // Hash Password with PBKDF2-HMAC-SHA256
 // =====================================================

@@ -27,7 +27,11 @@ namespace pmgHub {
         public:
 
             device();
+            device(String token);
+
             ~device() = default;
+
+            const String& getUID() const;
 
     };
 

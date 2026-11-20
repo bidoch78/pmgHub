@@ -25,7 +25,7 @@ namespace pmgHub {
             
             ~wsClientSessionManager() = default;
 
-            //void add(const device& dev, )
+            void add(const webSocket& ws, const device& dv);
 
     };
 

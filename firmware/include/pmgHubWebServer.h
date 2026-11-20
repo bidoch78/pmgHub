@@ -45,6 +45,8 @@ namespace pmgHub {
             static esp_err_t webSocketHandler(httpd_req_t* req);
             static void closeCallback(httpd_handle_t hd, int sockfd);
 
+            std::map<int, webSocket> _webSockets; 
+
         public:
 
             webServer(services& svc) : _services(svc), _webAuth(svc), _webCredentials(svc) {}

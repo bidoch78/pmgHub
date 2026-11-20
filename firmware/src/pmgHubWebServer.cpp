@@ -450,40 +450,29 @@ esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
     webServer* self = static_cast<webServer*>(req->user_ctx);
     return self->wsHandler(req);    
 
+};
+
+const webSocket* getWebSocket(int fd) const {
+    auto it = _webSockets.find(fd);
+    if (it == _webSockets.end()) return nullptr;
+    return &it->second;    
 }
 
 esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
-    if (req->method == HTTP_GET && !_webAuth.isAuthenticated(req)) {
-        return ESP_FAIL;
-    }
+    int fd = httpd_req_to_sockfd(req);
 
     Serial.printf("[WebSocket] Request: %s\n", req->uri);
 
-    int fd = httpd_req_to_sockfd(req);
+    //Simulate Connection event
+    if (req->method == HTTP_GET) return wsConnection(req, fd);
 
-    // Handshake WebSocket
-    if (req->method == HTTP_GET) {
-
-        Serial.printf(
-            "WebSocket connected: path=%s fd=%d\n",
-            req->uri,
-            fd
-        );
-
-        return ESP_OK;
-    }
+    //Send message to WebSocket
+    webSocket* ws = getWebSocket(fd);
+    if (ws == nullptr) return ESP_OK;
 
     httpd_ws_frame_t frame = {};
-    esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);
-
-    if (ret != ESP_OK) {
-        Serial.printf(
-            "httpd_ws_recv_frame error: %s\n",
-            esp_err_to_name(ret)
-        );
-        return ret;
-    }
+    esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);    
 
     if (frame.type != HTTPD_WS_TYPE_TEXT) {
         Serial.printf("Ignoring non-text WebSocket frame (type=%d)\n", frame.type);
@@ -509,45 +498,128 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
     }
 
     payload[frame.len] = '\0';
-
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(
-        doc,
-        reinterpret_cast<const char*>(payload),
-        frame.len
-    );
+    String message(reinterpret_cast<char*>(payload));
     free(payload);
 
-    if (error || !doc.is<JsonObject>() || !doc["type"].is<const char*>()) {
-        Serial.println("Invalid WebSocket JSON command");
-        return ESP_OK;
-    }
+    Serial.printf("Message: %s\n", message);
 
-    const char* type = doc["type"].as<const char*>();
-    if (strcmp(type, "webadmin.init") == 0) {
-        Serial.println("WebSocket command received: webadmin.init");
+    ws->dispatchMessage(message);
 
-        uint8_t response[] = "{\"type\":\"hello\",\"data\":[]}";
-        httpd_ws_frame_t responseFrame = {};
-        responseFrame.type = HTTPD_WS_TYPE_TEXT;
-        responseFrame.payload = response;
-        responseFrame.len = sizeof(response) - 1;
+    // int fd = httpd_req_to_sockfd(req);
 
-        ret = httpd_ws_send_frame(req, &responseFrame);
-        if (ret != ESP_OK) {
-            Serial.printf("httpd_ws_send_frame error: %s\n", esp_err_to_name(ret));
+    // // Handshake WebSocket
+    // if (req->method == HTTP_GET) {
+
+    //     Serial.printf(
+    //         "WebSocket connected: path=%s fd=%d\n",
+    //         req->uri,
+    //         fd
+    //     );
+
+    //     return ESP_OK;
+    // }
+
+    // httpd_ws_frame_t frame = {};
+    // esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);
+
+    // if (ret != ESP_OK) {
+    //     Serial.printf(
+    //         "httpd_ws_recv_frame error: %s\n",
+    //         esp_err_to_name(ret)
+    //     );
+    //     return ret;
+    // }
+
+    // if (frame.type != HTTPD_WS_TYPE_TEXT) {
+    //     Serial.printf("Ignoring non-text WebSocket frame (type=%d)\n", frame.type);
+    //     return ESP_OK;
+    // }
+
+    // if (frame.len == 0) return ESP_OK;
+
+    // if (frame.len > pmgHub::config::webServerMaxBodySize) {
+    //     Serial.printf("WebSocket frame too large: %u bytes\n", static_cast<unsigned int>(frame.len));
+    //     return ESP_FAIL;
+    // }
+
+    // uint8_t* payload = static_cast<uint8_t*>(malloc(frame.len + 1));
+    // if (payload == nullptr) return ESP_ERR_NO_MEM;
+
+    // frame.payload = payload;
+    // ret = httpd_ws_recv_frame(req, &frame, frame.len);
+    // if (ret != ESP_OK) {
+    //     free(payload);
+    //     Serial.printf("httpd_ws_recv_frame payload error: %s\n", esp_err_to_name(ret));
+    //     return ret;
+    // }
+
+    // payload[frame.len] = '\0';
+
+    // JsonDocument doc;
+    // DeserializationError error = deserializeJson(doc, reinterpret_cast<const char*>(payload), frame.len);
+    // free(payload);
+
+    // if (error || !doc.is<JsonObject>() || !doc["type"].is<const char*>()) {
+    //     Serial.println("Invalid WebSocket JSON command");
+    //     return ESP_OK;
+    // }
+
+    // const char* type = doc["type"].as<const char*>();
+    // if (strcmp(type, "webadmin.init") == 0) {
+    //     Serial.println("WebSocket command received: webadmin.init");
+
+    //     uint8_t response[] = "{\"type\":\"hello\",\"data\":[]}";
+    //     httpd_ws_frame_t responseFrame = {};
+    //     responseFrame.type = HTTPD_WS_TYPE_TEXT;
+    //     responseFrame.payload = response;
+    //     responseFrame.len = sizeof(response) - 1;
+
+    //     ret = httpd_ws_send_frame(req, &responseFrame);
+    //     if (ret != ESP_OK) {
+    //         Serial.printf("httpd_ws_send_frame error: %s\n", esp_err_to_name(ret));
+    //     }
+
+    //     Serial.printf("[webSocket] Sent response: ret=%s fd=%d len=%u", esp_err_to_name(ret), httpd_req_to_sockfd(req), static_cast<unsigned int>(responseFrame.len));
+
+    //     return ret;
+    // }
+
+    // Serial.printf("Unknown WebSocket command: %s\n", type);
+
+    // return ESP_OK;
+
+};
+
+esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
+
+    Serial.printf("wsConnection %i\n", fd);
+ 
+    if (_webSocket.size() >= pmgHub::config::maxWebSocket) return ESP_FAIL;
+    
+    //because we use the same handler for /ws/admin & /ws/device
+    String path = req->uri;
+
+    if (path.startsWith("/ws/admin")) {
+   
+        if _webAuth.getSessionTypeAuthenticated(req) != sessionManager::sessionType::webAdmin) {
+            httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
+            return ESP_FAIL;
         }
+        
+        //client is Admin
 
-        Serial.printf("[webSocket] Sent response: ret=%s fd=%d len=%u", esp_err_to_name(ret), httpd_req_to_sockfd(req), static_cast<unsigned int>(responseFrame.len));
+        return ESP_OK;
 
-        return ret;
     }
 
-    Serial.printf("Unknown WebSocket command: %s\n", type);
+    // client is device
+
+    //instanciate and add directly on the map
+    //_webSockets.try_emplace(fd, _server, fd);
 
     return ESP_OK;
 
-};
+}
 
 void webServer::closeCallback(httpd_handle_t hd, int sockfd) {
 

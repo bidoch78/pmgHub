@@ -1,0 +1,23 @@
+#pragma once
+
+#include <WiFi.h>
+
+namespace pmgHub::config {
+   
+    constexpr char WIFI_STA_SSID[] = "xxx";
+    constexpr char WIFI_STA_PASSWORD[] = "xxxxx";
+
+    constexpr char WIFI_AP_SSID[] = "pmghub";
+    constexpr char WIFI_AP_PASSWORD[] = "xxxxx";
+
+    constexpr wifi_mode_t WIFI_MODE = WIFI_STA;
+
+    constexpr uint32_t sessionTimeoutMs = 60 * 60 * 1000; // web interface timeout
+    constexpr uint32_t maxSessions = 10; // web interface + devices
+
+    constexpr uint32_t PBKDF2_HMAC_SHA256_iterations = 10000; // default iterations for password hashing
+
+    constexpr uint32_t webServerMaxBodySize = 1024 * 16; // 16 KB
+
+    constexpr uint32_t maxWebSocket = 10;
+}

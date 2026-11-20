@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pmgHubClientSessionManager.h>
 #include <pmgHubSessionManager.h>
 #include <pmgHubStorage.h>
 #include <pmgHubSensors.h>
@@ -13,10 +14,11 @@ namespace pmgHub {
             sessionManager& _sessions;
             storage& _storage;
             sensors& _sensors;
+            wsClientSessionManager& _csManager;
 
         public:
 
-            services(sessionManager& ssessions, storage& sstorage, sensors& ssensors) : _sessions(ssessions), _storage(sstorage), _sensors(ssensors) {
+            services(sessionManager& ssessions, storage& sstorage, sensors& ssensors, wsClientSessionManager& wsclientsm) : _sessions(ssessions), _storage(sstorage), _sensors(ssensors), _csManager(wsclientsm) {
                 ssessions.setServices(*this);
             }
             ~services() = default;
@@ -29,6 +31,8 @@ namespace pmgHub {
 
             sensors& getSensors() { return _sensors; }
             //const sensors& getSensors() const { return _sensors; }
+
+            wsClientSessionManager& getCSManager() { return _csManager;  }
         
     };
 

@@ -15,5 +15,5 @@ device::device(String token) {
 
 const String& device::getUID() const { return _uid; };
 
-void device::setMAC(const String mac) { _mac = mac; };
+void device::setMAC(const String mac) { _mac = mac.toLowerCase(); };
 const String& device::getMAC() const { return _mac; };

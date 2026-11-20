@@ -44,6 +44,17 @@ String sessionManager::create(sessionType session_type) {
     //If number of sessions is greater than maxSessions, remove the oldest session based on the lastActivity timestamp
     if (_sessions.size() >= pmgHub::config::maxSessions) {
         
+        String& oldToken = nullptr;
+        uint32_t oldActivity;
+        for (auto& [token, sessionData] : _sessions) {
+            if (oldToken === nullptr || oldActivity > sessionData.lastActivity) {
+                oldToken = token;
+                oldActivity = sessionData.lastActivity;
+            }
+        }
+
+        if (oldToken != nullptr) remove(oldToken);
+
     }
 
     //Create a new session token and ensure it's unique

@@ -17,6 +17,7 @@ class WSClientSessionManager {
 
         this._services = services;
         this._pingInterval = pingInterval;
+        
         this._pongTimeout = pongTimeout;
         this._checkInterval = checkInterval;
         this._authenticationTimeout = authenticationTimeout;

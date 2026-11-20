@@ -4,6 +4,7 @@
 #include <esp_http_server.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <pmgHubWebSocket.h>
 
 using namespace pmgHub;
 
@@ -452,7 +453,7 @@ esp_err_t webServer::webSocketHandler(httpd_req_t* req) {
 
 };
 
-const webSocket* getWebSocket(int fd) const {
+webSocket* webServer::getWebSocket(int fd) {
     auto it = _webSockets.find(fd);
     if (it == _webSockets.end()) return nullptr;
     return &it->second;    
@@ -462,14 +463,14 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
     int fd = httpd_req_to_sockfd(req);
 
-    Serial.printf("[WebSocket] Request: %s\n", req->uri);
-
     //Simulate Connection event
     if (req->method == HTTP_GET) return wsConnection(req, fd);
 
     //Send message to WebSocket
     webSocket* ws = getWebSocket(fd);
     if (ws == nullptr) return ESP_OK;
+
+    Serial.printf("[WebSocket Msg]");
 
     httpd_ws_frame_t frame = {};
     esp_err_t ret = httpd_ws_recv_frame(req, &frame, 0);    
@@ -501,9 +502,10 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
     String message(reinterpret_cast<char*>(payload));
     free(payload);
 
-    Serial.printf("Message: %s\n", message);
+    Serial.printf("Message: %s\n", message.c_str());
 
     ws->dispatchMessage(message);
+    return ESP_OK;
 
     // int fd = httpd_req_to_sockfd(req);
 
@@ -592,30 +594,26 @@ esp_err_t webServer::wsHandler(httpd_req_t *req) {
 
 esp_err_t webServer::wsConnection(httpd_req_t *req, int fd) {
 
-    Serial.printf("wsConnection %i\n", fd);
+    Serial.printf("wsConnection %i (Size %i, Max %i)\n", fd, _webSockets.size(), pmgHub::config::maxWebSocket);
  
-    if (_webSocket.size() >= pmgHub::config::maxWebSocket) return ESP_FAIL;
+    if (_webSockets.size() >= pmgHub::config::maxWebSocket) return ESP_FAIL;
     
+    Serial.printf("[WebSocket] Request: %s\n", req->uri);
+
     //because we use the same handler for /ws/admin & /ws/device
     String path = req->uri;
 
     if (path.startsWith("/ws/admin")) {
-   
-        if _webAuth.getSessionTypeAuthenticated(req) != sessionManager::sessionType::webAdmin) {
+      
+        if (_webAuth.getSessionTypeAuthenticated(req) != sessionManager::sessionType::webAdmin) {
             httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
             return ESP_FAIL;
         }
         
-        //client is Admin
-
-        return ESP_OK;
-
     }
 
-    // client is device
-
     //instanciate and add directly on the map
-    //_webSockets.try_emplace(fd, _server, fd);
+    _webSockets.try_emplace(fd, _server, fd);
 
     return ESP_OK;
 
@@ -625,8 +623,15 @@ void webServer::closeCallback(httpd_handle_t hd, int sockfd) {
 
     Serial.printf("close socket callback: sockfd=%d\n", sockfd);
 
-    //ESP_LOGI(TAG, "Socket %d closed", sockfd);
-    // ...
+webServer* self = static_cast<webServer*>(req->user_ctx);
+
+    // webSocket* ws = getWebSocket(sockfd);
+    // if (ws == nullptr);
+
+    // ws->dispatchClose(1000, "socket is closed");
+
+    // //ESP_LOGI(TAG, "Socket %d closed", sockfd);
+    // // ...
 
     close(sockfd); // Close the socket to free resources
 

@@ -1,17 +1,12 @@
 #pragma once
 
-// #include <pmgHubConfig.h>
 #include <WiFi.h>
 #include <LittleFS.h>
-// #include <WebServer.h>
-// #include <pmgHubServices.h>
 #include <pmgHubSessionManager.h>
 #include <pmgHubWebAuth.h>
 #include <pmgHubWebCredentials.h>
 #include <esp_http_server.h>
-
-// #include <ArduinoJson.h>
-// #include <pmgHubCryptoManager.h>
+#include <pmgHubWebSocket.h>
 
 namespace pmgHub {
 
@@ -40,11 +35,14 @@ namespace pmgHub {
             esp_err_t sendJson(httpd_req_t* req, const String& json);
             esp_err_t webHandler(httpd_req_t *req);
             esp_err_t wsHandler(httpd_req_t *req);
+            esp_err_t wsConnection(httpd_req_t *req, int fd);
 
             static esp_err_t httpUriHandler(httpd_req_t* req);
             static esp_err_t webSocketHandler(httpd_req_t* req);
             static void closeCallback(httpd_handle_t hd, int sockfd);
 
+            webSocket* getWebSocket(int fd);
+                
             std::map<int, webSocket> _webSockets; 
 
         public:

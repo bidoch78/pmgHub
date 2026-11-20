@@ -1,5 +1,9 @@
 #pragma once
 
+#include <pmgHubServicesBase.h>
+#include <pmgHubClientSession.h>
+#include <map>
+
 namespace pmgHub {
 
     class wsClientSessionManager : public servicesBase {

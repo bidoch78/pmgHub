@@ -37,6 +37,7 @@ String webAuth::getCookieFromReq(httpd_req_t* req) {
     if (httpd_req_get_hdr_value_str(req, "Cookie", buffer, len + 1) != ESP_OK) { delete[] buffer; return ""; }
 
     String cookies(buffer);
+
     delete[] buffer;
 
     return cookies;

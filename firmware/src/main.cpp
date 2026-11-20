@@ -4,11 +4,14 @@
 #include <pmgHubWebServer.h>
 #include <pmgHubSensorsSimulator.h>
 #include <pmgHubSessionManager.h>
+#include <pmgHubClientSessionManager.h>
 
 pmgHub::sessionManager sessions(pmgHub::config::sessionTimeoutMs); 
 pmgHub::storage storage;
 pmgHub::sensorsSimulator sensors;
-pmgHub::services services(sessions, storage, sensors);
+pmgHub::wsClientSessionManager csManager(pmgHub::config::csManager_pingInterval, pmgHub::config::csManager_pongTimeout, 
+                                            pmgHub::config::csManager_checkInterval, pmgHub::config::csManager_authenticationTimeout);
+pmgHub::services services(sessions, storage, sensors, csManager);
 pmgHub::webServer webServer(services);
 
 void setup()
